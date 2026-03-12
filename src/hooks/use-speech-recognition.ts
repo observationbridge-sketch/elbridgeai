@@ -5,12 +5,15 @@ export function useSpeechRecognition() {
   const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef("");
+  const sessionFinalsRef = useRef("");
 
   const isSupported = typeof window !== "undefined" && 
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
   const startListening = useCallback(() => {
     if (!isSupported) return;
+
+    sessionFinalsRef.current = "";
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
@@ -19,19 +22,17 @@ export function useSpeechRecognition() {
     recognition.lang = "en-US";
 
     recognition.onresult = (event: any) => {
-      let finalPart = "";
-      let interimPart = "";
+      let sessionFinal = "";
+      let interim = "";
       for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalPart += result[0].transcript;
+        if (event.results[i].isFinal) {
+          sessionFinal += event.results[i][0].transcript;
         } else {
-          interimPart += result[0].transcript;
+          interim += event.results[i][0].transcript;
         }
       }
-      // Accumulated finals from this recognition session + any interim
-      const current = finalPart + interimPart;
-      setTranscript(accumulatedRef.current + current);
+      sessionFinalsRef.current = sessionFinal;
+      setTranscript(accumulatedRef.current + sessionFinal + interim);
     };
 
     // If recognition ends unexpectedly (e.g. silence timeout on some browsers),
