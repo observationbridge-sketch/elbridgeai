@@ -293,6 +293,7 @@ Deno.serve(async (req) => {
       };
 
       const html = buildEmailHtml(report, label);
+      const plainText = buildPlainText(report, label);
 
       // Send via Resend
       const resendRes = await fetch("https://api.resend.com/emails", {
