@@ -1,13 +1,10 @@
 import { useState, useCallback, useRef } from "react";
 
-interface SpeechRecognitionEvent {
-  results: SpeechRecognitionResultList;
-}
-
 export function useSpeechRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef<any>(null);
+  const accumulatedRef = useRef("");
 
   const isSupported = typeof window !== "undefined" && 
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
@@ -17,39 +14,70 @@ export function useSpeechRecognition() {
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = "";
-      let interimTranscript = "";
+    recognition.onresult = (event: any) => {
+      let finalPart = "";
+      let interimPart = "";
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalTranscript += result[0].transcript;
+          finalPart += result[0].transcript;
         } else {
-          interimTranscript += result[0].transcript;
+          interimPart += result[0].transcript;
         }
       }
-      setTranscript(finalTranscript || interimTranscript);
+      // Accumulated finals from this recognition session + any interim
+      const current = finalPart + interimPart;
+      setTranscript(accumulatedRef.current + current);
     };
 
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+    // If recognition ends unexpectedly (e.g. silence timeout on some browsers),
+    // save what we have and restart automatically
+    recognition.onend = () => {
+      // Snapshot the current transcript into accumulated
+      setTranscript((prev) => {
+        accumulatedRef.current = prev;
+        return prev;
+      });
+      // Only restart if we're still supposed to be listening
+      if (recognitionRef.current === recognition) {
+        try {
+          recognition.start();
+        } catch {
+          setIsListening(false);
+        }
+      }
+    };
+
+    recognition.onerror = (e: any) => {
+      if (e.error === "aborted" || e.error === "no-speech") return;
+      setIsListening(false);
+    };
 
     recognitionRef.current = recognition;
-    setTranscript("");
     recognition.start();
     setIsListening(true);
   }, [isSupported]);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null; // prevent auto-restart in onend
+    recognition?.stop();
     setIsListening(false);
+    // Finalize accumulated
+    setTranscript((prev) => {
+      accumulatedRef.current = prev;
+      return prev;
+    });
   }, []);
 
-  const resetTranscript = useCallback(() => setTranscript(""), []);
+  const resetTranscript = useCallback(() => {
+    accumulatedRef.current = "";
+    setTranscript("");
+  }, []);
 
   return { isListening, transcript, startListening, stopListening, resetTranscript, isSupported };
 }

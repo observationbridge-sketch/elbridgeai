@@ -293,6 +293,9 @@ const StudentSession = () => {
                       {/* Microphone button */}
                       {speech.isSupported ? (
                         <div className="flex flex-col items-center gap-3">
+                          <p className="text-sm text-muted-foreground text-center">
+                            Tap the mic to start. Tap again when you are done speaking.
+                          </p>
                           <button
                             onClick={speech.isListening ? speech.stopListening : speech.startListening}
                             className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-lg ${
@@ -307,10 +310,10 @@ const StudentSession = () => {
                               <Mic className="h-10 w-10" />
                             )}
                           </button>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {speech.isListening
-                              ? "Listening... tap to stop"
-                              : "Tap the microphone to start speaking"}
+                              ? "🔴 Recording... tap the mic to stop"
+                              : "Ready to listen"}
                           </p>
                           {answer && (
                             <div className="w-full bg-muted/50 rounded-lg p-3 border border-border">
