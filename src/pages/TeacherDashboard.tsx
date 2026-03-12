@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, Copy, LogOut, Users, Play, Square, History } from "lucide-react";
+import EmailSettings from "@/components/dashboard/EmailSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
