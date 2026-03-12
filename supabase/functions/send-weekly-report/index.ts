@@ -304,8 +304,9 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "ElbridgeAI Reports <reports@elbridgeai.com>",
           to: [email],
-          subject: `📊 Your Weekly ElbridgeAI Report — ${label}`,
+          subject: `Your Weekly ElbridgeAI Student Report — ${label}`,
           html,
+          text: plainText,
         }),
       });
 
