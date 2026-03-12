@@ -38,11 +38,9 @@ export function useSpeechRecognition() {
     // If recognition ends unexpectedly (e.g. silence timeout on some browsers),
     // save what we have and restart automatically
     recognition.onend = () => {
-      // Snapshot the current transcript into accumulated
-      setTranscript((prev) => {
-        accumulatedRef.current = prev;
-        return prev;
-      });
+      // Snapshot session finals into accumulated before potential restart
+      accumulatedRef.current += sessionFinalsRef.current;
+      sessionFinalsRef.current = "";
       // Only restart if we're still supposed to be listening
       if (recognitionRef.current === recognition) {
         try {
