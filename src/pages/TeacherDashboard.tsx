@@ -1,0 +1,236 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Brain, Copy, LogOut, Users, Play, Square, History } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+function generateCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+const TeacherDashboard = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [sessionActive, setSessionActive] = useState(false);
+  const [studentCount, setStudentCount] = useState(0);
+  const [sessions, setSessions] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/teacher/auth");
+        return;
+      }
+      setUser(session.user);
+      loadSessions(session.user.id);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) navigate("/teacher/auth");
+      else setUser(session.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const loadSessions = async (userId: string) => {
+    const { data } = await supabase
+      .from("sessions")
+      .select("*, session_students(count)")
+      .eq("teacher_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (data) setSessions(data);
+
+    // Check for active session
+    const active = data?.find((s: any) => s.status === "active");
+    if (active) {
+      setSessionCode(active.code);
+      setSessionActive(true);
+      pollStudents(active.id);
+    }
+  };
+
+  const pollStudents = async (sessionId: string) => {
+    const { count } = await supabase
+      .from("session_students")
+      .select("*", { count: "exact", head: true })
+      .eq("session_id", sessionId);
+    setStudentCount(count || 0);
+  };
+
+  const startSession = async () => {
+    if (!user) return;
+    const code = generateCode();
+    const { data, error } = await supabase
+      .from("sessions")
+      .insert({ teacher_id: user.id, code, status: "active" })
+      .select()
+      .single();
+    if (error) {
+      toast.error("Failed to start session");
+      return;
+    }
+    setSessionCode(code);
+    setSessionActive(true);
+    setStudentCount(0);
+    toast.success("Session started!");
+
+    // Poll for students
+    const interval = setInterval(async () => {
+      if (data) await pollStudents(data.id);
+    }, 5000);
+    // Store interval for cleanup
+    (window as any).__sessionPoll = interval;
+  };
+
+  const endSession = async () => {
+    if (!sessionCode) return;
+    await supabase
+      .from("sessions")
+      .update({ status: "ended", ended_at: new Date().toISOString() })
+      .eq("code", sessionCode)
+      .eq("teacher_id", user.id);
+    setSessionActive(false);
+    setSessionCode(null);
+    setStudentCount(0);
+    clearInterval((window as any).__sessionPoll);
+    toast.success("Session ended");
+    if (user) loadSessions(user.id);
+  };
+
+  const copyCode = () => {
+    if (sessionCode) {
+      navigator.clipboard.writeText(sessionCode);
+      toast.success("Code copied!");
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+            <Brain className="h-8 w-8 text-primary" />
+            <span className="text-xl font-bold text-foreground">ElbridgeAI</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground hidden sm:block">
+              {user?.user_metadata?.full_name || user?.email}
+            </span>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        <h1 className="text-3xl font-bold text-foreground">Teacher Dashboard</h1>
+
+        {/* Session Control */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="card-shadow border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {sessionActive ? <Square className="h-5 w-5 text-destructive" /> : <Play className="h-5 w-5 text-success" />}
+                Live Session
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {sessionActive && sessionCode ? (
+                <>
+                  <div className="bg-muted rounded-lg p-6 text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Share this code with students</p>
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="text-5xl font-mono font-bold tracking-[0.2em] text-primary">
+                        {sessionCode}
+                      </span>
+                      <Button variant="ghost" size="icon" onClick={copyCode}>
+                        <Copy className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Button variant="destructive" className="w-full" onClick={endSession}>
+                    <Square className="h-4 w-4 mr-2" /> End Session
+                  </Button>
+                </>
+              ) : (
+                <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
+                  <Play className="h-4 w-4 mr-2" /> Start New Session
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="card-shadow border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-accent" />
+                Students Connected
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-6">
+                <span className="text-6xl font-bold text-accent">{studentCount}</span>
+                <p className="text-muted-foreground mt-2">
+                  {sessionActive ? "students in session" : "No active session"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Session History */}
+        <Card className="card-shadow border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-muted-foreground" />
+              Session History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {sessions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No sessions yet. Start your first session!</p>
+            ) : (
+              <div className="space-y-3">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => session.status === "ended" && navigate(`/teacher/session/${session.id}`)}
+                  >
+                    <div>
+                      <span className="font-mono text-sm text-primary">{session.code}</span>
+                      <span className="text-muted-foreground text-sm ml-3">
+                        {new Date(session.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                    }`}>
+                      {session.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+};
+
+export default TeacherDashboard;
