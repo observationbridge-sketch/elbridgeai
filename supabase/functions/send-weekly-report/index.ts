@@ -167,7 +167,8 @@ ${widaRows ? `<tr><td style="padding:16px 40px 8px;">
 <!-- Footer -->
 <tr><td style="padding:20px 40px;background:#f6f9fc;text-align:center;border-top:1px solid #e8edf2;">
   <p style="margin:0;font-size:11px;color:#8a9bb0;">ElbridgeAI • Empowering English Language Learners</p>
-  <p style="margin:4px 0 0;font-size:11px;color:#8a9bb0;">You can opt out of these emails in your dashboard settings.</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#8a9bb0;">You can manage your email preferences in your <a href="https://elbridgeai.lovable.app/teacher/dashboard#email-settings" style="color:#1a6db5;text-decoration:underline;">dashboard settings</a>.</p>
+  <p style="margin:4px 0 0;font-size:11px;"><a href="https://elbridgeai.lovable.app/teacher/dashboard#email-settings" style="color:#8a9bb0;text-decoration:underline;">Unsubscribe</a></p>
 </td></tr>
 
 </table>
