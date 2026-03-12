@@ -124,6 +124,30 @@ export type Database = {
           },
         ]
       }
+      teacher_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          teacher_id: string
+          updated_at: string
+          weekly_email_opt_out: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          teacher_id: string
+          updated_at?: string
+          weekly_email_opt_out?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          teacher_id?: string
+          updated_at?: string
+          weekly_email_opt_out?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
