@@ -55,7 +55,7 @@ const StudentSession = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
-  const [totalActivities] = useState(8);
+  const [totalActivities] = useState(12);
   const [sessionEnded, setSessionEnded] = useState(false);
 
   const tts = useTTS();
