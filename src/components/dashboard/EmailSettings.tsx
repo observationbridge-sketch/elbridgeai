@@ -102,6 +102,9 @@ const EmailSettings = ({ userId }: EmailSettingsProps) => {
           <Send className="h-4 w-4 mr-2" />
           {sending ? "Sending..." : "Send me this week's report now"}
         </Button>
+        <p className="text-xs text-muted-foreground mt-3">
+          💡 First time? Check your spam or junk folder and mark us as safe to ensure future reports land in your inbox.
+        </p>
       </CardContent>
     </Card>
   );

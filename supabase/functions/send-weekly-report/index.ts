@@ -33,6 +33,30 @@ function getWeekRange(): { start: string; end: string; label: string } {
   };
 }
 
+function buildPlainText(report: TeacherReport, weekLabel: string): string {
+  const domains = ["Reading", "Writing", "Speaking", "Listening"];
+  const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
+
+  let text = `Weekly ElbridgeAI Student Report — ${weekLabel}\n\n`;
+  text += `Hi ${report.name},\n\nHere's how your students performed this past week.\n\n`;
+  text += `Sessions: ${report.totalSessions}  |  Students: ${report.totalStudents}\n\n`;
+  text += `DOMAIN PERFORMANCE\n`;
+  for (const d of domains) {
+    const data = report.domainScores[d] || { correct: 0, total: 0 };
+    const pct = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+    text += `  ${d}: ${pct}%\n`;
+  }
+  text += `\nWIDA LEVELS\n`;
+  for (const level of widaLevels) {
+    const count = report.widaLevels[level] || 0;
+    if (count > 0) text += `  ${level}: ${count}\n`;
+  }
+  text += `\nView Full Dashboard: https://elbridgeai.lovable.app/teacher/dashboard\n`;
+  text += `\nTo manage email preferences or unsubscribe, visit:\nhttps://elbridgeai.lovable.app/teacher/dashboard#email-settings\n`;
+  text += `\n—\nElbridgeAI • Empowering English Language Learners\n`;
+  return text;
+}
+
 function buildEmailHtml(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
   const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
