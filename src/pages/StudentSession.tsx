@@ -61,7 +61,8 @@ const StudentSession = () => {
   const tts = useTTS();
   const speech = useSpeechRecognition();
 
-  const domainOrder: Domain[] = ["reading", "writing", "speaking", "listening"];
+  // Domain rotation: Reading → Listening → Speaking → Writing (matches edge function)
+  const domainOrder: Domain[] = ["reading", "listening", "speaking", "writing"];
 
   const fetchActivity = useCallback(async () => {
     setLoading(true);
