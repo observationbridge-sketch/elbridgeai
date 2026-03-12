@@ -33,6 +33,30 @@ function getWeekRange(): { start: string; end: string; label: string } {
   };
 }
 
+function buildPlainText(report: TeacherReport, weekLabel: string): string {
+  const domains = ["Reading", "Writing", "Speaking", "Listening"];
+  const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
+
+  let text = `Weekly ElbridgeAI Student Report — ${weekLabel}\n\n`;
+  text += `Hi ${report.name},\n\nHere's how your students performed this past week.\n\n`;
+  text += `Sessions: ${report.totalSessions}  |  Students: ${report.totalStudents}\n\n`;
+  text += `DOMAIN PERFORMANCE\n`;
+  for (const d of domains) {
+    const data = report.domainScores[d] || { correct: 0, total: 0 };
+    const pct = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+    text += `  ${d}: ${pct}%\n`;
+  }
+  text += `\nWIDA LEVELS\n`;
+  for (const level of widaLevels) {
+    const count = report.widaLevels[level] || 0;
+    if (count > 0) text += `  ${level}: ${count}\n`;
+  }
+  text += `\nView Full Dashboard: https://elbridgeai.lovable.app/teacher/dashboard\n`;
+  text += `\nTo manage email preferences or unsubscribe, visit:\nhttps://elbridgeai.lovable.app/teacher/dashboard#email-settings\n`;
+  text += `\n—\nElbridgeAI • Empowering English Language Learners\n`;
+  return text;
+}
+
 function buildEmailHtml(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
   const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
@@ -143,7 +167,8 @@ ${widaRows ? `<tr><td style="padding:16px 40px 8px;">
 <!-- Footer -->
 <tr><td style="padding:20px 40px;background:#f6f9fc;text-align:center;border-top:1px solid #e8edf2;">
   <p style="margin:0;font-size:11px;color:#8a9bb0;">ElbridgeAI • Empowering English Language Learners</p>
-  <p style="margin:4px 0 0;font-size:11px;color:#8a9bb0;">You can opt out of these emails in your dashboard settings.</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#8a9bb0;">You can manage your email preferences in your <a href="https://elbridgeai.lovable.app/teacher/dashboard#email-settings" style="color:#1a6db5;text-decoration:underline;">dashboard settings</a>.</p>
+  <p style="margin:4px 0 0;font-size:11px;"><a href="https://elbridgeai.lovable.app/teacher/dashboard#email-settings" style="color:#8a9bb0;text-decoration:underline;">Unsubscribe</a></p>
 </td></tr>
 
 </table>
@@ -268,6 +293,7 @@ Deno.serve(async (req) => {
       };
 
       const html = buildEmailHtml(report, label);
+      const plainText = buildPlainText(report, label);
 
       // Send via Resend
       const resendRes = await fetch("https://api.resend.com/emails", {
@@ -279,8 +305,9 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "ElbridgeAI Reports <reports@elbridgeai.com>",
           to: [email],
-          subject: `📊 Your Weekly ElbridgeAI Report — ${label}`,
+          subject: `Your Weekly ElbridgeAI Student Report — ${label}`,
           html,
+          text: plainText,
         }),
       });
 
