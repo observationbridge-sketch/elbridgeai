@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Users, Brain, Mic, Headphones, PenTool } from "lucide-react";
+import { BookOpen, Users } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -10,8 +10,8 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Brain className="h-8 w-8 text-primary" />
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="ElbridgeAI Logo" className="h-10 w-auto" />
             <span className="text-xl font-bold text-foreground">ElbridgeAI</span>
           </div>
           <Button variant="ghost" onClick={() => navigate("/teacher/auth")}>
