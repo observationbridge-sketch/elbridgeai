@@ -66,11 +66,9 @@ export function useSpeechRecognition() {
     recognitionRef.current = null; // prevent auto-restart in onend
     recognition?.stop();
     setIsListening(false);
-    // Finalize accumulated
-    setTranscript((prev) => {
-      accumulatedRef.current = prev;
-      return prev;
-    });
+    // Finalize: snapshot session finals
+    accumulatedRef.current += sessionFinalsRef.current;
+    sessionFinalsRef.current = "";
   }, []);
 
   const resetTranscript = useCallback(() => {
