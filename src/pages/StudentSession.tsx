@@ -55,13 +55,14 @@ const StudentSession = () => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
-  const [totalActivities] = useState(8);
+  const [totalActivities] = useState(12);
   const [sessionEnded, setSessionEnded] = useState(false);
 
   const tts = useTTS();
   const speech = useSpeechRecognition();
 
-  const domainOrder: Domain[] = ["reading", "writing", "speaking", "listening"];
+  // Domain rotation: Reading → Listening → Speaking → Writing (matches edge function)
+  const domainOrder: Domain[] = ["reading", "listening", "speaking", "writing"];
 
   const fetchActivity = useCallback(async () => {
     setLoading(true);
@@ -121,19 +122,32 @@ const StudentSession = () => {
       return;
     }
 
-    // For speaking prompts, be more lenient with matching
+    // Flexible grading based on activity type
     let correct: boolean;
-    if (currentActivity.type === "speaking_prompt") {
-      const normalizeText = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
-      const userNorm = normalizeText(userAnswer);
-      const correctNorm = normalizeText(currentActivity.correctAnswer);
-      // Check if at least 60% of words match for speaking
-      const userWords = userNorm.split(/\s+/);
-      const correctWords = correctNorm.split(/\s+/);
-      const matchCount = userWords.filter(w => correctWords.includes(w)).length;
-      correct = matchCount >= Math.ceil(correctWords.length * 0.5);
-    } else {
+    const normalizeText = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+    const userNorm = normalizeText(userAnswer);
+
+    if (currentActivity.type === "multiple_choice") {
       correct = userAnswer.toLowerCase().trim() === currentActivity.correctAnswer.toLowerCase().trim();
+    } else {
+      // For speaking & writing: check against acceptableKeywords or flexible word matching
+      const keywords: string[] = (currentActivity as any).acceptableKeywords || [];
+      if (keywords.length > 0) {
+        const matchCount = keywords.filter(kw => userNorm.includes(kw.toLowerCase())).length;
+        // Accept if at least 2 keywords match, or 30% of keywords
+        correct = matchCount >= Math.max(2, Math.ceil(keywords.length * 0.3));
+      } else {
+        // Fallback: compare against correctAnswer with word overlap
+        const correctNorm = normalizeText(currentActivity.correctAnswer);
+        const userWords = userNorm.split(/\s+/);
+        const correctWords = correctNorm.split(/\s+/);
+        const matchCount = userWords.filter(w => correctWords.includes(w)).length;
+        correct = matchCount >= Math.ceil(correctWords.length * 0.4);
+      }
+      // For open-ended: if student wrote at least 3 words, give credit (encourage effort)
+      if (!correct && userNorm.split(/\s+/).length >= 3) {
+        correct = true;
+      }
     }
 
     setIsCorrect(correct);

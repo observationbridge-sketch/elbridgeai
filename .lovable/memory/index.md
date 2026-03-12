@@ -16,6 +16,13 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - WIDA levels: Entering, Emerging, Developing, Expanding, Bridging
 - TTS: Best-voice selection (Google > cloud en-US > local en-US)
 
+## Session Structure
+- 12 questions per session: 3 each of Reading, Listening, Speaking, Writing
+- Domain rotation: Reading → Listening → Speaking → Writing (repeat 3x)
+- Difficulty progression: Entering (Q1-2) → Emerging (Q3-5) → Developing (Q6-8) → Expanding (Q9-12)
+- 8 rotating themes: nature, school, sports, superheroes, fantasy, science, social studies, ELA skills
+- Flexible grading: acceptableKeywords for speaking/writing, effort-based credit (3+ words)
+
 ## Database Tables
 - sessions (teacher_id, code, status)
 - session_students (session_id, student_name)
