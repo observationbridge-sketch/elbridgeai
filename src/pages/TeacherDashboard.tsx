@@ -193,6 +193,9 @@ const TeacherDashboard = () => {
           </Card>
         </div>
 
+        {/* Email Settings */}
+        {user && <EmailSettings userId={user.id} />}
+
         {/* Session History */}
         <Card className="card-shadow border-border">
           <CardHeader>
