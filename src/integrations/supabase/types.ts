@@ -14,7 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      session_students: {
+        Row: {
+          id: string
+          joined_at: string
+          session_id: string
+          student_name: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          session_id: string
+          student_name: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          session_id?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_students_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          code: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          status: string
+          teacher_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          status?: string
+          teacher_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          status?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
+      student_responses: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          domain: string
+          id: string
+          is_correct: boolean
+          question: string
+          session_id: string
+          student_answer: string
+          student_id: string
+          wida_level: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          domain: string
+          id?: string
+          is_correct?: boolean
+          question: string
+          session_id: string
+          student_answer: string
+          student_id: string
+          wida_level?: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          is_correct?: boolean
+          question?: string
+          session_id?: string
+          student_answer?: string
+          student_id?: string
+          wida_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_responses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "session_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
