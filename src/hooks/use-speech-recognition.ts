@@ -5,12 +5,15 @@ export function useSpeechRecognition() {
   const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef("");
+  const sessionFinalsRef = useRef("");
 
   const isSupported = typeof window !== "undefined" && 
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
   const startListening = useCallback(() => {
     if (!isSupported) return;
+
+    sessionFinalsRef.current = "";
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
@@ -19,29 +22,25 @@ export function useSpeechRecognition() {
     recognition.lang = "en-US";
 
     recognition.onresult = (event: any) => {
-      let finalPart = "";
-      let interimPart = "";
+      let sessionFinal = "";
+      let interim = "";
       for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalPart += result[0].transcript;
+        if (event.results[i].isFinal) {
+          sessionFinal += event.results[i][0].transcript;
         } else {
-          interimPart += result[0].transcript;
+          interim += event.results[i][0].transcript;
         }
       }
-      // Accumulated finals from this recognition session + any interim
-      const current = finalPart + interimPart;
-      setTranscript(accumulatedRef.current + current);
+      sessionFinalsRef.current = sessionFinal;
+      setTranscript(accumulatedRef.current + sessionFinal + interim);
     };
 
     // If recognition ends unexpectedly (e.g. silence timeout on some browsers),
     // save what we have and restart automatically
     recognition.onend = () => {
-      // Snapshot the current transcript into accumulated
-      setTranscript((prev) => {
-        accumulatedRef.current = prev;
-        return prev;
-      });
+      // Snapshot session finals into accumulated before potential restart
+      accumulatedRef.current += sessionFinalsRef.current;
+      sessionFinalsRef.current = "";
       // Only restart if we're still supposed to be listening
       if (recognitionRef.current === recognition) {
         try {
@@ -67,11 +66,9 @@ export function useSpeechRecognition() {
     recognitionRef.current = null; // prevent auto-restart in onend
     recognition?.stop();
     setIsListening(false);
-    // Finalize accumulated
-    setTranscript((prev) => {
-      accumulatedRef.current = prev;
-      return prev;
-    });
+    // Finalize: snapshot session finals
+    accumulatedRef.current += sessionFinalsRef.current;
+    sessionFinalsRef.current = "";
   }, []);
 
   const resetTranscript = useCallback(() => {
