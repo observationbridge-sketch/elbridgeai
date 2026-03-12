@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Users } from "lucide-react";
+import { BookOpen, Users, Brain, Mic, Headphones, PenTool } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
