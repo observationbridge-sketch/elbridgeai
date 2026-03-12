@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Brain, BookOpen, PenTool, Mic, Headphones, CheckCircle, ArrowRight, Loader2, Star } from "lucide-react";
+import { Brain, BookOpen, PenTool, Mic, MicOff, Headphones, CheckCircle, ArrowRight, Loader2, Star, Volume2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTTS } from "@/hooks/use-tts";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 
@@ -56,6 +58,9 @@ const StudentSession = () => {
   const [totalActivities] = useState(8);
   const [sessionEnded, setSessionEnded] = useState(false);
 
+  const tts = useTTS();
+  const speech = useSpeechRecognition();
+
   const domainOrder: Domain[] = ["reading", "writing", "speaking", "listening"];
 
   const fetchActivity = useCallback(async () => {
@@ -63,6 +68,8 @@ const StudentSession = () => {
     setShowFeedback(false);
     setAnswer("");
     setSelectedOption(null);
+    speech.resetTranscript();
+    tts.stop();
 
     const domain = domainOrder[activityIndex % 4];
 
@@ -74,12 +81,21 @@ const StudentSession = () => {
       if (error) throw error;
       setCurrentActivity(data as Activity);
     } catch {
-      // Fallback activity if AI fails
       setCurrentActivity(getFallbackActivity(domain));
     } finally {
       setLoading(false);
     }
   }, [activityIndex]);
+
+  // Auto-play TTS for listening activities
+  useEffect(() => {
+    if (!loading && currentActivity?.domain === "listening" && tts.isSupported) {
+      const textToRead = currentActivity.audioDescription || currentActivity.question;
+      // Small delay so the UI renders first
+      const timer = setTimeout(() => tts.speak(textToRead), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, currentActivity]);
 
   useEffect(() => {
     if (activityIndex < totalActivities) {
@@ -88,6 +104,13 @@ const StudentSession = () => {
       setSessionEnded(true);
     }
   }, [activityIndex, fetchActivity, totalActivities]);
+
+  // Sync speech transcript to answer
+  useEffect(() => {
+    if (speech.transcript) {
+      setAnswer(speech.transcript);
+    }
+  }, [speech.transcript]);
 
   const submitAnswer = async () => {
     if (!currentActivity) return;
@@ -98,12 +121,28 @@ const StudentSession = () => {
       return;
     }
 
-    const correct = userAnswer.toLowerCase().trim() === currentActivity.correctAnswer.toLowerCase().trim();
+    // For speaking prompts, be more lenient with matching
+    let correct: boolean;
+    if (currentActivity.type === "speaking_prompt") {
+      const normalizeText = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+      const userNorm = normalizeText(userAnswer);
+      const correctNorm = normalizeText(currentActivity.correctAnswer);
+      // Check if at least 60% of words match for speaking
+      const userWords = userNorm.split(/\s+/);
+      const correctWords = correctNorm.split(/\s+/);
+      const matchCount = userWords.filter(w => correctWords.includes(w)).length;
+      correct = matchCount >= Math.ceil(correctWords.length * 0.5);
+    } else {
+      correct = userAnswer.toLowerCase().trim() === currentActivity.correctAnswer.toLowerCase().trim();
+    }
+
     setIsCorrect(correct);
     setShowFeedback(true);
     if (correct) setScore((s) => s + 1);
 
-    // Save response
+    // Stop any audio
+    tts.stop();
+
     try {
       await supabase.from("student_responses").insert({
         session_id: sessionId,
@@ -121,6 +160,7 @@ const StudentSession = () => {
   };
 
   const nextActivity = () => {
+    tts.stop();
     setActivityIndex((i) => i + 1);
   };
 
@@ -185,6 +225,12 @@ const StudentSession = () => {
               <span className={`text-sm font-medium ${DOMAIN_COLORS[currentActivity.domain]}`}>
                 {DOMAIN_LABELS[currentActivity.domain]}
               </span>
+              {currentActivity.domain === "listening" && (
+                <Volume2 className="h-4 w-4 text-warning ml-1" />
+              )}
+              {currentActivity.domain === "speaking" && (
+                <Mic className="h-4 w-4 text-success ml-1" />
+              )}
               <span className="text-xs text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full">
                 {currentActivity.widaLevel}
               </span>
@@ -198,11 +244,25 @@ const StudentSession = () => {
                 </div>
               )}
 
-              {/* Audio description for listening */}
-              {currentActivity.audioDescription && (
-                <div className="bg-secondary/50 rounded-lg p-4 border border-border flex items-center gap-3">
-                  <Headphones className="h-6 w-6 text-warning flex-shrink-0" />
-                  <p className="text-foreground text-sm italic">{currentActivity.audioDescription}</p>
+              {/* Listening: audio player area */}
+              {currentActivity.domain === "listening" && currentActivity.audioDescription && (
+                <div className="bg-secondary/50 rounded-lg p-4 border border-border space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Headphones className="h-6 w-6 text-warning flex-shrink-0" />
+                    <p className="text-foreground text-sm italic">{currentActivity.audioDescription}</p>
+                  </div>
+                  {tts.isSupported && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => tts.speak(currentActivity.audioDescription || currentActivity.question)}
+                      disabled={tts.isSpeaking}
+                      className="gap-2"
+                    >
+                      <Volume2 className={`h-4 w-4 ${tts.isSpeaking ? "animate-pulse text-warning" : ""}`} />
+                      {tts.isSpeaking ? "Playing..." : "Replay Audio"}
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -229,17 +289,50 @@ const StudentSession = () => {
                       ))}
                     </div>
                   ) : currentActivity.type === "speaking_prompt" ? (
-                    <div className="space-y-3">
-                      <div className="bg-success/5 border border-success/20 rounded-lg p-4 text-center">
-                        <Mic className="h-8 w-8 text-success mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          Say your answer out loud, then type what you said:
-                        </p>
-                      </div>
+                    <div className="space-y-4">
+                      {/* Microphone button */}
+                      {speech.isSupported ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <button
+                            onClick={speech.isListening ? speech.stopListening : speech.startListening}
+                            className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-lg ${
+                              speech.isListening
+                                ? "bg-destructive text-destructive-foreground animate-pulse scale-110"
+                                : "bg-success text-success-foreground hover:scale-105"
+                            }`}
+                          >
+                            {speech.isListening ? (
+                              <MicOff className="h-10 w-10" />
+                            ) : (
+                              <Mic className="h-10 w-10" />
+                            )}
+                          </button>
+                          <p className="text-sm text-muted-foreground">
+                            {speech.isListening
+                              ? "Listening... tap to stop"
+                              : "Tap the microphone to start speaking"}
+                          </p>
+                          {answer && (
+                            <div className="w-full bg-muted/50 rounded-lg p-3 border border-border">
+                              <p className="text-xs text-muted-foreground mb-1">What I heard:</p>
+                              <p className="text-foreground">{answer}</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-center">
+                            <p className="text-sm text-muted-foreground">
+                              🎤 Speech recognition is not available in your browser. Please type your answer instead.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {/* Always show text input as fallback or for editing */}
                       <Input
                         value={answer}
                         onChange={(e) => setAnswer(e.target.value)}
-                        placeholder="Type your spoken answer here..."
+                        placeholder={speech.isSupported ? "Or type your answer here..." : "Type your spoken answer here..."}
                         className="h-12"
                       />
                     </div>
@@ -273,7 +366,14 @@ const StudentSession = () => {
                     <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isCorrect ? "text-success" : "text-destructive"}`} />
                     <div>
                       <p className={`font-medium ${isCorrect ? "text-success" : "text-destructive"}`}>
-                        {isCorrect ? "Great job! 🌟" : "Good try! Keep learning! 💪"}
+                        {isCorrect
+                          ? currentActivity.type === "speaking_prompt"
+                            ? "Nice speaking! You said it well! 🎤🌟"
+                            : "Great job! 🌟"
+                          : currentActivity.type === "speaking_prompt"
+                            ? "Good effort! Try saying it again next time! 💪🎤"
+                            : "Good try! Keep learning! 💪"
+                        }
                       </p>
                       {!isCorrect && (
                         <p className="text-sm text-muted-foreground mt-1">
@@ -316,7 +416,7 @@ function getFallbackActivity(domain: Domain): Activity {
     speaking: {
       domain: "speaking",
       type: "speaking_prompt",
-      question: "Say this sentence out loud and then type it: 'The cat sat on the mat and looked at the bird.'",
+      question: "Say this sentence out loud: 'The cat sat on the mat and looked at the bird.'",
       correctAnswer: "The cat sat on the mat and looked at the bird.",
       widaLevel: "Emerging",
     },
