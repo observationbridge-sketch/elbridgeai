@@ -5,6 +5,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const STRICT_RULES = `
+ABSOLUTE RULES:
+- NEVER mention partners, pair work, group work, or classroom peers — this is a solo digital activity
+- NEVER say "look at the picture", "look at the image", or reference any visual not displayed on screen
+- NEVER use "partner", "class", or "teacher" in student-facing text
+- ALWAYS frame content as a solo learning adventure
+- Before outputting, verify: "Can a student sitting alone on a device use this with only what is shown on screen?"
+`;
+
 const THEMES = [
   "Nature & animals",
   "School & classroom life",
@@ -43,6 +52,8 @@ You must also create a specific topic within this theme. For example:
 - Theme "Nature & animals" → topic "How butterflies migrate south in autumn"
 - Theme "Ancient Egypt" → topic "The building of the Great Pyramid"
 - Theme "Ocean exploration" → topic "Deep sea creatures that glow in the dark"
+
+${STRICT_RULES}
 
 RULES:
 - The passage MUST be exactly 2-3 complete sentences
@@ -107,7 +118,6 @@ Return ONLY valid JSON (no markdown, no code blocks):
       };
     }
 
-    // Ensure topic field exists
     if (!result.topic) {
       result.topic = result.theme;
     }

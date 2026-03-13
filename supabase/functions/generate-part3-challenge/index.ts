@@ -5,6 +5,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const STRICT_RULES = `
+ABSOLUTE RULES FOR ALL ACTIVITIES:
+- NEVER mention partners, pair work, group work, or classroom peers — this is a solo digital activity
+- NEVER say "look at the picture", "look at the image", "look at the photo", or reference any visual not displayed on screen
+- NEVER ask a speaking question with one specific correct answer — speaking prompts must be open-ended
+- ALWAYS provide all context needed within the activity — never assume outside knowledge
+- NEVER use "partner", "class", or "teacher" in student-facing text
+- ALWAYS frame activities as solo adventures connected to the session theme
+- Before outputting, verify: "Can a student sitting alone on a device complete this with only what is shown on screen?" If not, rewrite.
+`;
+
 type ChallengeType = "story_builder" | "speed_round" | "teach_it_back";
 
 serve(async (req) => {
@@ -26,10 +37,11 @@ serve(async (req) => {
       systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
+${STRICT_RULES}
 
 Generate a STORY BUILDER challenge. The student will write a 4-6 sentence mini story connecting 4 vivid scene descriptions.
 
-Create 4 short scene descriptions (1-2 sentences each) that form a logical sequence about "${topic}". Since we can't show images, describe vivid scenes in words.
+Create 4 short scene descriptions (1-2 sentences each) that form a logical sequence about "${topic}". Describe vivid scenes in words — do NOT reference any pictures or images.
 
 Return ONLY valid JSON (no markdown):
 {
@@ -52,14 +64,16 @@ Return ONLY valid JSON (no markdown):
       systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
+${STRICT_RULES}
 
 Generate a SPEED ROUND challenge with exactly 5 multiple-choice questions about "${topic}".
 - 2 reading comprehension (include a short 2-3 sentence passage each)
 - 1 listening comprehension (include an audioDescription field with a 2-3 sentence story)
-- 1 speaking prompt (include what the student should say)
+- 1 speaking prompt (open-ended, multiple reasonable answers — frame as multiple choice for speed)
 - 1 writing prompt (include a sentence to complete)
 
 Each question must have exactly 4 options with one clearly correct answer.
+Do NOT reference any images, pictures, or visuals.
 
 Return ONLY valid JSON (no markdown):
 {
@@ -90,7 +104,7 @@ Return ONLY valid JSON (no markdown):
     },
     {
       "domain": "speaking",
-      "question": "<speaking prompt about ${topic}>",
+      "question": "<open-ended speaking prompt about ${topic}>",
       "options": ["<A>", "<B>", "<C>", "<D>"],
       "correctAnswer": "<correct>"
     },
@@ -107,14 +121,14 @@ Return ONLY valid JSON (no markdown):
 
 ALL questions must be specifically about "${topic}".`;
     } else {
-      // teach_it_back
       systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
+${STRICT_RULES}
 
 Generate a TEACH IT BACK challenge. The student will record themselves explaining "${topic}" in their own words.
 
-Provide helpful vocabulary words they learned during the session and guiding questions.
+Provide helpful vocabulary words they learned during the session and guiding questions. Do NOT reference any images, pictures, or visuals.
 
 Return ONLY valid JSON (no markdown):
 {

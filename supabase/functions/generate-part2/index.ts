@@ -5,7 +5,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const STRICT_RULES = `
+ABSOLUTE RULES FOR ALL ACTIVITIES:
+- NEVER mention partners, pair work, group work, or classroom peers — this is a solo digital activity
+- NEVER say "look at the picture", "look at the image", "look at the photo", or reference any visual not displayed on screen
+- NEVER ask a speaking question with one specific correct answer — speaking prompts must be open-ended and accept any reasonable response
+- ALWAYS provide all context needed within the activity — never assume outside knowledge
+- NEVER use "partner", "class", or "teacher" in student-facing text
+- ALWAYS frame activities as solo adventures connected to the session theme
+- Before outputting, verify: "Can a student sitting alone on a device complete this with only what is shown on screen?" If not, rewrite.
+- No two consecutive activities should use the exact same input format.
+`;
+
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
+
+const INPUT_TYPES: Record<Strategy, string[]> = {
+  sentence_frames: ["typing", "listen_then_type", "typing", "multiple_choice", "record_then_type", "typing"],
+  sentence_expansion: ["recording", "typing", "recording", "multiple_choice", "typing", "typing"],
+  quick_writes: ["typing", "listen_then_type", "typing", "typing", "record_then_type", "typing"],
+};
 
 function selectStrategy(domainScores: Record<string, number> | null): { strategy: Strategy; weakestDomain: string; reason: string } {
   if (!domainScores || Object.keys(domainScores).length === 0) {
@@ -61,7 +79,19 @@ function selectStrategy(domainScores: Record<string, number> | null): { strategy
   };
 }
 
+function getInputTypeFields(inputType: string, topic: string): string {
+  let extra = "";
+  if (inputType === "listen_then_type") {
+    extra = `\n  "audioClip": "<2-3 complete sentences about ${topic} to be read aloud via text-to-speech. Must be self-contained and give all context needed.>",`;
+  }
+  if (inputType === "multiple_choice") {
+    extra = `\n  "options": ["<option A>", "<option B>", "<option C>", "<option D>"],`;
+  }
+  return extra;
+}
+
 function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string): string {
+  const inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
   const difficultyLabels = [
@@ -74,31 +104,43 @@ function buildPrompt(strategy: Strategy, theme: string, topic: string, questionI
   ];
   const difficultyNote = difficultyLabels[questionIndex] || difficultyLabels[5];
 
+  const inputTypeNote = `INPUT FORMAT: "${inputType}"
+${inputType === "typing" ? "The student will TYPE their answer in a text field." : ""}
+${inputType === "listen_then_type" ? "The student will LISTEN to an audio clip (via TTS), then TYPE their answer. You MUST include an 'audioClip' field with 2-3 sentences to be read aloud." : ""}
+${inputType === "multiple_choice" ? "The student will SELECT from 4 options. You MUST include an 'options' array with exactly 4 choices. 'modelAnswer' must exactly match one option text." : ""}
+${inputType === "recording" ? "The student will RECORD themselves speaking. 'modelAnswer' is what they should say." : ""}
+${inputType === "record_then_type" ? "The student will TYPE their answer AND THEN RECORD themselves saying the full sentence aloud." : ""}`;
+
+  const extraFields = getInputTypeFields(inputType, topic);
+
   if (strategy === "sentence_frames") {
     const scaffolding = [
       "ONE blank to fill in. Provide a sentence frame with exactly one blank marked as ___.",
-      "ONE blank but requires more thought. The blank should need a phrase, not just one word.",
-      "TWO blanks to fill in. Provide a sentence frame with two blanks marked as ___.",
-      "TWO blanks requiring longer phrases. More complex frame.",
-      "The student writes a FULL sentence inspired by the frame. Show the frame as a model only.",
+      "LISTEN THEN TYPE: After hearing the audio clip, the student completes a sentence frame with one blank. Include the audioClip field.",
+      "Read a passage then fill TWO blanks in a sentence frame. Provide a passage and a frame with two blanks.",
+      "MULTIPLE CHOICE: Provide 4 word options to complete the sentence frame. Include the options array.",
+      "Complete the sentence frame by typing, then record saying the full completed sentence aloud.",
       "The student writes their OWN complete sentence about the topic with NO frame provided — fully open.",
     ][questionIndex];
 
     return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
+${STRICT_RULES}
+${inputTypeNote}
 
 Generate a SENTENCE FRAMES activity about "${topic}".
 ${difficultyNote}: ${scaffolding}
 
 STRUCTURE:
 1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
-2. Present a sentence frame for the student to complete
+2. Present a sentence frame for the student to complete (unless this is a free production activity)
 3. The question should clearly show the frame with blanks marked as ___
 
 Return ONLY valid JSON (no markdown):
 {
   "type": "sentence_frame",
+  "inputType": "${inputType}",${extraFields}
   "passage": "<3-5 sentence passage about ${topic}>",
   "question": "<instruction + the sentence frame with ___ blanks>",
   "sentenceFrame": "<just the frame itself>",
@@ -113,17 +155,19 @@ Use vivid, kid-friendly language. ALL content must be about "${topic}".`;
 
   if (strategy === "sentence_expansion") {
     const expansion = [
-      "The student simply REPEATS the base sentence exactly. Keep it short (4-6 words). About " + topic + ".",
-      "The student repeats + adds WHERE (location). Provide the expanded version.",
-      "The student repeats + adds WHAT it looks like (description). Provide the expanded version.",
-      "The student repeats + adds WHEN (time). Provide the expanded version.",
-      "The student repeats + adds WHY using BECAUSE. Provide the expanded version.",
-      "The student says the FULL expanded sentence with all details combined. Provide the complete version.",
+      "RECORDING: The student simply REPEATS the base sentence by recording themselves. Keep the sentence short (4-6 words). About " + topic + ".",
+      "TYPING: The student reads the expanded version and fills in the missing expansion word by typing.",
+      "RECORDING: The student records the expanded sentence with a new detail added (WHERE).",
+      "MULTIPLE CHOICE: The student chooses which expansion makes the most sense from 4 options. Include the options array.",
+      "TYPING: The student writes the fully expanded sentence from memory.",
+      "TYPING: The student creates their own expanded sentence about the session theme using the same structure.",
     ][questionIndex];
 
     return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
+${STRICT_RULES}
+${inputTypeNote}
 
 Generate a SENTENCE EXPANSION activity about "${topic}".
 ${difficultyNote}: ${expansion}
@@ -133,8 +177,9 @@ The 6 questions build on each other, creating a progressively longer sentence ab
 Return ONLY valid JSON (no markdown):
 {
   "type": "sentence_expansion",
-  "baseSentence": "<the sentence the student should say>",
-  "question": "<instruction telling the student what to say and what detail to add>",
+  "inputType": "${inputType}",${extraFields}
+  "baseSentence": "<the sentence the student should say or expand>",
+  "question": "<instruction telling the student what to do>",
   "expansionHint": "<what was added, e.g. 'where it happened'>",
   "modelAnswer": "<the full expected sentence>",
   "acceptableKeywords": ["<5-8 key words for flexible scoring>"],
@@ -147,17 +192,19 @@ ALL content must be about "${topic}".`;
 
   // quick_writes
   const scaffold = [
-    "Provide BOTH a sentence starter AND a word bank of 5-6 vocabulary words about " + topic + ".",
-    "Provide a sentence starter AND a word bank of 4 words.",
-    "Provide a sentence starter ONLY (no word bank).",
-    "Provide a sentence starter ONLY. More complex prompt.",
-    "OPEN prompt — no sentence starter, no word bank. Still specific and vivid about " + topic + ".",
-    "OPEN prompt — student writes freely. Most challenging. About " + topic + ".",
+    "TYPING: Provide BOTH a sentence starter AND a word bank of 5-6 vocabulary words about " + topic + ".",
+    "LISTEN THEN TYPE: Include an audioClip with a prompt read aloud. Student listens then writes their response. Include the audioClip field.",
+    "TYPING: Provide a sentence starter ONLY (no word bank).",
+    "TYPING: Include a short passage to read, then ask the student to write what happens next in 2 sentences.",
+    "RECORD THEN TYPE: Student first thinks about their answer, types it, then records themselves saying it aloud.",
+    "TYPING: OPEN prompt — student writes freely. Most challenging. About " + topic + ".",
   ][questionIndex];
 
   return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
+${STRICT_RULES}
+${inputTypeNote}
 
 Generate a QUICK WRITES activity about "${topic}".
 ${difficultyNote}: ${scaffold}
@@ -170,9 +217,10 @@ RULES:
 Return ONLY valid JSON (no markdown):
 {
   "type": "quick_write",
+  "inputType": "${inputType}",${extraFields}
   "question": "<the writing prompt about ${topic}>",
   "sentenceStarter": "<sentence starter or null if open prompt>",
-  "wordBank": ${questionIndex <= 1 ? '["<4-6 vocabulary words about ' + topic + '>"]' : "null"},
+  "wordBank": ${questionIndex === 0 ? '["<5-6 vocabulary words about ' + topic + '>"]' : "null"},
   "modelAnswer": "<a sample 2-3 sentence response>",
   "acceptableKeywords": ["<6-8 words any reasonable answer might contain>"],
   "difficulty": ${questionIndex + 1},
@@ -245,6 +293,10 @@ serve(async (req) => {
     activity.strategy = strategy;
     activity.weakestDomain = weakestDomain;
     activity.strategyReason = reason;
+    // Ensure inputType is set
+    if (!activity.inputType) {
+      activity.inputType = INPUT_TYPES[strategy]?.[questionIndex || 0] || "typing";
+    }
 
     return new Response(JSON.stringify(activity), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
