@@ -188,7 +188,27 @@ const TeacherDashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        <h1 className="text-3xl font-bold text-foreground">Teacher Dashboard</h1>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <h1 className="text-3xl font-bold text-foreground">Teacher Dashboard</h1>
+          <div className="flex bg-muted rounded-lg p-1 gap-1">
+            <Button
+              variant={dashboardTab === "sessions" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setDashboardTab("sessions")}
+              className="gap-1.5"
+            >
+              <Play className="h-4 w-4" /> Sessions
+            </Button>
+            <Button
+              variant={dashboardTab === "growth" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setDashboardTab("growth")}
+              className="gap-1.5"
+            >
+              <BarChart3 className="h-4 w-4" /> Student Growth
+            </Button>
+          </div>
+        </div>
 
         {/* Session Control */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
