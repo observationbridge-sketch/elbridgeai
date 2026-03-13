@@ -198,6 +198,12 @@ const StudentSession = () => {
   const [teacherId, setTeacherId] = useState("");
   const [sessionTheme, setSessionTheme] = useState("");
   const [sessionTopic, setSessionTopic] = useState("");
+  const [gradeBand, setGradeBand] = useState<GradeBand>("3-5");
+  const [effectiveGradeBand, setEffectiveGradeBand] = useState<GradeBand>("3-5");
+  const [gradeBandAdjusted, setGradeBandAdjusted] = useState(false);
+
+  const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
+  const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
 
   // Gamification
   const gamification = useGamification(studentName, teacherId);
