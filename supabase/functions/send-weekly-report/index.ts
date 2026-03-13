@@ -325,7 +325,7 @@ Deno.serve(async (req) => {
         if (!domainScores[r.domain]) domainScores[r.domain] = { correct: 0, total: 0 };
         domainScores[r.domain].total++;
         if (r.is_correct) domainScores[r.domain].correct++;
-        widaLevels[r.wida_level] = (widaLevels[r.wida_level] || 0) + 1;
+        proficiencyLevels[r.wida_level] = (proficiencyLevels[r.wida_level] || 0) + 1;
         if (r.strategy) {
           strategyBreakdown[r.strategy] = (strategyBreakdown[r.strategy] || 0) + 1;
         }
