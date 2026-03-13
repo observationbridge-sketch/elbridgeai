@@ -124,12 +124,35 @@ const TeacherDashboard = () => {
     if (user) loadSessions(user.id);
   };
 
+  const [linkCopied, setLinkCopied] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  const joinUrl = sessionCode ? `https://elbridgeai.lovable.app/join/${sessionCode}` : "";
+
   const copyCode = () => {
     if (sessionCode) {
       navigator.clipboard.writeText(sessionCode);
       toast.success("Code copied!");
     }
   };
+
+  const copyLink = useCallback(() => {
+    if (joinUrl) {
+      navigator.clipboard.writeText(joinUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  }, [joinUrl]);
+
+  const downloadQR = useCallback(() => {
+    const canvas = qrRef.current?.querySelector("canvas");
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ELBridgeAI-Join-${sessionCode}.png`;
+    a.click();
+  }, [sessionCode]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
