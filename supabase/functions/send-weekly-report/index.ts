@@ -34,6 +34,12 @@ function getWeekRange(): { start: string; end: string; label: string } {
   };
 }
 
+const STRATEGY_LABELS: Record<string, string> = {
+  sentence_frames: "Sentence Frames",
+  sentence_expansion: "Sentence Expansion",
+  quick_writes: "Quick Writes",
+};
+
 function buildPlainText(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
   const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
@@ -51,6 +57,13 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
   for (const level of widaLevels) {
     const count = report.widaLevels[level] || 0;
     if (count > 0) text += `  ${level}: ${count}\n`;
+  }
+  // Strategy breakdown
+  if (Object.keys(report.strategyBreakdown).length > 0) {
+    text += `\nADAPTIVE STRATEGIES USED\n`;
+    for (const [strategy, count] of Object.entries(report.strategyBreakdown)) {
+      text += `  ${STRATEGY_LABELS[strategy] || strategy}: ${count} sessions\n`;
+    }
   }
   text += `\nView Full Dashboard: https://elbridgeai.lovable.app/teacher/dashboard\n`;
   text += `\nTo manage email preferences or unsubscribe, visit:\nhttps://elbridgeai.lovable.app/teacher/dashboard#email-settings\n`;
