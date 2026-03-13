@@ -842,7 +842,7 @@ const StudentSession = () => {
         <div className="px-4 pb-2 pt-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground whitespace-nowrap">{getProgressLabel()}</span>
-            <Progress value={((globalStep + 1) / TOTAL_STEPS) * 100} className="flex-1" />
+            <Progress value={((globalStep + 1) / totalSteps) * 100} className="flex-1" />
           </div>
         </div>
       </div>
