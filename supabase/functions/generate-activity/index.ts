@@ -71,7 +71,7 @@ WRITING (type: short_answer):
 - The "correctAnswer" should be a SAMPLE answer
 - Include "acceptableKeywords" array with 5-8 key words that a reasonable answer might contain
 
-WIDA LEVEL GUIDELINES:
+PROFICIENCY LEVEL GUIDELINES:
 - Entering (Level 1): Simple vocabulary, short sentences, basic comprehension
 - Emerging (Level 2): Simple sentences, familiar topics, some descriptive words
 - Developing (Level 3): More complex sentences, content vocabulary, paragraph-level text
