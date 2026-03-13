@@ -13,7 +13,7 @@ interface TeacherReport {
   totalSessions: number;
   totalStudents: number;
   domainScores: Record<string, { correct: number; total: number }>;
-  widaLevels: Record<string, number>;
+  proficiencyLevels: Record<string, number>;
   strategyBreakdown: Record<string, number>;
   topStudent?: { name: string; points: number; animal: string };
 }
