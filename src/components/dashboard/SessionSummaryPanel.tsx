@@ -291,8 +291,8 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
                               <ScoreCell value={s.listening} />
                             </td>
                             <td className="text-center py-2 px-1">
-                              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full" title={s.widaLabel}>
-                                {s.widaLevel} - {s.widaLabel}
+                              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full" title={s.proficiencyLabel}>
+                                {s.proficiencyLevel} - {s.proficiencyLabel}
                               </span>
                             </td>
                           </tr>

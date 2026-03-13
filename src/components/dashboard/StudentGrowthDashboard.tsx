@@ -138,7 +138,7 @@ function exportStudentCSV(student: StudentGrowthData) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${student.name}-wida-progress.csv`;
+  a.download = `${student.name}-proficiency-progress.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
