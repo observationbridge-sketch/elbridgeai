@@ -52,7 +52,7 @@ interface StudentGrowthData {
   totalSessions: number;
   thisMonthSessions: number;
   lastActive: string;
-  currentLevels: Record<string, WidaLevel>;
+  currentLevels: Record<string, ProficiencyLevel>;
   strongest: string;
   weakest: string;
   wasAdjusted: boolean;
