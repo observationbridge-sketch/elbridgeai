@@ -148,11 +148,14 @@ ${inputType === "record_then_type" ? "The student will TYPE their answer AND THE
       "The student writes their OWN complete sentence about the topic with NO frame provided — fully open.",
     ][questionIndex];
 
+    const histCtx = buildHistoryContext(contentHistory);
+
     return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
 ${STRICT_RULES}
 ${inputTypeNote}
+${histCtx}
 
 Generate a SENTENCE FRAMES activity about "${topic}".
 ${difficultyNote}: ${scaffolding}
