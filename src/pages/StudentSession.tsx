@@ -842,9 +842,11 @@ const StudentSession = () => {
     return "Part 3 • Challenge";
   };
 
+  const isK2 = effectiveGradeBand === "K-2";
+
   // ─── Main render ───
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${isK2 ? "text-xl" : ""}`}>
       {/* Top bar */}
       <div className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
