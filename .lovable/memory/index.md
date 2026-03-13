@@ -24,6 +24,13 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - Domains: Reading, Writing, Speaking, Listening
 - Proficiency levels: Entering, Emerging, Developing, Expanding, Bridging
 
+## Grade Bands
+- Two bands: K-2 and 3-5 (stored in sessions.grade_band and student_responses.grade_band)
+- K-2: 1 sentence anchor (max 8 words), Tier 1 vocab, 4 Part 2 activities, Speed Round only for Part 3
+- 3-5: 2-3 sentence anchor, full vocabulary, 6 Part 2 activities, all Part 3 types
+- Auto-adjustment: <50% Part 1 → downgrade, >85% Part 1 → upgrade (per-student)
+- WIDA K-2: Entering(1), Emerging(2), Developing(3); 3-5: Expanding(4), Bridging(5), Reaching(6)
+
 ## Session Flow (3 parts, 12 steps, ~25-30 min)
 - Part 1: 5-step Literacy Squared routine with 2-3 sentence anchor passage
 - Part 2: 6 adaptive activities using one of 3 strategies
@@ -37,5 +44,7 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - Points, animal evolution (🐣→🦋), 13 badges, real-time leaderboard
 
 ## Database Tables
-- sessions, session_students, student_responses (session_part, strategy, wida_level column)
+- sessions (teacher_id, code, status, grade_band)
+- session_students (session_id, student_name)
+- student_responses (session_id, student_id, domain, question, answers, is_correct, wida_level, grade_band)
 - student_points, student_badges, teacher_preferences
