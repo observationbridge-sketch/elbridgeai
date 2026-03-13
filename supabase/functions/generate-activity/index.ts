@@ -5,52 +5,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const THEMES = [
-  "Nature & animals",
-  "School & classroom life",
-  "Sports & games",
-  "Superheroes",
-  "Fantasy & myths",
-  "Science vocabulary (grade 3-5 topics like habitats, weather, states of matter)",
-  "Social studies (communities, maps, culture, history for kids)",
-  "ELA reading skills (main idea, sequencing, character traits, context clues)",
+// Part 2: 8 questions, 2 per domain
+// Domain rotation for 8 questions: R, L, S, W, R, L, S, W
+const DOMAIN_ROTATION_8 = [
+  "reading", "listening", "speaking", "writing",
+  "reading", "listening", "speaking", "writing",
 ];
 
-// WIDA progression across 12 questions
-const WIDA_PROGRESSION = [
+// WIDA progression across 8 questions (gradual increase)
+const WIDA_PROGRESSION_8 = [
   "Entering",    // Q1
   "Entering",    // Q2
   "Emerging",    // Q3
   "Emerging",    // Q4
-  "Emerging",    // Q5
+  "Developing",  // Q5
   "Developing",  // Q6
-  "Developing",  // Q7
-  "Developing",  // Q8
-  "Expanding",   // Q9
-  "Expanding",   // Q10
-  "Expanding",   // Q11
-  "Expanding",   // Q12
-];
-
-// Domain rotation: Reading → Listening → Speaking → Writing, repeat 3x
-const DOMAIN_ROTATION = [
-  "reading", "listening", "speaking", "writing",
-  "reading", "listening", "speaking", "writing",
-  "reading", "listening", "speaking", "writing",
+  "Expanding",   // Q7
+  "Expanding",   // Q8
 ];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { domain, grade, activityIndex } = await req.json();
+    const { domain, grade, activityIndex, theme: sessionTheme } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Use the rotation if activityIndex is provided, otherwise fall back to passed domain
-    const actualDomain = DOMAIN_ROTATION[activityIndex] || domain;
-    const widaLevel = WIDA_PROGRESSION[activityIndex] || "Developing";
-    const theme = THEMES[activityIndex % THEMES.length];
+    const actualDomain = DOMAIN_ROTATION_8[activityIndex] || domain;
+    const widaLevel = WIDA_PROGRESSION_8[activityIndex] || "Developing";
+    const theme = sessionTheme || "Nature & animals";
 
     const systemPrompt = `You are an expert English Language Development activity generator for grades 3-5 ELL students.
 
@@ -67,21 +51,18 @@ READING (type: multiple_choice):
 - Ask a comprehension question ABOUT that specific passage
 - Provide 4 answer options where exactly one is clearly correct based on the passage
 - NEVER ask about content not shown in the passage
-- Example: A passage about a superhero rescuing a kitten, then ask "Why did Captain Sky fly down to the tree?"
 
 LISTENING (type: multiple_choice):
 - The "audioDescription" field must contain a complete 3-5 sentence mini-story or description that will be read aloud via TTS
-- Start audioDescription with "🔊 Listen to this story:" followed by the full story
+- Start audioDescription with "Listen to this story:" followed by the full story
 - Then ask a comprehension question about what was just heard
 - Provide 4 answer options
-- The story in audioDescription must contain all info needed to answer
 
 SPEAKING (type: speaking_prompt):
 - Give the student a clear, vivid scene description or scenario
 - Ask an open-ended question where MANY answers are reasonable
 - The "correctAnswer" should be a SAMPLE answer, not the only accepted answer
 - Include "acceptableKeywords" array with 5-8 key words/phrases that any reasonable answer might contain
-- Example: "Imagine you are a knight who just found a baby dragon in a cave. What would you say to the dragon? Start with: Hello little dragon, I..."
 
 WRITING (type: short_answer):
 - Give a specific, vivid scenario connected to the theme
@@ -89,10 +70,9 @@ WRITING (type: short_answer):
 - Ask for 1-3 sentences depending on WIDA level (1 for Entering, 2-3 for higher)
 - The "correctAnswer" should be a SAMPLE answer
 - Include "acceptableKeywords" array with 5-8 key words that a reasonable answer might contain
-- Example: "A young dragon named Spark just learned to fly! Write 2 sentences about how Spark feels. You can start with: Spark feels..."
 
 WIDA LEVEL GUIDELINES:
-- Entering (Level 1): Simple vocabulary, short sentences, basic comprehension, picture-like descriptions
+- Entering (Level 1): Simple vocabulary, short sentences, basic comprehension
 - Emerging (Level 2): Simple sentences, familiar topics, some descriptive words
 - Developing (Level 3): More complex sentences, content vocabulary, paragraph-level text
 - Expanding (Level 4): Grade-level complexity, academic vocabulary, inference questions
@@ -111,7 +91,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this structure:
   "audioDescription": "<complete mini-story for LISTENING domain, omit for others>"
 }
 
-Use vivid, specific, kid-friendly language. Reference named characters, animals, places. Avoid generic or abstract prompts.`;
+Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -158,7 +138,6 @@ Use vivid, specific, kid-friendly language. Reference named characters, animals,
       throw new Error("Invalid AI response format");
     }
 
-    // Enforce domain and WIDA level
     activity.domain = actualDomain;
     activity.widaLevel = widaLevel;
 
