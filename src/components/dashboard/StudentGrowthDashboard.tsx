@@ -124,12 +124,12 @@ function getTrendArrow(sessions: SessionDomainScores[]): "up" | "down" | "stable
 
 // ─── CSV Export ───
 function exportStudentCSV(student: StudentGrowthData) {
-  const headers = ["Date", "Reading %", "Writing %", "Speaking %", "Listening %", "Reading WIDA", "Writing WIDA", "Speaking WIDA", "Listening WIDA", "Grade Band"];
+  const headers = ["Date", "Reading %", "Writing %", "Speaking %", "Listening %", "Reading Level", "Writing Level", "Speaking Level", "Listening Level", "Grade Band"];
   const rows = student.sessions.map((s) => {
-    const rw = pctToWida(s.reading, s.gradeBand);
-    const ww = pctToWida(s.writing, s.gradeBand);
-    const sw = pctToWida(s.speaking, s.gradeBand);
-    const lw = pctToWida(s.listening, s.gradeBand);
+    const rw = pctToProficiency(s.reading, s.gradeBand);
+    const ww = pctToProficiency(s.writing, s.gradeBand);
+    const sw = pctToProficiency(s.speaking, s.gradeBand);
+    const lw = pctToProficiency(s.listening, s.gradeBand);
     return [s.date, s.reading, s.writing, s.speaking, s.listening, `${rw.level} ${rw.label}`, `${ww.level} ${ww.label}`, `${sw.level} ${sw.label}`, `${lw.level} ${lw.label}`, s.gradeBand].join(",");
   });
 
