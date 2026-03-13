@@ -106,9 +106,9 @@ function buildEmailHtml(report: TeacherReport, weekLabel: string): string {
     })
     .join("");
 
-  const widaRows = widaLevels
+  const proficiencyRows = proficiencyLevels
     .map((level) => {
-      const count = report.widaLevels[level] || 0;
+      const count = report.proficiencyLevels[level] || 0;
       return count > 0
         ? `<span style="display:inline-block;margin:4px 6px;padding:6px 14px;background:#e0f0f5;color:#1a6b5a;border-radius:20px;font-size:13px;font-weight:600;">${level}: ${count}</span>`
         : "";
