@@ -67,7 +67,7 @@ Return ONLY valid JSON (no markdown):
 ${themeDirective}
 ${STRICT_RULES}
 
-Generate a SPEED ROUND challenge with exactly 5 multiple-choice questions about "${topic}".
+Generate a SPEED ROUND challenge with exactly ${isK2 ? "3" : "5"} multiple-choice questions about "${topic}".${isK2 ? "\nK-2 RULES: Each question must have exactly 2 options only. Use simple Tier 1 vocabulary. Short sentences under 10 words." : ""}
 - 2 reading comprehension (include a short 2-3 sentence passage each)
 - 1 listening comprehension (include an audioDescription field with a 2-3 sentence story)
 - 1 speaking prompt (open-ended, multiple reasonable answers — frame as multiple choice for speed)
