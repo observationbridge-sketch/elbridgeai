@@ -16,12 +16,23 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - WIDA levels: Entering, Emerging, Developing, Expanding, Bridging
 - TTS: Best-voice selection (Google > cloud en-US > local en-US)
 
-## Session Structure
-- 12 questions per session: 3 each of Reading, Listening, Speaking, Writing
-- Domain rotation: Reading → Listening → Speaking → Writing (repeat 3x)
-- Difficulty progression: Entering (Q1-2) → Emerging (Q3-5) → Developing (Q6-8) → Expanding (Q9-12)
-- 8 rotating themes: nature, school, sports, superheroes, fantasy, science, social studies, ELA skills
-- Flexible grading: acceptableKeywords for speaking/writing, effort-based credit (3+ words)
+## Session Structure (Two Parts)
+### Part 1 — Daily Language Builder (5 steps, 1 anchor sentence)
+- Step 1: Listen (TTS auto-play, replay button, "I heard it")
+- Step 2: Repeat (mic input, flexible word matching with Levenshtein)
+- Step 3: Write (type from memory, sentence hidden, compare after)
+- Step 4: Record (mic input again, fluency evaluation)
+- Step 5: AI Feedback (summary card, badge, strengths/practice)
+- Anchor sentences from: academic frames, compare/contrast, descriptive, vocab, character dev
+- Feeds into Speaking + Writing domain scores
+
+### Part 2 — Free Domain Practice (8 questions)
+- 2 per domain: Reading → Listening → Speaking → Writing (repeat)
+- Difficulty: Entering (Q1-2) → Emerging (Q3-4) → Developing (Q5-6) → Expanding (Q7-8)
+- Theme matches anchor sentence from Part 1
+- Flexible grading: acceptableKeywords, effort-based credit (3+ words)
+
+### Total = 13 steps, ~15-30 minutes, progress bar across both parts
 
 ## Database Tables
 - sessions (teacher_id, code, status)
@@ -30,7 +41,8 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - teacher_preferences (teacher_id, weekly_email_opt_out)
 
 ## Edge Functions
-- generate-activity: AI activity generation (verify_jwt=false)
+- generate-anchor-sentence: AI anchor sentence for Part 1 (verify_jwt=false)
+- generate-activity: AI activity generation for Part 2, 8 questions (verify_jwt=false)
 - send-weekly-report: Weekly email via Resend (verify_jwt=false)
 
 ## Email
