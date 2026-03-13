@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   Brain, BookOpen, PenTool, Mic, MicOff, Headphones, CheckCircle,
   ArrowRight, Loader2, Star, Volume2, Trophy, Flame, RefreshCw,
-  Eye, EyeOff,
+  Eye, EyeOff, Target, Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -15,19 +16,7 @@ import { useTTS } from "@/hooks/use-tts";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
-
-interface Activity {
-  domain: Domain;
-  type: "multiple_choice" | "short_answer" | "speaking_prompt" | "listening_prompt";
-  question: string;
-  passage?: string;
-  options?: string[];
-  correctAnswer: string;
-  acceptableKeywords?: string[];
-  widaLevel: string;
-  audioDescription?: string;
-  theme?: string;
-}
+type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
 
 interface AnchorSentence {
   sentence: string;
@@ -38,7 +27,7 @@ interface AnchorSentence {
 
 interface Part1Scores {
   listen: boolean;
-  repeat: number; // word match count
+  repeat: number;
   repeatTotal: number;
   write: number;
   writeTotal: number;
@@ -46,30 +35,33 @@ interface Part1Scores {
   recordTotal: number;
 }
 
-const DOMAIN_ICONS: Record<Domain, any> = {
-  reading: BookOpen,
-  writing: PenTool,
-  speaking: Mic,
-  listening: Headphones,
+interface Part2Activity {
+  type: string;
+  question: string;
+  passage?: string;
+  sentenceFrame?: string;
+  baseSentence?: string;
+  expansionHint?: string;
+  sentenceStarter?: string | null;
+  wordBank?: string[] | null;
+  modelAnswer: string;
+  acceptableKeywords: string[];
+  difficulty: number;
+  theme: string;
+  strategy: Strategy;
+  weakestDomain: string;
+  strategyReason: string;
+}
+
+const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: string; targetDomain: string }> = {
+  sentence_frames: { label: "Sentence Frames", icon: BookOpen, color: "text-primary", targetDomain: "Reading & Listening" },
+  sentence_expansion: { label: "Sentence Expansion", icon: Mic, color: "text-success", targetDomain: "Speaking" },
+  quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-const DOMAIN_COLORS: Record<Domain, string> = {
-  reading: "text-primary",
-  writing: "text-accent",
-  speaking: "text-success",
-  listening: "text-warning",
-};
+const TOTAL_STEPS = 8; // 5 Part 1 + 3 Part 2
 
-const DOMAIN_LABELS: Record<Domain, string> = {
-  reading: "Reading",
-  writing: "Writing",
-  speaking: "Speaking",
-  listening: "Listening",
-};
-
-const TOTAL_STEPS = 13; // 5 Part 1 + 8 Part 2
-
-// ─── Helper: flexible word matching ───
+// ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
   const normalize = (s: string) =>
     s.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean);
@@ -79,10 +71,7 @@ function compareWords(input: string, target: string): { matched: number; total: 
   const used = new Set<number>();
   for (const tw of targetWords) {
     const idx = inputWords.findIndex((w, i) => !used.has(i) && (w === tw || levenshtein(w, tw) <= 2));
-    if (idx !== -1) {
-      matched++;
-      used.add(idx);
-    }
+    if (idx !== -1) { matched++; used.add(idx); }
   }
   return { matched, total: targetWords.length };
 }
@@ -109,6 +98,20 @@ function getBadge(scores: Part1Scores): { icon: any; label: string; color: strin
   return { icon: Star, label: "⭐ Keep Practicing!", color: "text-primary" };
 }
 
+function flexibleGrade(input: string, keywords: string[]): boolean {
+  const norm = input.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+  if (keywords.length > 0) {
+    const matchCount = keywords.filter((kw) => norm.includes(kw.toLowerCase())).length;
+    if (matchCount >= Math.max(2, Math.ceil(keywords.length * 0.3))) return true;
+  }
+  // Effort-based: 3+ words is always credit
+  if (norm.split(/\s+/).length >= 3) return true;
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+// Main Component
+// ═══════════════════════════════════════════════
 const StudentSession = () => {
   const { sessionId, studentId } = useParams();
   const navigate = useNavigate();
@@ -117,7 +120,7 @@ const StudentSession = () => {
 
   // Session state
   const [loading, setLoading] = useState(true);
-  const [globalStep, setGlobalStep] = useState(0); // 0-12 total
+  const [globalStep, setGlobalStep] = useState(0);
   const [sessionEnded, setSessionEnded] = useState(false);
 
   // Part 1 state
@@ -132,16 +135,19 @@ const StudentSession = () => {
   });
 
   // Part 2 state
-  const [currentActivity, setCurrentActivity] = useState<Activity | null>(null);
-  const [activityIndex, setActivityIndex] = useState(0);
-  const [answer, setAnswer] = useState("");
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [part2Activity, setPart2Activity] = useState<Part2Activity | null>(null);
+  const [part2Index, setPart2Index] = useState(0);
+  const [part2Answer, setPart2Answer] = useState("");
+  const [part2Submitted, setPart2Submitted] = useState(false);
+  const [part2Feedback, setPart2Feedback] = useState<string | null>(null);
+  const [part2IsCorrect, setPart2IsCorrect] = useState(false);
   const [part2Score, setPart2Score] = useState(0);
+  const [part2Strategy, setPart2Strategy] = useState<Strategy | null>(null);
+  const [part2StrategyReason, setPart2StrategyReason] = useState("");
+  const [domainScores, setDomainScores] = useState<Record<string, number> | null>(null);
 
   const inPart1 = globalStep < 5;
-  const inPart2 = globalStep >= 5 && globalStep < 13;
+  const inPart2 = globalStep >= 5 && globalStep < 8;
 
   // ─── Load anchor sentence on mount ───
   useEffect(() => {
@@ -164,8 +170,55 @@ const StudentSession = () => {
         setLoading(false);
       }
     };
+
+    // Also load student history for adaptive Part 2
+    const loadHistory = async () => {
+      if (!studentId) return;
+      try {
+        // Look up this student's name to find historical data
+        const { data: studentData } = await supabase
+          .from("session_students")
+          .select("student_name")
+          .eq("id", studentId)
+          .single();
+
+        if (studentData?.student_name) {
+          // Find all student IDs with same name
+          const { data: allStudents } = await supabase
+            .from("session_students")
+            .select("id")
+            .eq("student_name", studentData.student_name);
+
+          if (allStudents && allStudents.length > 0) {
+            const studentIds = allStudents.map((s) => s.id);
+            const { data: responses } = await supabase
+              .from("student_responses")
+              .select("domain, is_correct")
+              .in("student_id", studentIds);
+
+            if (responses && responses.length > 0) {
+              const scores: Record<string, { correct: number; total: number }> = {};
+              for (const r of responses) {
+                if (!scores[r.domain]) scores[r.domain] = { correct: 0, total: 0 };
+                scores[r.domain].total++;
+                if (r.is_correct) scores[r.domain].correct++;
+              }
+              const pctScores: Record<string, number> = {};
+              for (const [domain, data] of Object.entries(scores)) {
+                pctScores[domain] = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+              }
+              setDomainScores(pctScores);
+              return;
+            }
+          }
+        }
+      } catch { /* use default */ }
+      setDomainScores(null); // No history — will default to sentence_frames
+    };
+
     loadAnchor();
-  }, []);
+    loadHistory();
+  }, [studentId]);
 
   // Auto-play TTS for Step 1
   useEffect(() => {
@@ -179,9 +232,31 @@ const StudentSession = () => {
   useEffect(() => {
     if (speech.transcript) {
       if (inPart1) setPart1Answer(speech.transcript);
-      else setAnswer(speech.transcript);
+      else setPart2Answer(speech.transcript);
     }
-  }, [speech.transcript]);
+  }, [speech.transcript, inPart1]);
+
+  // ─── Save response helper ───
+  const saveResponse = async (
+    domain: string, question: string, studentAnswer: string,
+    correctAnswer: string, isCorrect: boolean, widaLevel: string,
+    sessionPart: string, strategy?: string
+  ) => {
+    try {
+      await supabase.from("student_responses").insert({
+        session_id: sessionId,
+        student_id: studentId,
+        domain,
+        question,
+        student_answer: studentAnswer,
+        correct_answer: correctAnswer,
+        is_correct: isCorrect,
+        wida_level: widaLevel,
+        session_part: sessionPart,
+        strategy: strategy || null,
+      });
+    } catch { /* non-blocking */ }
+  };
 
   // ─── Part 1 handlers ───
   const handlePart1Next = () => {
@@ -204,8 +279,7 @@ const StudentSession = () => {
 
   const handleStep1Done = () => {
     setPart1Scores((s) => ({ ...s, listen: true }));
-    // Save listening response
-    saveResponse("listening", "Listened to anchor sentence", "heard", anchor?.sentence || "", true, "Entering");
+    saveResponse("listening", "Listened to anchor sentence", "heard", anchor?.sentence || "", true, "Entering", "part1");
     handlePart1Next();
   };
 
@@ -221,7 +295,7 @@ const StudentSession = () => {
         : `Good effort! You got ${matched} out of ${total} words. Here's the sentence again: "${anchor.sentence}"`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
-    saveResponse("speaking", `Repeat: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering");
+    saveResponse("speaking", `Repeat: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
   const handleStep3Submit = () => {
@@ -229,13 +303,13 @@ const StudentSession = () => {
     const { matched, total } = compareWords(part1Answer, anchor.sentence);
     setPart1Scores((s) => ({ ...s, write: matched, writeTotal: total }));
     const pct = total > 0 ? matched / total : 0;
-    setPart1ShowSentence(true); // reveal sentence for comparison
+    setPart1ShowSentence(true);
     const feedback = pct >= 0.8
       ? `Excellent writing! You remembered ${matched} out of ${total} words! ✍️🌟`
       : `Good try! You got ${matched} out of ${total} words. Compare your answer above. ✍️`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
-    saveResponse("writing", `Write from memory: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering");
+    saveResponse("writing", `Write from memory: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
   const handleStep4Submit = () => {
@@ -250,115 +324,112 @@ const StudentSession = () => {
         : `You used ${matched} out of ${total} words — keep practicing! 🎤💪`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
-    saveResponse("speaking", `Record: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering");
+    saveResponse("speaking", `Record: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
   // ─── Part 2 handlers ───
   const fetchPart2Activity = useCallback(async (index: number) => {
     setLoading(true);
-    setShowFeedback(false);
-    setAnswer("");
-    setSelectedOption(null);
+    setPart2Submitted(false);
+    setPart2Feedback(null);
+    setPart2Answer("");
     speech.resetTranscript();
     tts.stop();
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-activity", {
-        body: { domain: "reading", grade: "3-5", activityIndex: index, theme: anchor?.theme },
+      const { data, error } = await supabase.functions.invoke("generate-part2", {
+        body: {
+          grade: "3-5",
+          theme: anchor?.theme,
+          domainScores,
+          questionIndex: index,
+        },
       });
       if (error) throw error;
-      setCurrentActivity(data as Activity);
+      const activity = data as Part2Activity;
+      setPart2Activity(activity);
+      setPart2Strategy(activity.strategy);
+      setPart2StrategyReason(activity.strategyReason);
     } catch {
-      setCurrentActivity(getFallbackActivity(["reading", "listening", "speaking", "writing"][index % 4] as Domain));
+      toast.error("Failed to load activity. Using backup.");
+      setPart2Activity({
+        type: "sentence_frame",
+        question: "Complete this sentence: The forest was ___ because ___.",
+        sentenceFrame: "The forest was ___ because ___.",
+        modelAnswer: "The forest was quiet because all the animals were sleeping.",
+        acceptableKeywords: ["forest", "quiet", "animals", "sleeping", "dark", "peaceful"],
+        difficulty: index + 1,
+        theme: anchor?.theme || "Nature",
+        strategy: "sentence_frames",
+        weakestDomain: "none",
+        strategyReason: "Default strategy",
+      });
     } finally {
       setLoading(false);
     }
-  }, [anchor]);
+  }, [anchor, domainScores]);
 
-  // Auto-play TTS for listening activities in Part 2
-  useEffect(() => {
-    if (!loading && inPart2 && currentActivity?.domain === "listening" && tts.isSupported) {
-      const textToRead = currentActivity.audioDescription || currentActivity.question;
-      const timer = setTimeout(() => tts.speak(textToRead), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, currentActivity, inPart2]);
-
-  const submitPart2Answer = async () => {
-    if (!currentActivity) return;
-    const userAnswer = currentActivity.type === "multiple_choice" ? selectedOption : answer;
-    if (!userAnswer) { toast.error("Please provide an answer!"); return; }
-
-    const normalizeText = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
-    const userNorm = normalizeText(userAnswer);
-    let correct: boolean;
-
-    if (currentActivity.type === "multiple_choice") {
-      correct = userAnswer.toLowerCase().trim() === currentActivity.correctAnswer.toLowerCase().trim();
-    } else {
-      const keywords: string[] = currentActivity.acceptableKeywords || [];
-      if (keywords.length > 0) {
-        const matchCount = keywords.filter((kw) => userNorm.includes(kw.toLowerCase())).length;
-        correct = matchCount >= Math.max(2, Math.ceil(keywords.length * 0.3));
-      } else {
-        const correctNorm = normalizeText(currentActivity.correctAnswer);
-        const userWords = userNorm.split(/\s+/);
-        const correctWords = correctNorm.split(/\s+/);
-        const matchCount = userWords.filter((w) => correctWords.includes(w)).length;
-        correct = matchCount >= Math.ceil(correctWords.length * 0.4);
-      }
-      if (!correct && userNorm.split(/\s+/).length >= 3) correct = true;
+  const submitPart2 = () => {
+    if (!part2Activity || !part2Answer.trim()) {
+      toast.error("Please provide an answer!");
+      return;
     }
 
-    setIsCorrect(correct);
-    setShowFeedback(true);
+    const correct = flexibleGrade(part2Answer, part2Activity.acceptableKeywords || []);
+    setPart2IsCorrect(correct);
     if (correct) setPart2Score((s) => s + 1);
+
+    // Generate encouraging feedback
+    let feedback: string;
+    if (correct) {
+      const msgs = [
+        "Excellent work! 🌟",
+        "Great job — you nailed it! ✨",
+        "Wonderful response! Keep it up! 🎉",
+      ];
+      feedback = msgs[part2Index % msgs.length];
+    } else {
+      feedback = "Good effort! Here's a model answer to compare:";
+    }
+    setPart2Feedback(feedback);
+    setPart2Submitted(true);
     tts.stop();
 
+    // Determine domain for saving
+    const domainMap: Record<string, string> = {
+      sentence_frames: "reading",
+      sentence_expansion: "speaking",
+      quick_writes: "writing",
+    };
+    const domain = domainMap[part2Activity.strategy] || "reading";
+
     saveResponse(
-      currentActivity.domain,
-      currentActivity.question,
-      userAnswer,
-      currentActivity.correctAnswer,
+      domain,
+      part2Activity.question,
+      part2Answer,
+      part2Activity.modelAnswer,
       correct,
-      currentActivity.widaLevel
+      part2Activity.difficulty <= 1 ? "Entering" : part2Activity.difficulty <= 2 ? "Developing" : "Expanding",
+      "part2",
+      part2Activity.strategy
     );
   };
 
-  const nextPart2Activity = () => {
+  const nextPart2 = () => {
     tts.stop();
-    const nextIdx = activityIndex + 1;
-    if (nextIdx >= 8) {
+    const nextIdx = part2Index + 1;
+    if (nextIdx >= 3) {
       setSessionEnded(true);
       return;
     }
-    setActivityIndex(nextIdx);
+    setPart2Index(nextIdx);
     setGlobalStep(5 + nextIdx);
     fetchPart2Activity(nextIdx);
   };
 
-  // ─── Save response helper ───
-  const saveResponse = async (
-    domain: string, question: string, studentAnswer: string,
-    correctAnswer: string, isCorrect: boolean, widaLevel: string
-  ) => {
-    try {
-      await supabase.from("student_responses").insert({
-        session_id: sessionId,
-        student_id: studentId,
-        domain,
-        question,
-        student_answer: studentAnswer,
-        correct_answer: correctAnswer,
-        is_correct: isCorrect,
-        wida_level: widaLevel,
-      });
-    } catch { /* non-blocking */ }
-  };
-
   // ─── Session ended screen ───
   if (sessionEnded) {
-    const totalCorrect = part2Score + (part1Scores.listen ? 1 : 0);
+    const strategyMeta = part2Strategy ? STRATEGY_LABELS[part2Strategy] : null;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md card-shadow text-center">
@@ -366,6 +437,7 @@ const StudentSession = () => {
             <Star className="h-16 w-16 text-warning mx-auto" />
             <h2 className="text-2xl font-bold text-foreground">Amazing Work! 🎉</h2>
             <p className="text-lg text-muted-foreground">You completed today's session!</p>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-muted rounded-lg p-4">
                 <p className="text-sm text-muted-foreground">Language Builder</p>
@@ -374,11 +446,35 @@ const StudentSession = () => {
               </div>
               <div className="bg-muted rounded-lg p-4">
                 <p className="text-sm text-muted-foreground">Practice</p>
-                <p className="text-2xl font-bold text-accent">{part2Score}/8</p>
+                <p className="text-2xl font-bold text-accent">{part2Score}/3</p>
                 <p className="text-xs text-muted-foreground">correct answers</p>
               </div>
             </div>
-            <p className="text-muted-foreground">You practiced Reading, Writing, Speaking, and Listening today!</p>
+
+            {strategyMeta && (
+              <div className="bg-muted/50 rounded-lg p-4 border border-border text-left space-y-2">
+                <div className="flex items-center gap-2">
+                  <Target className={`h-4 w-4 ${strategyMeta.color}`} />
+                  <span className="text-sm font-medium text-foreground">
+                    Strategy: {strategyMeta.label}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{part2StrategyReason}</p>
+              </div>
+            )}
+
+            {/* Growth tip */}
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-left">
+              <p className="text-sm font-medium text-primary mb-1">💡 Growth Tip:</p>
+              <p className="text-sm text-foreground">
+                {part2Score >= 3
+                  ? "You're doing amazing! Try reading a short book or story tonight to keep building your skills."
+                  : part2Score >= 2
+                    ? "Great progress! Practice writing 2-3 sentences about your day before bed."
+                    : "Every practice session makes you stronger! Try saying new English words out loud when you hear them."}
+              </p>
+            </div>
+
             <Button variant="hero" onClick={() => navigate("/")} className="w-full">
               Back to Home
             </Button>
@@ -400,7 +496,7 @@ const StudentSession = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
-              {inPart1 ? `Part 1 • Step ${part1Step}/5` : `Part 2 • ${activityIndex + 1}/8`}
+              {inPart1 ? `Part 1 • Step ${part1Step}/5` : `Part 2 • ${part2Index + 1}/3`}
             </span>
             <div className="w-32">
               <Progress value={((globalStep + 1) / TOTAL_STEPS) * 100} />
@@ -436,19 +532,19 @@ const StudentSession = () => {
             onStep4Submit={handleStep4Submit}
             onNext={handlePart1Next}
           />
-        ) : inPart2 && currentActivity ? (
-          <Part2View
-            activity={currentActivity}
-            answer={answer}
-            setAnswer={setAnswer}
-            selectedOption={selectedOption}
-            setSelectedOption={setSelectedOption}
-            showFeedback={showFeedback}
-            isCorrect={isCorrect}
+        ) : inPart2 && part2Activity ? (
+          <Part2StrategyView
+            activity={part2Activity}
+            index={part2Index}
+            answer={part2Answer}
+            setAnswer={setPart2Answer}
+            submitted={part2Submitted}
+            feedback={part2Feedback}
+            isCorrect={part2IsCorrect}
             speech={speech}
             tts={tts}
-            onSubmit={submitPart2Answer}
-            onNext={nextPart2Activity}
+            onSubmit={submitPart2}
+            onNext={nextPart2}
           />
         ) : null}
       </main>
@@ -492,7 +588,7 @@ function Part1View({
     <Card className="card-shadow border-border">
       <div className="px-6 pt-6">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
             Daily Language Builder
           </span>
         </div>
@@ -500,21 +596,13 @@ function Part1View({
       </div>
 
       <CardContent className="pt-4 space-y-6">
-        {/* ─── Step 1: Listen ─── */}
         {step === 1 && (
           <>
             <div className="bg-muted/50 rounded-lg p-6 border border-border text-center space-y-4">
               <Headphones className="h-10 w-10 text-warning mx-auto" />
-              <p className="text-lg font-medium text-foreground leading-relaxed">
-                {anchor.sentence}
-              </p>
+              <p className="text-lg font-medium text-foreground leading-relaxed">{anchor.sentence}</p>
               {tts.isSupported && (
-                <Button
-                  variant="outline"
-                  onClick={() => tts.speak(anchor.sentence)}
-                  disabled={tts.isSpeaking}
-                  className="gap-2"
-                >
+                <Button variant="outline" onClick={() => tts.speak(anchor.sentence)} disabled={tts.isSpeaking} className="gap-2">
                   <RefreshCw className={`h-4 w-4 ${tts.isSpeaking ? "animate-spin" : ""}`} />
                   {tts.isSpeaking ? "Playing..." : "Replay"}
                 </Button>
@@ -526,19 +614,13 @@ function Part1View({
           </>
         )}
 
-        {/* ─── Step 2: Repeat ─── */}
         {step === 2 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Say this sentence out loud:</p>
               <p className="text-foreground font-medium">{anchor.sentence}</p>
             </div>
-            <MicrophoneInput
-              speech={speech}
-              answer={part1Answer}
-              setAnswer={setPart1Answer}
-              disabled={part1Submitted}
-            />
+            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
             {!part1Submitted ? (
               <Button variant="hero" className="w-full" size="lg" onClick={onStep2Submit} disabled={!part1Answer.trim()}>
                 Check My Speaking
@@ -554,7 +636,6 @@ function Part1View({
           </>
         )}
 
-        {/* ─── Step 3: Write ─── */}
         {step === 3 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
@@ -567,7 +648,7 @@ function Part1View({
                   </button>
                 )}
               </div>
-              {(part1Submitted && part1ShowSentence) && (
+              {part1Submitted && part1ShowSentence && (
                 <p className="text-foreground font-medium">{anchor.sentence}</p>
               )}
               {!part1Submitted && (
@@ -596,19 +677,13 @@ function Part1View({
           </>
         )}
 
-        {/* ─── Step 4: Record ─── */}
         {step === 4 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Record yourself saying the full sentence — your best try!</p>
               <p className="text-foreground font-medium">{anchor.sentence}</p>
             </div>
-            <MicrophoneInput
-              speech={speech}
-              answer={part1Answer}
-              setAnswer={setPart1Answer}
-              disabled={part1Submitted}
-            />
+            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
             {!part1Submitted ? (
               <Button variant="hero" className="w-full" size="lg" onClick={onStep4Submit} disabled={!part1Answer.trim()}>
                 Check My Recording
@@ -624,10 +699,7 @@ function Part1View({
           </>
         )}
 
-        {/* ─── Step 5: AI Feedback Summary ─── */}
-        {step === 5 && (
-          <Step5Summary anchor={anchor} scores={part1Scores} onContinue={onNext} />
-        )}
+        {step === 5 && <Step5Summary anchor={anchor} scores={part1Scores} onContinue={onNext} />}
       </CardContent>
     </Card>
   );
@@ -639,23 +711,15 @@ function Step5Summary({ anchor, scores, onContinue }: {
 }) {
   const badge = getBadge(scores);
   const BadgeIcon = badge.icon;
-
   const repeatPct = scores.repeatTotal > 0 ? Math.round((scores.repeat / scores.repeatTotal) * 100) : 0;
   const writePct = scores.writeTotal > 0 ? Math.round((scores.write / scores.writeTotal) * 100) : 0;
   const recordPct = scores.recordTotal > 0 ? Math.round((scores.record / scores.recordTotal) * 100) : 0;
 
   const strengths: string[] = [];
   const practice: string[] = [];
-
-  if (repeatPct >= 70) strengths.push("Speaking clearly");
-  else practice.push("Repeat sentences out loud more");
-
-  if (writePct >= 70) strengths.push("Writing from memory");
-  else practice.push("Practice writing sentences from memory");
-
-  if (recordPct >= 80) strengths.push("Fluent recording");
-  else practice.push("Record yourself speaking full sentences");
-
+  if (repeatPct >= 70) strengths.push("Speaking clearly"); else practice.push("Repeat sentences out loud more");
+  if (writePct >= 70) strengths.push("Writing from memory"); else practice.push("Practice writing sentences from memory");
+  if (recordPct >= 80) strengths.push("Fluent recording"); else practice.push("Record yourself speaking full sentences");
   if (strengths.length === 0) strengths.push("Completing all the steps — great effort!");
 
   return (
@@ -664,7 +728,6 @@ function Step5Summary({ anchor, scores, onContinue }: {
         <BadgeIcon className={`h-16 w-16 mx-auto ${badge.color}`} />
         <h3 className="text-xl font-bold text-foreground">{badge.label}</h3>
       </div>
-
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-muted rounded-lg p-3 text-center">
           <Mic className="h-5 w-5 text-success mx-auto mb-1" />
@@ -682,7 +745,6 @@ function Step5Summary({ anchor, scores, onContinue }: {
           <p className="text-xs text-muted-foreground">Record</p>
         </div>
       </div>
-
       <div className="space-y-3">
         <div className="bg-success/10 border border-success/20 rounded-lg p-3">
           <p className="text-sm font-medium text-success mb-1">✅ What you did well:</p>
@@ -697,12 +759,10 @@ function Step5Summary({ anchor, scores, onContinue }: {
           </div>
         )}
       </div>
-
       <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
         <p className="text-xs text-muted-foreground mb-1">Today's anchor sentence:</p>
         <p className="text-foreground font-bold">{anchor.sentence}</p>
       </div>
-
       <Button variant="hero" className="w-full" size="lg" onClick={onContinue}>
         Continue to Practice <ArrowRight className="h-4 w-4 ml-2" />
       </Button>
@@ -711,15 +771,15 @@ function Step5Summary({ anchor, scores, onContinue }: {
 }
 
 // ═══════════════════════════════════════════════
-// Part 2 — Free Domain Practice
+// Part 2 — Strategy-Based Practice
 // ═══════════════════════════════════════════════
 interface Part2Props {
-  activity: Activity;
+  activity: Part2Activity;
+  index: number;
   answer: string;
   setAnswer: (v: string) => void;
-  selectedOption: string | null;
-  setSelectedOption: (v: string | null) => void;
-  showFeedback: boolean;
+  submitted: boolean;
+  feedback: string | null;
   isCorrect: boolean;
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
@@ -727,118 +787,180 @@ interface Part2Props {
   onNext: () => void;
 }
 
-function Part2View({
-  activity, answer, setAnswer, selectedOption, setSelectedOption,
-  showFeedback, isCorrect, speech, tts, onSubmit, onNext,
+function Part2StrategyView({
+  activity, index, answer, setAnswer, submitted, feedback, isCorrect,
+  speech, tts, onSubmit, onNext,
 }: Part2Props) {
-  const Icon = DOMAIN_ICONS[activity.domain];
+  const strategyMeta = STRATEGY_LABELS[activity.strategy];
+  const StrategyIcon = strategyMeta.icon;
+
   return (
     <Card className="card-shadow border-border">
-      <div className="px-6 pt-6 flex items-center gap-2">
-        <span className="text-xs font-medium bg-accent/10 text-accent px-2 py-0.5 rounded-full">
-          Free Practice
-        </span>
-        <Icon className={`h-5 w-5 ${DOMAIN_COLORS[activity.domain]}`} />
-        <span className={`text-sm font-medium ${DOMAIN_COLORS[activity.domain]}`}>
-          {DOMAIN_LABELS[activity.domain]}
-        </span>
-        <span className="text-xs text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full">
-          {activity.widaLevel}
-        </span>
+      <div className="px-6 pt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`text-xs font-medium bg-accent/10 px-2 py-0.5 rounded-full flex items-center gap-1 ${strategyMeta.color}`}>
+            <StrategyIcon className="h-3 w-3" />
+            {strategyMeta.label}
+          </span>
+          <span className="text-xs text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full">
+            {index + 1} of 3
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Targeting: {strategyMeta.targetDomain}
+        </p>
       </div>
 
       <CardContent className="pt-4 space-y-6">
-        {/* Passage */}
-        {activity.passage && (
-          <div className="bg-muted/50 rounded-lg p-4 border border-border">
-            <p className="text-foreground leading-relaxed">{activity.passage}</p>
-          </div>
+        {/* Strategy-specific content */}
+        {activity.strategy === "sentence_frames" && (
+          <SentenceFrameActivity
+            activity={activity}
+            answer={answer}
+            setAnswer={setAnswer}
+            submitted={submitted}
+          />
         )}
 
-        {/* Listening audio area */}
-        {activity.domain === "listening" && activity.audioDescription && (
-          <div className="bg-secondary/50 rounded-lg p-4 border border-border space-y-3">
-            <div className="flex items-center gap-3">
-              <Headphones className="h-6 w-6 text-warning flex-shrink-0" />
-              <p className="text-foreground text-sm italic">{activity.audioDescription}</p>
-            </div>
-            {tts.isSupported && (
-              <Button
-                variant="outline" size="sm"
-                onClick={() => tts.speak(activity.audioDescription || activity.question)}
-                disabled={tts.isSpeaking}
-                className="gap-2"
-              >
-                <Volume2 className={`h-4 w-4 ${tts.isSpeaking ? "animate-pulse text-warning" : ""}`} />
-                {tts.isSpeaking ? "Playing..." : "Replay Audio"}
-              </Button>
-            )}
-          </div>
+        {activity.strategy === "sentence_expansion" && (
+          <SentenceExpansionActivity
+            activity={activity}
+            answer={answer}
+            setAnswer={setAnswer}
+            submitted={submitted}
+            speech={speech}
+          />
         )}
 
-        {/* Question */}
-        <h3 className="text-lg font-medium text-foreground">{activity.question}</h3>
-
-        {/* Answer area */}
-        {!showFeedback && (
-          <>
-            {activity.type === "multiple_choice" && activity.options ? (
-              <div className="space-y-2">
-                {activity.options.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => setSelectedOption(opt)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all ${
-                      selectedOption === opt
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <span className="text-foreground">{opt}</span>
-                  </button>
-                ))}
-              </div>
-            ) : activity.type === "speaking_prompt" ? (
-              <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} />
-            ) : (
-              <Input
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer..."
-                className="h-12"
-              />
-            )}
-            <Button variant="hero" className="w-full" size="lg" onClick={onSubmit} disabled={!selectedOption && !answer}>
-              Submit Answer
-            </Button>
-          </>
+        {activity.strategy === "quick_writes" && (
+          <QuickWriteActivity
+            activity={activity}
+            answer={answer}
+            setAnswer={setAnswer}
+            submitted={submitted}
+          />
         )}
 
-        {/* Feedback */}
-        {showFeedback && (
+        {/* Submit / Feedback */}
+        {!submitted ? (
+          <Button variant="hero" className="w-full" size="lg" onClick={onSubmit} disabled={!answer.trim()}>
+            Submit Answer
+          </Button>
+        ) : (
           <div className="space-y-4">
             <div className={`rounded-lg p-4 flex items-start gap-3 ${
-              isCorrect ? "bg-success/10 border border-success/20" : "bg-destructive/10 border border-destructive/20"
+              isCorrect ? "bg-success/10 border border-success/20" : "bg-primary/10 border border-primary/20"
             }`}>
-              <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isCorrect ? "text-success" : "text-destructive"}`} />
+              <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isCorrect ? "text-success" : "text-primary"}`} />
               <div>
-                <p className={`font-medium ${isCorrect ? "text-success" : "text-destructive"}`}>
-                  {isCorrect ? "Great job! 🌟" : "Good try! Keep learning! 💪"}
-                </p>
-                {!isCorrect && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    The correct answer was: <strong>{activity.correctAnswer}</strong>
-                  </p>
-                )}
+                <p className={`font-medium text-sm ${isCorrect ? "text-success" : "text-primary"}`}>{feedback}</p>
+                <div className="mt-2 bg-muted/50 rounded p-2">
+                  <p className="text-xs text-muted-foreground mb-1">Model answer:</p>
+                  <p className="text-sm text-foreground font-medium">{activity.modelAnswer}</p>
+                </div>
               </div>
             </div>
             <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
-              Next Activity <ArrowRight className="h-4 w-4 ml-2" />
+              {index < 2 ? "Next Activity" : "Finish Session"} <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ─── Sentence Frames Activity ───
+function SentenceFrameActivity({ activity, answer, setAnswer, submitted }: {
+  activity: Part2Activity; answer: string; setAnswer: (v: string) => void; submitted: boolean;
+}) {
+  return (
+    <>
+      {activity.passage && (
+        <div className="bg-muted/50 rounded-lg p-4 border border-border">
+          <p className="text-xs text-muted-foreground mb-1">📖 Read this passage:</p>
+          <p className="text-foreground leading-relaxed">{activity.passage}</p>
+        </div>
+      )}
+      <h3 className="text-lg font-medium text-foreground">{activity.question}</h3>
+      {activity.sentenceFrame && (
+        <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
+          <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
+          <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
+        </div>
+      )}
+      <Input
+        value={answer}
+        onChange={(e) => setAnswer(e.target.value)}
+        placeholder="Complete the sentence..."
+        className="h-12"
+        disabled={submitted}
+      />
+    </>
+  );
+}
+
+// ─── Sentence Expansion Activity ───
+function SentenceExpansionActivity({ activity, answer, setAnswer, submitted, speech }: {
+  activity: Part2Activity; answer: string; setAnswer: (v: string) => void; submitted: boolean;
+  speech: ReturnType<typeof useSpeechRecognition>;
+}) {
+  return (
+    <>
+      <div className="bg-success/5 rounded-lg p-4 border border-success/20 text-center space-y-2">
+        <Zap className="h-6 w-6 text-success mx-auto" />
+        <p className="text-sm text-muted-foreground">Say this sentence out loud:</p>
+        <p className="text-lg font-bold text-foreground">{activity.baseSentence}</p>
+        {activity.expansionHint && (
+          <p className="text-sm text-accent font-medium">
+            ➕ Add: {activity.expansionHint}
+          </p>
+        )}
+      </div>
+      <h3 className="text-base font-medium text-foreground">{activity.question}</h3>
+      <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} />
+    </>
+  );
+}
+
+// ─── Quick Write Activity ───
+function QuickWriteActivity({ activity, answer, setAnswer, submitted }: {
+  activity: Part2Activity; answer: string; setAnswer: (v: string) => void; submitted: boolean;
+}) {
+  return (
+    <>
+      <h3 className="text-lg font-medium text-foreground">{activity.question}</h3>
+      {activity.sentenceStarter && (
+        <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
+          <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
+          <p className="text-foreground font-medium italic">{activity.sentenceStarter}</p>
+        </div>
+      )}
+      {activity.wordBank && activity.wordBank.length > 0 && (
+        <div className="bg-muted/50 rounded-lg p-3 border border-border">
+          <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
+          <div className="flex flex-wrap gap-2">
+            {activity.wordBank.map((word, i) => (
+              <span key={i} className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full font-medium">
+                {word}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      <div>
+        <Textarea
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          placeholder="Write your answer here..."
+          className="min-h-[120px]"
+          disabled={submitted}
+        />
+        <p className="text-xs text-muted-foreground mt-2">
+          ⏱️ Most students finish in about 2 minutes! Write at least 2-3 sentences.
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -862,8 +984,8 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled }: {
             onClick={speech.isListening ? speech.stopListening : speech.startListening}
             disabled={disabled}
             className={`w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-lg ${
-              disabled ? "bg-muted text-muted-foreground" :
-              speech.isListening
+              disabled ? "bg-muted text-muted-foreground"
+              : speech.isListening
                 ? "bg-destructive text-destructive-foreground animate-pulse scale-110"
                 : "bg-success text-success-foreground hover:scale-105"
             }`}
@@ -908,41 +1030,6 @@ function FeedbackBanner({ feedback, positive }: { feedback: string | null; posit
       <p className={`font-medium text-sm ${positive ? "text-success" : "text-primary"}`}>{feedback}</p>
     </div>
   );
-}
-
-// ─── Fallback activities ───
-function getFallbackActivity(domain: Domain): Activity {
-  const activities: Record<Domain, Activity> = {
-    reading: {
-      domain: "reading", type: "multiple_choice",
-      passage: "The butterfly landed on the bright red flower. It moved its wings slowly. The butterfly was looking for sweet nectar.",
-      question: "What was the butterfly looking for?",
-      options: ["Water", "Nectar", "Seeds", "Leaves"],
-      correctAnswer: "Nectar", widaLevel: "Developing",
-    },
-    writing: {
-      domain: "writing", type: "short_answer",
-      question: "A baby bird just learned to fly! Write one sentence about how the bird feels. Start with: The bird feels...",
-      correctAnswer: "The bird feels happy and free.",
-      acceptableKeywords: ["bird", "feels", "happy", "free", "excited", "fly", "sky"],
-      widaLevel: "Entering",
-    },
-    speaking: {
-      domain: "speaking", type: "speaking_prompt",
-      question: "Imagine you found a treasure chest in your backyard. What is inside? Tell me about it!",
-      correctAnswer: "Inside the treasure chest I found gold coins and a magic map.",
-      acceptableKeywords: ["treasure", "found", "inside", "gold", "magic", "special", "coins"],
-      widaLevel: "Developing",
-    },
-    listening: {
-      domain: "listening", type: "multiple_choice",
-      audioDescription: "Listen to this story: Sam went to the park with his dog Rex. Rex loved to chase the ball. Sam threw the ball far and Rex ran very fast to catch it.",
-      question: "What did Rex love to do at the park?",
-      options: ["Swim", "Chase the ball", "Sleep", "Dig holes"],
-      correctAnswer: "Chase the ball", widaLevel: "Entering",
-    },
-  };
-  return activities[domain];
 }
 
 export default StudentSession;
