@@ -322,9 +322,11 @@ Deno.serve(async (req) => {
       const strategyBreakdown: Record<string, number> = {};
 
       (responses || []).forEach((r: any) => {
-        if (!domainScores[r.domain]) domainScores[r.domain] = { correct: 0, total: 0 };
-        domainScores[r.domain].total++;
-        if (r.is_correct) domainScores[r.domain].correct++;
+        // Capitalize domain to match template lookup ("reading" -> "Reading")
+        const domainKey = r.domain.charAt(0).toUpperCase() + r.domain.slice(1);
+        if (!domainScores[domainKey]) domainScores[domainKey] = { correct: 0, total: 0 };
+        domainScores[domainKey].total++;
+        if (r.is_correct) domainScores[domainKey].correct++;
         proficiencyLevels[r.wida_level] = (proficiencyLevels[r.wida_level] || 0) + 1;
         if (r.strategy) {
           strategyBreakdown[r.strategy] = (strategyBreakdown[r.strategy] || 0) + 1;
