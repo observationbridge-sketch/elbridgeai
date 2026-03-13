@@ -408,9 +408,28 @@ const StudentSession = () => {
       setPart1Step((s) => (s + 1) as any);
       setGlobalStep((g) => g + 1);
     } else {
-      // Part 1 complete → bonus points
+      // Part 1 complete → bonus points + grade band auto-adjustment
       gamification.addPoints(POINTS.PART1_COMPLETE);
       gamification.awardBadge("first_word");
+
+      // Auto-adjust grade band based on Part 1 performance
+      const totalPossible = part1Scores.repeatTotal + part1Scores.writeTotal + part1Scores.recordTotal;
+      const totalEarned = part1Scores.repeat + part1Scores.write + part1Scores.record;
+      const pct = totalPossible > 0 ? (totalEarned / totalPossible) * 100 : 50;
+
+      let newBand = effectiveGradeBand;
+      if (gradeBand === "3-5" && pct < 50) {
+        newBand = "K-2";
+        setEffectiveGradeBand("K-2");
+        setGradeBandAdjusted(true);
+        console.log("Auto-adjusted student to K-2 band (Part 1 score:", Math.round(pct), "%)");
+      } else if (gradeBand === "K-2" && pct > 85) {
+        newBand = "3-5";
+        setEffectiveGradeBand("3-5");
+        setGradeBandAdjusted(true);
+        console.log("Auto-adjusted student to 3-5 band (Part 1 score:", Math.round(pct), "%)");
+      }
+
       setGlobalStep(8);
       fetchPart2Activity(0);
     }
