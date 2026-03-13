@@ -829,7 +829,7 @@ const StudentSession = () => {
   // ─── Progress label ───
   const getProgressLabel = () => {
     if (inPart1) return `Part 1 • Step ${part1Step}/8`;
-    if (inPart2) return `Part 2 • Activity ${part2Index + 1}/6`;
+    if (inPart2) return `Part 2 • Activity ${part2Index + 1}/${part2Count}`;
     return "Part 3 • Challenge";
   };
 
