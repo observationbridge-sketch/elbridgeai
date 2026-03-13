@@ -33,7 +33,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const actualDomain = DOMAIN_ROTATION_8[activityIndex] || domain;
-    const widaLevel = WIDA_PROGRESSION_8[activityIndex] || "Developing";
+    const widaLevel = PROFICIENCY_PROGRESSION_8[activityIndex] || "Developing";
     const theme = sessionTheme || "Nature & animals";
 
     const systemPrompt = `You are an expert English Language Development activity generator for grades 3-5 ELL students.
