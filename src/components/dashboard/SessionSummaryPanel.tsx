@@ -89,7 +89,7 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
 
       const { data: responses } = await supabase
         .from("student_responses")
-        .select("student_id, domain, is_correct")
+        .select("student_id, domain, is_correct, grade_band")
         .eq("session_id", session.id);
 
       const studentMap = new Map<string, { name: string; domains: Record<string, { correct: number; total: number }> }>();
