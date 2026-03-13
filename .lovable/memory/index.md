@@ -1,6 +1,3 @@
-# Memory: index.md
-Updated: now
-
 ElbridgeAI - K-12 English Language Learning platform for teachers and students (grades 3-5, K-2 and 6-8 rolling out soon)
 
 ## Branding & Legal
@@ -37,6 +34,14 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - Part 3: Fun challenge (Story Builder / Speed Round / Teach It Back)
 - Theme + topic declared at session start, enforced across all parts
 
+## Content History System
+- student_content_history table tracks: theme, topic, key_vocabulary, vocabulary_results, activity_formats, challenge_type per session
+- History injected into AI prompts to avoid repetition (last 10 sessions)
+- Theme rotation: no repeat within 4-session window; after 8 themes, vary sub-topics
+- Vocabulary progression: words from 2+ sessions ago can reappear as review; new:review ratio 3:1
+- First-time students get baseline flag; no constraints on content
+- Teacher dashboard shows Content History panel per student
+
 ## Edge Functions
 - generate-anchor-sentence, generate-part2, generate-part3-challenge, generate-activity (legacy)
 
@@ -48,3 +53,4 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - session_students (session_id, student_name)
 - student_responses (session_id, student_id, domain, question, answers, is_correct, wida_level, grade_band)
 - student_points, student_badges, teacher_preferences
+- student_content_history (student_name, teacher_id, session_id, theme, topic, key_vocabulary, vocabulary_results, activity_formats, challenge_type, grade_band, is_baseline)

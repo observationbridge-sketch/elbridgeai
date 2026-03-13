@@ -201,6 +201,10 @@ const StudentSession = () => {
   const [gradeBand, setGradeBand] = useState<GradeBand>("3-5");
   const [effectiveGradeBand, setEffectiveGradeBand] = useState<GradeBand>("3-5");
   const [gradeBandAdjusted, setGradeBandAdjusted] = useState(false);
+  const [contentHistory, setContentHistory] = useState<any>(null);
+  const [usedActivityFormats, setUsedActivityFormats] = useState<string[]>([]);
+  const [usedVocabulary, setUsedVocabulary] = useState<string[]>([]);
+  const [vocabularyResults, setVocabularyResults] = useState<Array<{ word: string; correct: boolean }>>([]);
 
   const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
   const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
@@ -258,6 +262,8 @@ const StudentSession = () => {
       setLoadingMessage("Getting your lesson ready... 📚");
       if (!studentId || !sessionId) return;
 
+      let currentStudentName = "";
+
       try {
         const { data: studentData } = await supabase
           .from("session_students")
@@ -266,6 +272,7 @@ const StudentSession = () => {
           .single();
 
         if (studentData) {
+          currentStudentName = studentData.student_name;
           setStudentName(studentData.student_name);
           const { data: sessionData } = await supabase
             .from("sessions")
@@ -281,9 +288,34 @@ const StudentSession = () => {
         }
       } catch { /* proceed */ }
 
+      // Fetch content history for returning students
+      let fetchedHistory: any = null;
+      try {
+        if (currentStudentName) {
+          const { data: historyData } = await supabase
+            .from("student_content_history")
+            .select("theme, topic, key_vocabulary, vocabulary_results, activity_formats, challenge_type")
+            .eq("student_name", currentStudentName)
+            .order("session_date", { ascending: false })
+            .limit(10);
+
+          if (historyData && historyData.length > 0) {
+            fetchedHistory = {
+              themes: historyData.map((h: any) => h.theme),
+              topics: historyData.map((h: any) => h.topic),
+              vocabulary: historyData.flatMap((h: any) => h.key_vocabulary || []).slice(0, 30),
+              activityFormats: historyData[0]?.activity_formats || [],
+              challengeTypes: historyData.map((h: any) => h.challenge_type).filter(Boolean),
+              vocabularyResults: historyData.flatMap((h: any) => h.vocabulary_results || []),
+            };
+            setContentHistory(fetchedHistory);
+          }
+        }
+      } catch { /* proceed without history */ }
+
       try {
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
-          body: { grade: gradeBand || "3-5" },
+          body: { grade: gradeBand || "3-5", contentHistory: fetchedHistory },
         });
         if (error) throw error;
         const anchorData = data as AnchorSentence;
@@ -516,6 +548,7 @@ const StudentSession = () => {
           topic: sessionTopic,
           domainScores,
           questionIndex: index,
+          contentHistory,
         },
       });
       if (error) throw error;
@@ -571,6 +604,18 @@ const StudentSession = () => {
     setPart2Submitted(true);
     tts.stop();
 
+    // Track activity formats and vocabulary
+    if (part2Activity.type) {
+      setUsedActivityFormats((prev) => [...new Set([...prev, part2Activity.type])]);
+    }
+    if (part2Activity.acceptableKeywords) {
+      const newWords = part2Activity.acceptableKeywords;
+      setUsedVocabulary((prev) => [...new Set([...prev, ...newWords])]);
+      newWords.forEach((word) => {
+        setVocabularyResults((prev) => [...prev, { word, correct }]);
+      });
+    }
+
     gamification.addPoints(POINTS.PART2_ACTIVITY);
 
     const domainMap: Record<string, string> = {
@@ -613,7 +658,7 @@ const StudentSession = () => {
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
       const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
-        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType },
+        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory },
       });
       if (error) throw error;
       setPart3Challenge(data as Part3Challenge);
@@ -710,7 +755,7 @@ const StudentSession = () => {
     saveResponse("speaking", "Part 3: Teach It Back", part3Answer, sessionTopic, true, "Expanding", "part3", "teach_it_back");
   };
 
-  const finishSession = () => {
+  const finishSession = async () => {
     gamification.addPoints(POINTS.SESSION_COMPLETE);
     gamification.completeSession();
     if (domainScores) {
@@ -721,6 +766,27 @@ const StudentSession = () => {
         }
       }
     }
+
+    // Save content history
+    try {
+      const isBaseline = !contentHistory;
+      await supabase.from("student_content_history").insert({
+        student_name: studentName,
+        teacher_id: teacherId,
+        session_id: sessionId,
+        theme: sessionTheme,
+        topic: sessionTopic,
+        key_vocabulary: usedVocabulary.concat(anchor?.keyWords || []),
+        vocabulary_results: vocabularyResults,
+        activity_formats: usedActivityFormats,
+        challenge_type: challengeCompleted?.toLowerCase().replace(/ /g, "_") || null,
+        grade_band: effectiveGradeBand,
+        is_baseline: isBaseline,
+      } as any);
+    } catch (e) {
+      console.error("Failed to save content history:", e);
+    }
+
     setSessionEnded(true);
   };
 

@@ -90,7 +90,30 @@ function getInputTypeFields(inputType: string, topic: string): string {
   return extra;
 }
 
-function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string): string {
+function buildHistoryContext(contentHistory: any): string {
+  if (!contentHistory) return "";
+  const parts: string[] = [];
+  parts.push("\n--- STUDENT HISTORY (avoid repeating) ---");
+  if (contentHistory.vocabulary?.length > 0) {
+    parts.push(`- Vocabulary used recently: [${contentHistory.vocabulary.slice(0, 30).join(", ")}]`);
+    parts.push("- Use FRESH vocabulary. New words must outnumber review words 3:1.");
+  }
+  if (contentHistory.activityFormats?.length > 0) {
+    parts.push(`- Activity formats used in last session: [${contentHistory.activityFormats.join(", ")}]`);
+    parts.push("- Avoid repeating the same activity format sequence.");
+  }
+  const missedWords = contentHistory.vocabularyResults
+    ?.filter((v: any) => !v.correct)
+    .map((v: any) => v.word)
+    .slice(0, 10);
+  if (missedWords?.length > 0) {
+    parts.push(`- Words student struggled with (good for review): [${missedWords.join(", ")}]`);
+  }
+  parts.push("---\n");
+  return parts.join("\n");
+}
+
+function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string, contentHistory?: any): string {
   const isK2 = grade === "K-2";
   const inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
   const k2Override = isK2 ? `\nK-2 RULES: Maximum 1 blank per sentence. Multiple choice must have only 2 options. Use only Tier 1 (everyday) vocabulary. Keep sentences under 10 words. Instructions should be very simple.` : "";
@@ -125,11 +148,14 @@ ${inputType === "record_then_type" ? "The student will TYPE their answer AND THE
       "The student writes their OWN complete sentence about the topic with NO frame provided — fully open.",
     ][questionIndex];
 
+    const histCtx = buildHistoryContext(contentHistory);
+
     return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
 ${STRICT_RULES}
 ${inputTypeNote}
+${histCtx}
 
 Generate a SENTENCE FRAMES activity about "${topic}".
 ${difficultyNote}: ${scaffolding}
@@ -236,7 +262,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { grade, theme, topic, domainScores, questionIndex } = await req.json();
+    const { grade, theme, topic, domainScores, questionIndex, contentHistory } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -246,7 +272,8 @@ serve(async (req) => {
       theme || "Nature & animals",
       topic || theme || "Nature & animals",
       questionIndex || 0,
-      grade || "3-5"
+      grade || "3-5",
+      contentHistory
     );
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
