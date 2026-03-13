@@ -36,13 +36,16 @@ const DOMAIN_ICONS: Record<string, any> = {
   listening: Headphones,
 };
 
-function estimateWida(pct: number): number {
-  if (pct >= 90) return 6;
-  if (pct >= 75) return 5;
-  if (pct >= 60) return 4;
-  if (pct >= 40) return 3;
-  if (pct >= 20) return 2;
-  return 1;
+function estimateWida(pct: number, gradeBand: string): { level: number; label: string } {
+  if (gradeBand === "K-2") {
+    if (pct >= 70) return { level: 3, label: "Developing" };
+    if (pct >= 40) return { level: 2, label: "Emerging" };
+    return { level: 1, label: "Entering" };
+  }
+  // 3-5
+  if (pct >= 90) return { level: 6, label: "Reaching" };
+  if (pct >= 75) return { level: 5, label: "Bridging" };
+  return { level: 4, label: "Expanding" };
 }
 
 interface Props {
