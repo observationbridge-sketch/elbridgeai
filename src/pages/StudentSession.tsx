@@ -594,8 +594,8 @@ const StudentSession = () => {
   const nextPart2 = () => {
     tts.stop();
     const nextIdx = part2Index + 1;
-    if (nextIdx >= 6) {
-      setGlobalStep(14);
+    if (nextIdx >= part2Count) {
+      setGlobalStep(8 + part2Count);
       setPart3ShowIntro(true);
       fetchPart3Challenge();
       return;
