@@ -94,8 +94,11 @@ const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: strin
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-// Part 1 = 8 steps, Part 2 = 6 activities, Part 3 = 1 challenge = 15 total
-const TOTAL_STEPS = 15;
+// Part 1 = 8 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
+const TOTAL_STEPS_3_5 = 15;
+const TOTAL_STEPS_K2 = 13; // 8 + 4 + 1
+
+type GradeBand = "K-2" | "3-5";
 
 // ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
