@@ -103,7 +103,7 @@ Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate a ${actualDomain} activity at WIDA level ${widaLevel} with theme "${theme}" for grades ${grade}. Make it engaging, vivid, and fully self-contained.` },
+          { role: "user", content: `Generate a ${actualDomain} activity at proficiency level ${widaLevel} with theme "${theme}" for grades ${grade}. Make it engaging, vivid, and fully self-contained.` },
         ],
       }),
     });
