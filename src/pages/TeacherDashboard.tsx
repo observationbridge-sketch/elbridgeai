@@ -299,6 +299,9 @@ const TeacherDashboard = () => {
           </Card>
         )}
 
+        {/* Session Summary Panel */}
+        {user && <SessionSummaryPanel teacherId={user.id} />}
+
         {/* Email Settings */}
         {user && <EmailSettings userId={user.id} />}
 
