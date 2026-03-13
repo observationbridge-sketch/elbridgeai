@@ -245,9 +245,30 @@ const TeacherDashboard = () => {
                   </Button>
                 </>
               ) : (
-                <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
-                  <Play className="h-4 w-4 mr-2" /> Start New Session
-                </Button>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Grade Band</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant={gradeBand === "K-2" ? "default" : "outline"}
+                        className={gradeBand === "K-2" ? "border-2 border-primary" : ""}
+                        onClick={() => setGradeBand("K-2")}
+                      >
+                        K-2
+                      </Button>
+                      <Button
+                        variant={gradeBand === "3-5" ? "default" : "outline"}
+                        className={gradeBand === "3-5" ? "border-2 border-primary" : ""}
+                        onClick={() => setGradeBand("3-5")}
+                      >
+                        3-5
+                      </Button>
+                    </div>
+                  </div>
+                  <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
+                    <Play className="h-4 w-4 mr-2" /> Start New Session ({gradeBand})
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
