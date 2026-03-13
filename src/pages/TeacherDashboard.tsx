@@ -210,199 +210,205 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-        {/* Session Control */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="card-shadow border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {sessionActive ? <Square className="h-5 w-5 text-destructive" /> : <Play className="h-5 w-5 text-success" />}
-                Live Session
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {sessionActive && sessionCode ? (
-                <>
-                  <div className="bg-muted rounded-lg p-6 text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Share this code with students</p>
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="text-5xl font-mono font-bold tracking-[0.2em] text-primary">
-                        {sessionCode}
-                      </span>
-                      <Button variant="ghost" size="icon" onClick={copyCode}>
-                        <Copy className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                  {/* Join Link */}
-                  <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                      <Link className="h-4 w-4 text-primary" />
-                      Student Join Link
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-xs bg-muted px-3 py-2 rounded font-mono truncate text-muted-foreground">
-                        {joinUrl.replace("https://", "")}
-                      </code>
-                      <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0">
-                        {linkCopied ? <><Check className="h-3 w-3 mr-1" /> Copied!</> : <><Copy className="h-3 w-3 mr-1" /> Copy Link</>}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* QR Code */}
-                  <div className="bg-card border border-border rounded-lg p-4 flex flex-col items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground self-start">
-                      <QrCode className="h-4 w-4 text-primary" />
-                      QR Code — Scan to Join
-                    </div>
-                    <div ref={qrRef} className="bg-white p-4 rounded-xl">
-                      <QRCodeCanvas value={joinUrl} size={220} level="H" />
-                    </div>
-                    <Button variant="outline" size="sm" onClick={downloadQR}>
-                      <Download className="h-3 w-3 mr-1" /> Download QR Code
-                    </Button>
-                  </div>
-
-                  <Button variant="destructive" className="w-full" onClick={endSession}>
-                    <Square className="h-4 w-4 mr-2" /> End Session
-                  </Button>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-2">Grade Band</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant={gradeBand === "K-2" ? "default" : "outline"}
-                        className={gradeBand === "K-2" ? "border-2 border-primary" : ""}
-                        onClick={() => setGradeBand("K-2")}
-                      >
-                        K-2
-                      </Button>
-                      <Button
-                        variant={gradeBand === "3-5" ? "default" : "outline"}
-                        className={gradeBand === "3-5" ? "border-2 border-primary" : ""}
-                        onClick={() => setGradeBand("3-5")}
-                      >
-                        3-5
-                      </Button>
-                    </div>
-                  </div>
-                  <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
-                    <Play className="h-4 w-4 mr-2" /> Start New Session ({gradeBand})
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="card-shadow border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-accent" />
-                Students Connected
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-6">
-                <span className="text-6xl font-bold text-accent">{studentCount}</span>
-                <p className="text-muted-foreground mt-2">
-                  {sessionActive ? "students in session" : "No active session"}
-                </p>
-                {sessionActive && activeGradeBand && (
-                  <span className="inline-block mt-2 text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
-                    Grade Band: {activeGradeBand}
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Top Students Leaderboard */}
-        {topStudents.length > 0 && (
-          <Card className="card-shadow border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-warning" />
-                Top Students
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {topStudents.map((student, i) => {
-                  const level = getAnimalLevel(student.total_points);
-                  return (
-                    <div key={student.student_name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <span className={`text-lg font-bold w-8 text-center ${i < 3 ? "text-warning" : "text-muted-foreground"}`}>
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
-                      </span>
-                      <span className="text-2xl">{level.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-foreground truncate">{student.student_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {level.name} • {student.current_streak} day streak • {student.sessions_completed} sessions
-                        </p>
+        {dashboardTab === "growth" ? (
+          user && <StudentGrowthDashboard teacherId={user.id} />
+        ) : (
+          <>
+            {/* Session Control */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="card-shadow border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {sessionActive ? <Square className="h-5 w-5 text-destructive" /> : <Play className="h-5 w-5 text-success" />}
+                    Live Session
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {sessionActive && sessionCode ? (
+                    <>
+                      <div className="bg-muted rounded-lg p-6 text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Share this code with students</p>
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="text-5xl font-mono font-bold tracking-[0.2em] text-primary">
+                            {sessionCode}
+                          </span>
+                          <Button variant="ghost" size="icon" onClick={copyCode}>
+                            <Copy className="h-5 w-5" />
+                          </Button>
+                        </div>
                       </div>
-                      <span className="text-sm font-bold text-primary">{student.total_points} pts</span>
+                      {/* Join Link */}
+                      <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <Link className="h-4 w-4 text-primary" />
+                          Student Join Link
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs bg-muted px-3 py-2 rounded font-mono truncate text-muted-foreground">
+                            {joinUrl.replace("https://", "")}
+                          </code>
+                          <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0">
+                            {linkCopied ? <><Check className="h-3 w-3 mr-1" /> Copied!</> : <><Copy className="h-3 w-3 mr-1" /> Copy Link</>}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="bg-card border border-border rounded-lg p-4 flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-foreground self-start">
+                          <QrCode className="h-4 w-4 text-primary" />
+                          QR Code — Scan to Join
+                        </div>
+                        <div ref={qrRef} className="bg-white p-4 rounded-xl">
+                          <QRCodeCanvas value={joinUrl} size={220} level="H" />
+                        </div>
+                        <Button variant="outline" size="sm" onClick={downloadQR}>
+                          <Download className="h-3 w-3 mr-1" /> Download QR Code
+                        </Button>
+                      </div>
+
+                      <Button variant="destructive" className="w-full" onClick={endSession}>
+                        <Square className="h-4 w-4 mr-2" /> End Session
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm font-medium text-foreground mb-2">Grade Band</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant={gradeBand === "K-2" ? "default" : "outline"}
+                            className={gradeBand === "K-2" ? "border-2 border-primary" : ""}
+                            onClick={() => setGradeBand("K-2")}
+                          >
+                            K-2
+                          </Button>
+                          <Button
+                            variant={gradeBand === "3-5" ? "default" : "outline"}
+                            className={gradeBand === "3-5" ? "border-2 border-primary" : ""}
+                            onClick={() => setGradeBand("3-5")}
+                          >
+                            3-5
+                          </Button>
+                        </div>
+                      </div>
+                      <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
+                        <Play className="h-4 w-4 mr-2" /> Start New Session ({gradeBand})
+                      </Button>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  )}
+                </CardContent>
+              </Card>
 
-        {/* Session Summary Panel */}
-        {user && <SessionSummaryPanel teacherId={user.id} />}
-
-        {/* Content History Panel */}
-        {user && <ContentHistoryPanel teacherId={user.id} />}
-
-        {/* Email Settings */}
-        {user && <EmailSettings userId={user.id} />}
-
-        {/* Session History */}
-        <Card className="card-shadow border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-muted-foreground" />
-              Session History
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {sessions.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No sessions yet. Start your first session!</p>
-            ) : (
-              <div className="space-y-3">
-                {sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                    onClick={() => session.status === "ended" && navigate(`/teacher/session/${session.id}`)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm text-primary">{session.code}</span>
-                      <span className="text-muted-foreground text-sm">
-                        {new Date(session.created_at).toLocaleDateString()}
+              <Card className="card-shadow border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-accent" />
+                    Students Connected
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-6">
+                    <span className="text-6xl font-bold text-accent">{studentCount}</span>
+                    <p className="text-muted-foreground mt-2">
+                      {sessionActive ? "students in session" : "No active session"}
+                    </p>
+                    {sessionActive && activeGradeBand && (
+                      <span className="inline-block mt-2 text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
+                        Grade Band: {activeGradeBand}
                       </span>
-                      {(session as any).grade_band && (
-                        <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
-                          {(session as any).grade_band}
-                        </span>
-                      )}
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                    }`}>
-                      {session.status}
-                    </span>
+                    )}
                   </div>
-                ))}
-              </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Top Students Leaderboard */}
+            {topStudents.length > 0 && (
+              <Card className="card-shadow border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-warning" />
+                    Top Students
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {topStudents.map((student, i) => {
+                      const level = getAnimalLevel(student.total_points);
+                      return (
+                        <div key={student.student_name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                          <span className={`text-lg font-bold w-8 text-center ${i < 3 ? "text-warning" : "text-muted-foreground"}`}>
+                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                          </span>
+                          <span className="text-2xl">{level.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-foreground truncate">{student.student_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {level.name} • {student.current_streak} day streak • {student.sessions_completed} sessions
+                            </p>
+                          </div>
+                          <span className="text-sm font-bold text-primary">{student.total_points} pts</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+
+            {/* Session Summary Panel */}
+            {user && <SessionSummaryPanel teacherId={user.id} />}
+
+            {/* Content History Panel */}
+            {user && <ContentHistoryPanel teacherId={user.id} />}
+
+            {/* Email Settings */}
+            {user && <EmailSettings userId={user.id} />}
+
+            {/* Session History */}
+            <Card className="card-shadow border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-muted-foreground" />
+                  Session History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {sessions.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No sessions yet. Start your first session!</p>
+                ) : (
+                  <div className="space-y-3">
+                    {sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                        onClick={() => session.status === "ended" && navigate(`/teacher/session/${session.id}`)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm text-primary">{session.code}</span>
+                          <span className="text-muted-foreground text-sm">
+                            {new Date(session.created_at).toLocaleDateString()}
+                          </span>
+                          {(session as any).grade_band && (
+                            <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                              {(session as any).grade_band}
+                            </span>
+                          )}
+                        </div>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                        }`}>
+                          {session.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </main>
     </div>
   );
