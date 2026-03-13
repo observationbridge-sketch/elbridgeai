@@ -172,6 +172,19 @@ ${widaRows ? `<tr><td style="padding:16px 40px 8px;">
 </td></tr>
 <tr><td style="padding:0 40px 20px;">${widaRows}</td></tr>` : ""}
 
+<!-- Adaptive Strategies -->
+${(() => {
+  const entries = Object.entries(report.strategyBreakdown);
+  if (entries.length === 0) return "";
+  const strategyChips = entries.map(([s, c]) => 
+    `<span style="display:inline-block;margin:4px 6px;padding:6px 14px;background:#f0e6ff;color:#6b21a8;border-radius:20px;font-size:13px;font-weight:600;">${STRATEGY_LABELS[s] || s}: ${c} sessions</span>`
+  ).join("");
+  return `<tr><td style="padding:16px 40px 8px;">
+    <h2 style="margin:0;font-size:16px;color:#1a3a5c;">🎯 Adaptive Strategies Used</h2>
+  </td></tr>
+  <tr><td style="padding:0 40px 20px;">${strategyChips}</td></tr>`;
+})()}
+
 <!-- CTA -->
 <tr><td style="padding:16px 40px 32px;text-align:center;">
   <a href="https://elbridgeai.lovable.app/teacher/dashboard" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#1a6db5,#2e9e6b);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">View Full Dashboard →</a>
