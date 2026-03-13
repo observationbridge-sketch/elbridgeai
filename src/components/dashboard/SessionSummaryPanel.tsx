@@ -36,7 +36,7 @@ const DOMAIN_ICONS: Record<string, any> = {
   listening: Headphones,
 };
 
-function estimateWida(pct: number, gradeBand: string): { level: number; label: string } {
+function estimateProficiency(pct: number, gradeBand: string): { level: number; label: string } {
   if (gradeBand === "K-2") {
     if (pct >= 70) return { level: 3, label: "Developing" };
     if (pct >= 40) return { level: 2, label: "Emerging" };
