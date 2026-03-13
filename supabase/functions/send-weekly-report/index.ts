@@ -190,6 +190,19 @@ ${(() => {
   <tr><td style="padding:0 40px 20px;">${strategyChips}</td></tr>`;
 })()}
 
+${(() => {
+  if (!report.topStudent) return "";
+  return `<tr><td style="padding:16px 40px 8px;">
+    <h2 style="margin:0;font-size:16px;color:#1a3a5c;">🏅 Top Language Learner</h2>
+  </td></tr>
+  <tr><td style="padding:0 40px 20px;">
+    <div style="padding:14px 18px;background:#fff8e1;border-radius:10px;border-left:4px solid #d4a017;text-align:center;">
+      <span style="font-size:32px;">${report.topStudent.animal === "Baby Chick" ? "🐣" : report.topStudent.animal === "Little Turtle" ? "🐢" : report.topStudent.animal === "Clever Fox" ? "🦊" : report.topStudent.animal === "Soaring Eagle" ? "🦅" : report.topStudent.animal === "Ocean Dolphin" ? "🐬" : "🦋"}</span>
+      <p style="margin:8px 0 0;font-size:14px;color:#1a3a5c;"><strong>${report.topStudent.name}</strong> the ${report.topStudent.animal} with <strong>${report.topStudent.points} points</strong>!</p>
+    </div>
+  </td></tr>`;
+})()}
+
 <!-- CTA -->
 <tr><td style="padding:16px 40px 32px;text-align:center;">
   <a href="https://elbridgeai.lovable.app/teacher/dashboard" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#1a6db5,#2e9e6b);color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">View Full Dashboard →</a>
