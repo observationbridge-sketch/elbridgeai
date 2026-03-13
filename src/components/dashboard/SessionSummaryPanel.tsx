@@ -274,6 +274,9 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
                             <td className="py-2 px-2 font-medium text-foreground">
                               {s.student_name}
                               {!s.completed && <span className="text-xs text-muted-foreground ml-1">(incomplete)</span>}
+                              {s.gradeBand !== "3-5" && (
+                                <span className="text-xs bg-accent/10 text-accent ml-1 px-1.5 py-0.5 rounded-full">{s.gradeBand}</span>
+                              )}
                             </td>
                             <td className="text-center py-2 px-1">
                               <ScoreCell value={s.reading} />
