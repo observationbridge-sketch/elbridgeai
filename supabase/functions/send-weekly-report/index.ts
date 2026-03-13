@@ -66,6 +66,10 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
       text += `  ${STRATEGY_LABELS[strategy] || strategy}: ${count} sessions\n`;
     }
   }
+  if (report.topStudent) {
+    text += `\nTOP LANGUAGE LEARNER\n`;
+    text += `  This week's top learner: ${report.topStudent.name} the ${report.topStudent.animal} with ${report.topStudent.points} points!\n`;
+  }
   text += `\nView Full Dashboard: https://elbridgeai.lovable.app/teacher/dashboard\n`;
   text += `\nTo manage email preferences or unsubscribe, visit:\nhttps://elbridgeai.lovable.app/teacher/dashboard#email-settings\n`;
   text += `\n—\nElbridgeAI • Empowering English Language Learners\n`;
