@@ -95,7 +95,7 @@ const TeacherDashboard = () => {
     const code = generateCode();
     const { data, error } = await supabase
       .from("sessions")
-      .insert({ teacher_id: user.id, code, status: "active" })
+      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand } as any)
       .select()
       .single();
     if (error) {
@@ -104,8 +104,9 @@ const TeacherDashboard = () => {
     }
     setSessionCode(code);
     setSessionActive(true);
+    setActiveGradeBand(gradeBand);
     setStudentCount(0);
-    toast.success("Session started!");
+    toast.success(`Session started! (${gradeBand})`);
 
     const interval = setInterval(async () => {
       if (data) await pollStudents(data.id);
