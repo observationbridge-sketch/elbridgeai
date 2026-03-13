@@ -1,11 +1,11 @@
-ElbridgeAI - K-12 English Language Learning platform for teachers and students (grades 3-5, K-2 and 6-8 rolling out soon)
+ElbridgeAI - K-12 English Language Learning platform for teachers and students (grades K-5, 6-8 rolling out soon)
 
 ## Branding & Legal
 - NEVER use "WIDA" — use "ELD Proficiency Level" or "Proficiency Level"
 - NEVER use "WIDA Can-Do Descriptors" — use "Academic Can-Do Benchmarks"
 - NEVER use "Literacy Squared" or "Kathy Escamilla" — these are proprietary
 - Footer disclaimer: "ELBridgeAI is an independent tool designed to support language acquisition."
-- Focus: Grades 3-5 (K-2 and 6-8 rolling out soon)
+- Focus: Grades K-5 (6-8 rolling out soon)
 - DB column `wida_level` kept for backward compat but NEVER shown to users as "WIDA"
 
 ## Design System

@@ -30,7 +30,7 @@ const Index = () => {
               <span className="text-gradient">Every Student</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Engage your Grades 3–5 students with adaptive activities across Reading, Writing, Speaking, and Listening — aligned to Standard ELD Frameworks. <span className="italic text-sm">K–2 and 6–8 rolling out soon!</span>
+              Engage your Grades K–5 students with adaptive activities across Reading, Writing, Speaking, and Listening — aligned to Standard ELD Frameworks. <span className="italic text-sm">Grades 6–8 rolling out soon!</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button variant="hero" size="xl" onClick={() => navigate("/teacher/auth")}>
@@ -70,7 +70,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground text-sm space-y-2">
-          <p>© {new Date().getFullYear()} ElbridgeAI. Aligned to Academic Can-Do Benchmarks for Grades 3–5.</p>
+          <p>© {new Date().getFullYear()} ElbridgeAI. Aligned to Academic Can-Do Benchmarks for Grades K–5.</p>
           <p className="text-xs">ELBridgeAI is an independent tool designed to support language acquisition.</p>
         </div>
       </footer>
