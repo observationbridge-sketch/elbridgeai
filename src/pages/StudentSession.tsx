@@ -758,13 +758,22 @@ const StudentSession = () => {
               </div>
               <div className="bg-muted rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Practice</p>
-                <p className="text-xl font-bold text-accent">{part2Score}/6</p>
+                <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
               </div>
               <div className="bg-muted rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Challenge</p>
                 <p className="text-xl font-bold text-success">✓</p>
                 <p className="text-xs text-muted-foreground">{challengeCompleted}</p>
               </div>
+            </div>
+
+            {gradeBandAdjusted && (
+              <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground">
+                  📊 Grade band adjusted to <span className="font-bold text-accent">{effectiveGradeBand}</span> based on your performance
+                </p>
+              </div>
+            )}
             </div>
 
             {strategyMeta && (
