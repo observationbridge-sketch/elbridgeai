@@ -90,7 +90,30 @@ function getInputTypeFields(inputType: string, topic: string): string {
   return extra;
 }
 
-function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string): string {
+function buildHistoryContext(contentHistory: any): string {
+  if (!contentHistory) return "";
+  const parts: string[] = [];
+  parts.push("\n--- STUDENT HISTORY (avoid repeating) ---");
+  if (contentHistory.vocabulary?.length > 0) {
+    parts.push(`- Vocabulary used recently: [${contentHistory.vocabulary.slice(0, 30).join(", ")}]`);
+    parts.push("- Use FRESH vocabulary. New words must outnumber review words 3:1.");
+  }
+  if (contentHistory.activityFormats?.length > 0) {
+    parts.push(`- Activity formats used in last session: [${contentHistory.activityFormats.join(", ")}]`);
+    parts.push("- Avoid repeating the same activity format sequence.");
+  }
+  const missedWords = contentHistory.vocabularyResults
+    ?.filter((v: any) => !v.correct)
+    .map((v: any) => v.word)
+    .slice(0, 10);
+  if (missedWords?.length > 0) {
+    parts.push(`- Words student struggled with (good for review): [${missedWords.join(", ")}]`);
+  }
+  parts.push("---\n");
+  return parts.join("\n");
+}
+
+function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string, contentHistory?: any): string {
   const isK2 = grade === "K-2";
   const inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
   const k2Override = isK2 ? `\nK-2 RULES: Maximum 1 blank per sentence. Multiple choice must have only 2 options. Use only Tier 1 (everyday) vocabulary. Keep sentences under 10 words. Instructions should be very simple.` : "";

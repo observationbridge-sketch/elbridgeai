@@ -27,15 +27,74 @@ const THEMES = [
   "Volcanoes & earthquakes",
 ];
 
+interface ContentHistory {
+  themes: string[];
+  topics: string[];
+  vocabulary: string[];
+  activityFormats: string[];
+  challengeTypes: string[];
+  vocabularyResults: Array<{ word: string; correct: boolean }>;
+}
+
+function buildHistoryContext(history: ContentHistory | null): string {
+  if (!history) return "";
+
+  const parts: string[] = [];
+  parts.push("\n--- STUDENT HISTORY (avoid repeating) ---");
+
+  if (history.themes.length > 0) {
+    parts.push(`- Themes used recently: [${history.themes.join(", ")}]`);
+    parts.push(`- CRITICAL: Do NOT pick any of these themes: ${history.themes.slice(0, 4).join(", ")}`);
+  }
+  if (history.topics.length > 0) {
+    parts.push(`- Topics covered: [${history.topics.join(", ")}]`);
+  }
+  if (history.vocabulary.length > 0) {
+    parts.push(`- Vocabulary words used recently: [${history.vocabulary.slice(0, 30).join(", ")}]`);
+    parts.push(`- Use FRESH vocabulary. New words must outnumber review words 3:1.`);
+  }
+
+  // Identify words the student missed for review
+  const missedWords = history.vocabularyResults
+    ?.filter((v) => !v.correct)
+    .map((v) => v.word)
+    .slice(0, 10);
+  if (missedWords && missedWords.length > 0) {
+    parts.push(`- Words the student struggled with (good for review): [${missedWords.join(", ")}]`);
+  }
+
+  parts.push("Please select a different theme, fresh vocabulary, and a new topic.\n---");
+  return parts.join("\n");
+}
+
+function selectTheme(history: ContentHistory | null): string {
+  if (!history || history.themes.length === 0) {
+    return THEMES[Math.floor(Math.random() * THEMES.length)];
+  }
+
+  // Don't repeat within 4-session window
+  const recentThemes = history.themes.slice(0, 4);
+  const available = THEMES.filter((t) => !recentThemes.includes(t));
+
+  if (available.length === 0) {
+    // All themes used — pick any but vary sub-topic (AI handles this via history context)
+    return THEMES[Math.floor(Math.random() * THEMES.length)];
+  }
+
+  return available[Math.floor(Math.random() * available.length)];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { grade } = await req.json();
+    const { grade, contentHistory } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
+    const history = contentHistory as ContentHistory | null;
+    const theme = selectTheme(history);
+    const historyContext = buildHistoryContext(history);
 
     const isK2 = grade === "K-2";
 
@@ -50,7 +109,7 @@ Theme for this session: "${theme}"
 Create a specific topic within this theme. For example:
 - Theme "Nature & animals" → topic "A butterfly in the garden"
 - Theme "School & classroom life" → topic "Playing at recess"
-
+${historyContext}
 ${STRICT_RULES}
 
 RULES:
@@ -83,7 +142,7 @@ You must also create a specific topic within this theme. For example:
 - Theme "Nature & animals" → topic "How butterflies migrate south in autumn"
 - Theme "Ancient Egypt" → topic "The building of the Great Pyramid"
 - Theme "Ocean exploration" → topic "Deep sea creatures that glow in the dark"
-
+${historyContext}
 ${STRICT_RULES}
 
 RULES:
