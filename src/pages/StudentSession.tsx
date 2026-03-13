@@ -604,6 +604,18 @@ const StudentSession = () => {
     setPart2Submitted(true);
     tts.stop();
 
+    // Track activity formats and vocabulary
+    if (part2Activity.type) {
+      setUsedActivityFormats((prev) => [...new Set([...prev, part2Activity.type])]);
+    }
+    if (part2Activity.acceptableKeywords) {
+      const newWords = part2Activity.acceptableKeywords;
+      setUsedVocabulary((prev) => [...new Set([...prev, ...newWords])]);
+      newWords.forEach((word) => {
+        setVocabularyResults((prev) => [...prev, { word, correct }]);
+      });
+    }
+
     gamification.addPoints(POINTS.PART2_ACTIVITY);
 
     const domainMap: Record<string, string> = {
