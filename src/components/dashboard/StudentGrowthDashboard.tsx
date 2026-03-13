@@ -453,8 +453,8 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                     <Tooltip
                       contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: 12 }}
                       formatter={(value: number) => {
-                        const wida = WIDA_SCALE.find((s) => Math.round(value) === s.level);
-                        return [`Level ${value} ${wida?.label || ""}`, "Avg Level"];
+                        const entry = PROFICIENCY_SCALE.find((s) => Math.round(value) === s.level);
+                        return [`Level ${value} ${entry?.label || ""}`, "Avg Level"];
                       }}
                     />
                     <Bar dataKey="level" fill="hsl(210, 80%, 45%)" radius={[4, 4, 0, 0]} />
