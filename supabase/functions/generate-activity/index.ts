@@ -38,7 +38,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert English Language Development activity generator for grades 3-5 ELL students.
 
-Generate ONE activity for the "${actualDomain}" domain at WIDA level "${widaLevel}".
+Generate ONE activity for the "${actualDomain}" domain at proficiency level "${widaLevel}".
 Theme for this question: "${theme}"
 
 CRITICAL RULE: Every question MUST be fully self-contained. The student must have ALL information needed to answer within the question itself. Before outputting, verify: "Does this question contain everything the student needs to answer it?"
