@@ -331,6 +331,30 @@ Deno.serve(async (req) => {
         }
       });
 
+      // Get top student
+      const ANIMAL_LEVELS = [
+        { min: 0, max: 50, name: "Baby Chick" },
+        { min: 51, max: 150, name: "Little Turtle" },
+        { min: 151, max: 300, name: "Clever Fox" },
+        { min: 301, max: 500, name: "Soaring Eagle" },
+        { min: 501, max: 800, name: "Ocean Dolphin" },
+        { min: 801, max: Infinity, name: "Language Butterfly" },
+      ];
+
+      let topStudent: TeacherReport["topStudent"];
+      const { data: topStudentData } = await supabase
+        .from("student_points")
+        .select("student_name, total_points")
+        .eq("teacher_id", teacherId)
+        .order("total_points", { ascending: false })
+        .limit(1);
+
+      if (topStudentData && topStudentData.length > 0) {
+        const pts = topStudentData[0].total_points;
+        const animal = ANIMAL_LEVELS.find((l) => pts >= l.min && pts <= l.max) || ANIMAL_LEVELS[0];
+        topStudent = { name: topStudentData[0].student_name, points: pts, animal: animal.name };
+      }
+
       const report: TeacherReport = {
         teacherId,
         email,
@@ -340,6 +364,7 @@ Deno.serve(async (req) => {
         domainScores,
         widaLevels,
         strategyBreakdown,
+        topStudent,
       };
 
       const html = buildEmailHtml(report, label);
