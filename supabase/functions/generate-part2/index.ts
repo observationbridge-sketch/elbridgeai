@@ -91,6 +91,7 @@ function getInputTypeFields(inputType: string, topic: string): string {
 }
 
 function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string): string {
+  const isK2 = grade === "K-2";
   const inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
