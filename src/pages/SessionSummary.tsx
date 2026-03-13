@@ -304,7 +304,7 @@ const SessionSummary = () => {
                   <div className="flex items-end justify-between">
                     <span className="text-3xl font-bold text-foreground">{summary.percentage}%</span>
                     <span className={`text-sm px-2 py-1 rounded-full bg-muted ${meta.color}`}>
-                      {widaLevel}
+                      {proficiencyLevel}
                     </span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
