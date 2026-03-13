@@ -15,6 +15,7 @@ interface TeacherReport {
   domainScores: Record<string, { correct: number; total: number }>;
   widaLevels: Record<string, number>;
   strategyBreakdown: Record<string, number>;
+  topStudent?: { name: string; points: number; animal: string };
 }
 
 function getWeekRange(): { start: string; end: string; label: string } {
@@ -64,6 +65,10 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
     for (const [strategy, count] of Object.entries(report.strategyBreakdown)) {
       text += `  ${STRATEGY_LABELS[strategy] || strategy}: ${count} sessions\n`;
     }
+  }
+  if (report.topStudent) {
+    text += `\nTOP LANGUAGE LEARNER\n`;
+    text += `  This week's top learner: ${report.topStudent.name} the ${report.topStudent.animal} with ${report.topStudent.points} points!\n`;
   }
   text += `\nView Full Dashboard: https://elbridgeai.lovable.app/teacher/dashboard\n`;
   text += `\nTo manage email preferences or unsubscribe, visit:\nhttps://elbridgeai.lovable.app/teacher/dashboard#email-settings\n`;
@@ -183,6 +188,19 @@ ${(() => {
     <h2 style="margin:0;font-size:16px;color:#1a3a5c;">🎯 Adaptive Strategies Used</h2>
   </td></tr>
   <tr><td style="padding:0 40px 20px;">${strategyChips}</td></tr>`;
+})()}
+
+${(() => {
+  if (!report.topStudent) return "";
+  return `<tr><td style="padding:16px 40px 8px;">
+    <h2 style="margin:0;font-size:16px;color:#1a3a5c;">🏅 Top Language Learner</h2>
+  </td></tr>
+  <tr><td style="padding:0 40px 20px;">
+    <div style="padding:14px 18px;background:#fff8e1;border-radius:10px;border-left:4px solid #d4a017;text-align:center;">
+      <span style="font-size:32px;">${report.topStudent.animal === "Baby Chick" ? "🐣" : report.topStudent.animal === "Little Turtle" ? "🐢" : report.topStudent.animal === "Clever Fox" ? "🦊" : report.topStudent.animal === "Soaring Eagle" ? "🦅" : report.topStudent.animal === "Ocean Dolphin" ? "🐬" : "🦋"}</span>
+      <p style="margin:8px 0 0;font-size:14px;color:#1a3a5c;"><strong>${report.topStudent.name}</strong> the ${report.topStudent.animal} with <strong>${report.topStudent.points} points</strong>!</p>
+    </div>
+  </td></tr>`;
 })()}
 
 <!-- CTA -->
@@ -313,6 +331,30 @@ Deno.serve(async (req) => {
         }
       });
 
+      // Get top student
+      const ANIMAL_LEVELS = [
+        { min: 0, max: 50, name: "Baby Chick" },
+        { min: 51, max: 150, name: "Little Turtle" },
+        { min: 151, max: 300, name: "Clever Fox" },
+        { min: 301, max: 500, name: "Soaring Eagle" },
+        { min: 501, max: 800, name: "Ocean Dolphin" },
+        { min: 801, max: Infinity, name: "Language Butterfly" },
+      ];
+
+      let topStudent: TeacherReport["topStudent"];
+      const { data: topStudentData } = await supabase
+        .from("student_points")
+        .select("student_name, total_points")
+        .eq("teacher_id", teacherId)
+        .order("total_points", { ascending: false })
+        .limit(1);
+
+      if (topStudentData && topStudentData.length > 0) {
+        const pts = topStudentData[0].total_points;
+        const animal = ANIMAL_LEVELS.find((l) => pts >= l.min && pts <= l.max) || ANIMAL_LEVELS[0];
+        topStudent = { name: topStudentData[0].student_name, points: pts, animal: animal.name };
+      }
+
       const report: TeacherReport = {
         teacherId,
         email,
@@ -322,6 +364,7 @@ Deno.serve(async (req) => {
         domainScores,
         widaLevels,
         strategyBreakdown,
+        topStudent,
       };
 
       const html = buildEmailHtml(report, label);

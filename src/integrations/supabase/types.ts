@@ -70,6 +70,72 @@ export type Database = {
         }
         Relationships: []
       }
+      student_badges: {
+        Row: {
+          badge_icon: string
+          badge_id: string
+          badge_name: string
+          earned_at: string
+          id: string
+          student_name: string
+          teacher_id: string
+        }
+        Insert: {
+          badge_icon: string
+          badge_id: string
+          badge_name: string
+          earned_at?: string
+          id?: string
+          student_name: string
+          teacher_id: string
+        }
+        Update: {
+          badge_icon?: string
+          badge_id?: string
+          badge_name?: string
+          earned_at?: string
+          id?: string
+          student_name?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
+      student_points: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_session_date: string | null
+          sessions_completed: number
+          student_name: string
+          teacher_id: string
+          total_points: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_session_date?: string | null
+          sessions_completed?: number
+          student_name: string
+          teacher_id: string
+          total_points?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_session_date?: string | null
+          sessions_completed?: number
+          student_name?: string
+          teacher_id?: string
+          total_points?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_responses: {
         Row: {
           correct_answer: string

@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap } from "lucide-react";
+import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap, Award, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getAnimalLevel } from "@/components/gamification/constants";
 
 type DomainSummary = {
   domain: string;
@@ -15,6 +16,14 @@ type DomainSummary = {
 type StrategyInfo = {
   strategy: string;
   count: number;
+};
+
+type StudentGamification = {
+  student_name: string;
+  total_points: number;
+  current_streak: number;
+  sessions_completed: number;
+  badges: string[];
 };
 
 const DOMAIN_META: Record<string, { icon: any; color: string; label: string }> = {
@@ -48,6 +57,8 @@ const SessionSummary = () => {
   const [part2Stats, setPart2Stats] = useState({ total: 0, correct: 0 });
   const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
   const [weakestDomainNote, setWeakestDomainNote] = useState("");
+  const [studentGamification, setStudentGamification] = useState<StudentGamification[]>([]);
+  const [teacherId, setTeacherId] = useState("");
 
   useEffect(() => {
     if (!sessionId) return;
@@ -55,16 +66,19 @@ const SessionSummary = () => {
     const load = async () => {
       const { data: session } = await supabase
         .from("sessions")
-        .select("code")
+        .select("code, teacher_id")
         .eq("id", sessionId)
         .single();
-      if (session) setSessionCode(session.code);
+      if (session) {
+        setSessionCode(session.code);
+        setTeacherId(session.teacher_id);
+      }
 
-      const { count } = await supabase
+      const { data: students } = await supabase
         .from("session_students")
-        .select("*", { count: "exact", head: true })
+        .select("id, student_name")
         .eq("session_id", sessionId);
-      setStudentCount(count || 0);
+      setStudentCount(students?.length || 0);
 
       const { data: responses } = await supabase
         .from("student_responses")
@@ -72,7 +86,6 @@ const SessionSummary = () => {
         .eq("session_id", sessionId);
 
       if (responses) {
-        // Domain summaries
         const domains = ["reading", "writing", "speaking", "listening"];
         const summaries = domains.map((d) => {
           const domainResponses = responses.filter((r) => r.domain === d);
@@ -86,33 +99,58 @@ const SessionSummary = () => {
         });
         setDomainSummaries(summaries);
 
-        // Part 1 vs Part 2 stats
         const p1 = responses.filter((r) => r.session_part === "part1");
         const p2 = responses.filter((r) => r.session_part === "part2");
         setPart1Stats({ total: p1.length, correct: p1.filter((r) => r.is_correct).length });
         setPart2Stats({ total: p2.length, correct: p2.filter((r) => r.is_correct).length });
 
-        // Strategy info
         const strategyMap = new Map<string, number>();
         for (const r of responses) {
-          if (r.strategy) {
-            strategyMap.set(r.strategy, (strategyMap.get(r.strategy) || 0) + 1);
-          }
+          if (r.strategy) strategyMap.set(r.strategy, (strategyMap.get(r.strategy) || 0) + 1);
         }
-        const strategyList = Array.from(strategyMap.entries()).map(([strategy, count]) => ({ strategy, count }));
-        setStrategies(strategyList);
+        setStrategies(Array.from(strategyMap.entries()).map(([strategy, count]) => ({ strategy, count })));
 
-        // Find weakest domain for note
         if (summaries.some((s) => s.total > 0)) {
           const withData = summaries.filter((s) => s.total > 0);
           const weakest = withData.reduce((min, s) => (s.percentage < min.percentage ? s : min), withData[0]);
+          const strategyList = Array.from(strategyMap.entries());
           if (strategyList.length > 0) {
-            const strategyName = STRATEGY_LABELS[strategyList[0].strategy] || strategyList[0].strategy;
+            const strategyName = STRATEGY_LABELS[strategyList[0][0]] || strategyList[0][0];
             setWeakestDomainNote(
               `${weakest.domain.charAt(0).toUpperCase() + weakest.domain.slice(1)} was the weakest area, so Part 2 focused on ${strategyName}.`
             );
           }
         }
+      }
+
+      // Load gamification data for students in this session
+      if (session?.teacher_id && students && students.length > 0) {
+        const studentNames = students.map((s) => s.student_name);
+
+        const { data: pointsData } = await supabase
+          .from("student_points")
+          .select("student_name, total_points, current_streak, sessions_completed")
+          .eq("teacher_id", session.teacher_id)
+          .in("student_name", studentNames);
+
+        const { data: badgesData } = await supabase
+          .from("student_badges")
+          .select("student_name, badge_icon")
+          .eq("teacher_id", session.teacher_id)
+          .in("student_name", studentNames);
+
+        const gamData: StudentGamification[] = studentNames.map((name) => {
+          const pts = pointsData?.find((p) => p.student_name === name);
+          const badges = badgesData?.filter((b) => b.student_name === name).map((b) => b.badge_icon) || [];
+          return {
+            student_name: name,
+            total_points: pts?.total_points || 0,
+            current_streak: pts?.current_streak || 0,
+            sessions_completed: pts?.sessions_completed || 0,
+            badges,
+          };
+        });
+        setStudentGamification(gamData.sort((a, b) => b.total_points - a.total_points));
       }
     };
 
@@ -244,7 +282,45 @@ const SessionSummary = () => {
           })}
         </div>
 
-        {domainSummaries.every((s) => s.total === 0) && (
+        {/* Student Gamification */}
+        {studentGamification.length > 0 && (
+          <Card className="card-shadow border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-warning" />
+                Student Progress
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {studentGamification.map((student) => {
+                  const level = getAnimalLevel(student.total_points);
+                  return (
+                    <div key={student.student_name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <span className="text-2xl">{level.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">{student.student_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {level.name} • {student.total_points} pts • {student.current_streak} day streak • {student.sessions_completed} sessions
+                        </p>
+                      </div>
+                      <div className="flex gap-1">
+                        {student.badges.slice(0, 5).map((icon, i) => (
+                          <span key={i} className="text-lg">{icon}</span>
+                        ))}
+                        {student.badges.length > 5 && (
+                          <span className="text-xs text-muted-foreground">+{student.badges.length - 5}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {domainSummaries.every((s) => s.total === 0) && studentGamification.length === 0 && (
           <Card className="card-shadow border-border">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">No student responses recorded for this session yet.</p>

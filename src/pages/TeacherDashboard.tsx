@@ -2,16 +2,24 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Copy, LogOut, Users, Play, Square, History } from "lucide-react";
+import { Brain, Copy, LogOut, Users, Play, Square, History, Trophy } from "lucide-react";
 import EmailSettings from "@/components/dashboard/EmailSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getAnimalLevel } from "@/components/gamification/constants";
 
 function generateCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
   for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
+}
+
+interface StudentOverview {
+  student_name: string;
+  total_points: number;
+  current_streak: number;
+  sessions_completed: number;
 }
 
 const TeacherDashboard = () => {
@@ -21,6 +29,7 @@ const TeacherDashboard = () => {
   const [sessionActive, setSessionActive] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [topStudents, setTopStudents] = useState<StudentOverview[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -30,6 +39,7 @@ const TeacherDashboard = () => {
       }
       setUser(session.user);
       loadSessions(session.user.id);
+      loadTopStudents(session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -49,13 +59,22 @@ const TeacherDashboard = () => {
       .limit(10);
     if (data) setSessions(data);
 
-    // Check for active session
     const active = data?.find((s: any) => s.status === "active");
     if (active) {
       setSessionCode(active.code);
       setSessionActive(true);
       pollStudents(active.id);
     }
+  };
+
+  const loadTopStudents = async (userId: string) => {
+    const { data } = await supabase
+      .from("student_points")
+      .select("student_name, total_points, current_streak, sessions_completed")
+      .eq("teacher_id", userId)
+      .order("total_points", { ascending: false })
+      .limit(10);
+    if (data) setTopStudents(data);
   };
 
   const pollStudents = async (sessionId: string) => {
@@ -83,11 +102,9 @@ const TeacherDashboard = () => {
     setStudentCount(0);
     toast.success("Session started!");
 
-    // Poll for students
     const interval = setInterval(async () => {
       if (data) await pollStudents(data.id);
     }, 5000);
-    // Store interval for cleanup
     (window as any).__sessionPoll = interval;
   };
 
@@ -192,6 +209,40 @@ const TeacherDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Top Students Leaderboard */}
+        {topStudents.length > 0 && (
+          <Card className="card-shadow border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-warning" />
+                Top Students
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {topStudents.map((student, i) => {
+                  const level = getAnimalLevel(student.total_points);
+                  return (
+                    <div key={student.student_name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <span className={`text-lg font-bold w-8 text-center ${i < 3 ? "text-warning" : "text-muted-foreground"}`}>
+                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                      </span>
+                      <span className="text-2xl">{level.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">{student.student_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {level.name} • {student.current_streak} day streak • {student.sessions_completed} sessions
+                        </p>
+                      </div>
+                      <span className="text-sm font-bold text-primary">{student.total_points} pts</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Email Settings */}
         {user && <EmailSettings userId={user.id} />}
