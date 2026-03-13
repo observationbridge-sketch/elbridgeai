@@ -111,7 +111,7 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
       for (const r of (responses || [])) {
         const student = studentMap.get(r.student_id);
         if (!student) continue;
-        completedStudents.add(r.student_id);
+        completedStudents.set(r.student_id, (r as any).grade_band || "3-5");
         const d = r.domain as string;
         if (student.domains[d]) {
           student.domains[d].total++;
