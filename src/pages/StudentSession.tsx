@@ -548,6 +548,7 @@ const StudentSession = () => {
           topic: sessionTopic,
           domainScores,
           questionIndex: index,
+          contentHistory,
         },
       });
       if (error) throw error;
