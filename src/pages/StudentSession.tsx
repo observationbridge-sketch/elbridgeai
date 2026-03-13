@@ -8,12 +8,20 @@ import { Progress } from "@/components/ui/progress";
 import {
   Brain, BookOpen, PenTool, Mic, MicOff, Headphones, CheckCircle,
   ArrowRight, Loader2, Star, Volume2, Trophy, Flame, RefreshCw,
-  Eye, EyeOff, Target, Zap,
+  Eye, EyeOff, Target, Zap, Award, Users,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTTS } from "@/hooks/use-tts";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import { useGamification } from "@/hooks/use-gamification";
+import { AnimalCompanion } from "@/components/gamification/AnimalCompanion";
+import { PointsAnimation } from "@/components/gamification/PointsAnimation";
+import { EvolutionCelebration } from "@/components/gamification/EvolutionCelebration";
+import { BadgePopup } from "@/components/gamification/BadgePopup";
+import { BadgeCollection } from "@/components/gamification/BadgeCollection";
+import { Leaderboard } from "@/components/gamification/Leaderboard";
+import { POINTS } from "@/components/gamification/constants";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
@@ -59,7 +67,7 @@ const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: strin
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-const TOTAL_STEPS = 8; // 5 Part 1 + 3 Part 2
+const TOTAL_STEPS = 8;
 
 // ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
@@ -104,7 +112,6 @@ function flexibleGrade(input: string, keywords: string[]): boolean {
     const matchCount = keywords.filter((kw) => norm.includes(kw.toLowerCase())).length;
     if (matchCount >= Math.max(2, Math.ceil(keywords.length * 0.3))) return true;
   }
-  // Effort-based: 3+ words is always credit
   if (norm.split(/\s+/).length >= 3) return true;
   return false;
 }
@@ -122,6 +129,12 @@ const StudentSession = () => {
   const [loading, setLoading] = useState(true);
   const [globalStep, setGlobalStep] = useState(0);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [studentName, setStudentName] = useState("");
+  const [teacherId, setTeacherId] = useState("");
+
+  // Gamification
+  const gamification = useGamification(studentName, teacherId);
+  const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
 
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
@@ -133,6 +146,8 @@ const StudentSession = () => {
   const [part1Scores, setPart1Scores] = useState<Part1Scores>({
     listen: false, repeat: 0, repeatTotal: 0, write: 0, writeTotal: 0, record: 0, recordTotal: 0,
   });
+  const [hasSpoken, setHasSpoken] = useState(false);
+  const [hasWritten, setHasWritten] = useState(false);
 
   // Part 2 state
   const [part2Activity, setPart2Activity] = useState<Part2Activity | null>(null);
@@ -149,10 +164,37 @@ const StudentSession = () => {
   const inPart1 = globalStep < 5;
   const inPart2 = globalStep >= 5 && globalStep < 8;
 
-  // ─── Load anchor sentence on mount ───
+  // ─── Load student info, anchor sentence, and history on mount ───
   useEffect(() => {
-    const loadAnchor = async () => {
+    const init = async () => {
       setLoading(true);
+      if (!studentId || !sessionId) return;
+
+      // Load student name and teacher ID
+      try {
+        const { data: studentData } = await supabase
+          .from("session_students")
+          .select("student_name, session_id")
+          .eq("id", studentId)
+          .single();
+
+        if (studentData) {
+          setStudentName(studentData.student_name);
+
+          // Get teacher_id from session
+          const { data: sessionData } = await supabase
+            .from("sessions")
+            .select("teacher_id")
+            .eq("id", sessionId)
+            .single();
+
+          if (sessionData) {
+            setTeacherId(sessionData.teacher_id);
+          }
+        }
+      } catch { /* proceed */ }
+
+      // Load anchor
       try {
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
           body: { grade: "3-5" },
@@ -166,16 +208,10 @@ const StudentSession = () => {
           category: "Descriptive language models",
           keyWords: ["brave", "explorer", "climbed", "mountain", "discover", "hiding", "clouds"],
         });
-      } finally {
-        setLoading(false);
       }
-    };
 
-    // Also load student history for adaptive Part 2
-    const loadHistory = async () => {
-      if (!studentId) return;
+      // Load student history for adaptive Part 2
       try {
-        // Look up this student's name to find historical data
         const { data: studentData } = await supabase
           .from("session_students")
           .select("student_name")
@@ -183,7 +219,6 @@ const StudentSession = () => {
           .single();
 
         if (studentData?.student_name) {
-          // Find all student IDs with same name
           const { data: allStudents } = await supabase
             .from("session_students")
             .select("id")
@@ -208,17 +243,23 @@ const StudentSession = () => {
                 pctScores[domain] = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
               }
               setDomainScores(pctScores);
-              return;
             }
           }
         }
       } catch { /* use default */ }
-      setDomainScores(null); // No history — will default to sentence_frames
+
+      setLoading(false);
     };
 
-    loadAnchor();
-    loadHistory();
-  }, [studentId]);
+    init();
+  }, [studentId, sessionId]);
+
+  // Load gamification data once we have student info
+  useEffect(() => {
+    if (studentName && teacherId) {
+      gamification.loadData();
+    }
+  }, [studentName, teacherId]);
 
   // Auto-play TTS for Step 1
   useEffect(() => {
@@ -271,7 +312,12 @@ const StudentSession = () => {
       setPart1Step((s) => (s + 1) as 1 | 2 | 3 | 4 | 5);
       setGlobalStep((g) => g + 1);
     } else {
-      // Move to Part 2
+      // Part 1 complete → bonus points
+      gamification.addPoints(POINTS.PART1_COMPLETE);
+
+      // Award "First Word" badge
+      gamification.awardBadge("first_word");
+
       setGlobalStep(5);
       fetchPart2Activity(0);
     }
@@ -279,6 +325,7 @@ const StudentSession = () => {
 
   const handleStep1Done = () => {
     setPart1Scores((s) => ({ ...s, listen: true }));
+    gamification.addPoints(POINTS.STEP1_LISTEN);
     saveResponse("listening", "Listened to anchor sentence", "heard", anchor?.sentence || "", true, "Entering", "part1");
     handlePart1Next();
   };
@@ -295,6 +342,11 @@ const StudentSession = () => {
         : `Good effort! You got ${matched} out of ${total} words. Here's the sentence again: "${anchor.sentence}"`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    gamification.addPoints(POINTS.STEP2_REPEAT);
+    if (!hasSpoken) {
+      setHasSpoken(true);
+      gamification.awardBadge("first_voice");
+    }
     saveResponse("speaking", `Repeat: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
@@ -309,6 +361,11 @@ const StudentSession = () => {
       : `Good try! You got ${matched} out of ${total} words. Compare your answer above. ✍️`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    gamification.addPoints(POINTS.STEP3_WRITE);
+    if (!hasWritten) {
+      setHasWritten(true);
+      gamification.awardBadge("first_writer");
+    }
     saveResponse("writing", `Write from memory: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
@@ -324,6 +381,7 @@ const StudentSession = () => {
         : `You used ${matched} out of ${total} words — keep practicing! 🎤💪`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    gamification.addPoints(POINTS.STEP4_RECORD);
     saveResponse("speaking", `Record: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
@@ -379,14 +437,9 @@ const StudentSession = () => {
     setPart2IsCorrect(correct);
     if (correct) setPart2Score((s) => s + 1);
 
-    // Generate encouraging feedback
     let feedback: string;
     if (correct) {
-      const msgs = [
-        "Excellent work! 🌟",
-        "Great job — you nailed it! ✨",
-        "Wonderful response! Keep it up! 🎉",
-      ];
+      const msgs = ["Excellent work! 🌟", "Great job — you nailed it! ✨", "Wonderful response! Keep it up! 🎉"];
       feedback = msgs[part2Index % msgs.length];
     } else {
       feedback = "Good effort! Here's a model answer to compare:";
@@ -395,7 +448,9 @@ const StudentSession = () => {
     setPart2Submitted(true);
     tts.stop();
 
-    // Determine domain for saving
+    // Points for Part 2 activity
+    gamification.addPoints(POINTS.PART2_ACTIVITY);
+
     const domainMap: Record<string, string> = {
       sentence_frames: "reading",
       sentence_expansion: "speaking",
@@ -419,6 +474,20 @@ const StudentSession = () => {
     tts.stop();
     const nextIdx = part2Index + 1;
     if (nextIdx >= 3) {
+      // Session complete
+      gamification.addPoints(POINTS.SESSION_COMPLETE);
+      gamification.completeSession();
+
+      // Check domain 80% bonus
+      if (domainScores) {
+        for (const [, pct] of Object.entries(domainScores)) {
+          if (pct >= 80) {
+            gamification.addPoints(POINTS.DOMAIN_80_BONUS);
+            break;
+          }
+        }
+      }
+
       setSessionEnded(true);
       return;
     }
@@ -427,6 +496,14 @@ const StudentSession = () => {
     fetchPart2Activity(nextIdx);
   };
 
+  // ─── Badge/Leaderboard screens ───
+  if (showView === "badges") {
+    return <BadgeCollection earnedBadgeIds={gamification.earnedBadgeIds} onBack={() => setShowView("session")} />;
+  }
+  if (showView === "leaderboard") {
+    return <Leaderboard teacherId={teacherId} currentStudentName={studentName} onBack={() => setShowView("session")} />;
+  }
+
   // ─── Session ended screen ───
   if (sessionEnded) {
     const strategyMeta = part2Strategy ? STRATEGY_LABELS[part2Strategy] : null;
@@ -434,9 +511,18 @@ const StudentSession = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md card-shadow text-center">
           <CardContent className="pt-8 pb-8 space-y-6">
-            <Star className="h-16 w-16 text-warning mx-auto" />
+            {/* Animal companion */}
+            <AnimalCompanion points={gamification.totalPoints} studentName={studentName} />
+
             <h2 className="text-2xl font-bold text-foreground">Amazing Work! 🎉</h2>
             <p className="text-lg text-muted-foreground">You completed today's session!</p>
+
+            {/* Points earned */}
+            <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground">Points earned today</p>
+              <p className="text-3xl font-bold text-warning">+{gamification.sessionPoints} ⭐</p>
+              <p className="text-sm text-muted-foreground">Total: {gamification.totalPoints} points</p>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-muted rounded-lg p-4">
@@ -463,7 +549,21 @@ const StudentSession = () => {
               </div>
             )}
 
-            {/* Growth tip */}
+            {/* New badges */}
+            {gamification.earnedBadgeIds.length > 0 && (
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                <p className="text-sm font-medium text-primary mb-2">🎖️ Your badges:</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {gamification.earnedBadgeIds.slice(-5).map((id) => {
+                    const badge = BADGES_LOOKUP[id];
+                    return badge ? (
+                      <span key={id} className="text-2xl" title={badge.name}>{badge.icon}</span>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-left">
               <p className="text-sm font-medium text-primary mb-1">💡 Growth Tip:</p>
               <p className="text-sm text-foreground">
@@ -475,11 +575,39 @@ const StudentSession = () => {
               </p>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" onClick={() => setShowView("badges")} className="gap-2">
+                <Award className="h-4 w-4" /> My Badges
+              </Button>
+              <Button variant="outline" onClick={() => setShowView("leaderboard")} className="gap-2">
+                <Users className="h-4 w-4" /> Leaderboard
+              </Button>
+            </div>
+
             <Button variant="hero" onClick={() => navigate("/")} className="w-full">
               Back to Home
             </Button>
           </CardContent>
         </Card>
+
+        {/* Gamification popups */}
+        <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
+        {gamification.evolutionData && (
+          <EvolutionCelebration
+            show={true}
+            animalEmoji={gamification.evolutionData.emoji}
+            animalName={gamification.evolutionData.name}
+            onClose={() => gamification.setEvolutionData(null)}
+          />
+        )}
+        {gamification.pendingBadge && (
+          <BadgePopup
+            show={true}
+            badgeIcon={gamification.pendingBadge.icon}
+            badgeName={gamification.pendingBadge.name}
+            onClose={() => gamification.setPendingBadge(null)}
+          />
+        )}
       </div>
     );
   }
@@ -494,13 +622,28 @@ const StudentSession = () => {
             <Brain className="h-6 w-6 text-primary" />
             <span className="font-bold text-foreground">ElbridgeAI</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-3">
+            {/* Animal companion compact */}
+            {gamification.loaded && (
+              <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact />
+            )}
+            <div className="hidden sm:flex items-center gap-2">
+              <button onClick={() => setShowView("badges")} className="text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 flex items-center gap-1">
+                <Award className="h-3 w-3" /> Badges
+              </button>
+              <button onClick={() => setShowView("leaderboard")} className="text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 flex items-center gap-1">
+                <Users className="h-3 w-3" /> Rank
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
               {inPart1 ? `Part 1 • Step ${part1Step}/5` : `Part 2 • ${part2Index + 1}/3`}
             </span>
-            <div className="w-32">
-              <Progress value={((globalStep + 1) / TOTAL_STEPS) * 100} />
-            </div>
+            <Progress value={((globalStep + 1) / TOTAL_STEPS) * 100} className="flex-1" />
           </div>
         </div>
       </div>
@@ -548,9 +691,33 @@ const StudentSession = () => {
           />
         ) : null}
       </main>
+
+      {/* Gamification overlays */}
+      <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
+      {gamification.evolutionData && (
+        <EvolutionCelebration
+          show={true}
+          animalEmoji={gamification.evolutionData.emoji}
+          animalName={gamification.evolutionData.name}
+          onClose={() => gamification.setEvolutionData(null)}
+        />
+      )}
+      {gamification.pendingBadge && (
+        <BadgePopup
+          show={true}
+          badgeIcon={gamification.pendingBadge.icon}
+          badgeName={gamification.pendingBadge.name}
+          onClose={() => gamification.setPendingBadge(null)}
+        />
+      )}
     </div>
   );
 };
+
+// Badge lookup helper
+import { BADGES } from "@/components/gamification/constants";
+const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
+BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
 // ═══════════════════════════════════════════════
 // Part 1 — Daily Language Builder
@@ -812,36 +979,16 @@ function Part2StrategyView({
       </div>
 
       <CardContent className="pt-4 space-y-6">
-        {/* Strategy-specific content */}
         {activity.strategy === "sentence_frames" && (
-          <SentenceFrameActivity
-            activity={activity}
-            answer={answer}
-            setAnswer={setAnswer}
-            submitted={submitted}
-          />
+          <SentenceFrameActivity activity={activity} answer={answer} setAnswer={setAnswer} submitted={submitted} />
         )}
-
         {activity.strategy === "sentence_expansion" && (
-          <SentenceExpansionActivity
-            activity={activity}
-            answer={answer}
-            setAnswer={setAnswer}
-            submitted={submitted}
-            speech={speech}
-          />
+          <SentenceExpansionActivity activity={activity} answer={answer} setAnswer={setAnswer} submitted={submitted} speech={speech} />
         )}
-
         {activity.strategy === "quick_writes" && (
-          <QuickWriteActivity
-            activity={activity}
-            answer={answer}
-            setAnswer={setAnswer}
-            submitted={submitted}
-          />
+          <QuickWriteActivity activity={activity} answer={answer} setAnswer={setAnswer} submitted={submitted} />
         )}
 
-        {/* Submit / Feedback */}
         {!submitted ? (
           <Button variant="hero" className="w-full" size="lg" onClick={onSubmit} disabled={!answer.trim()}>
             Submit Answer
@@ -889,13 +1036,7 @@ function SentenceFrameActivity({ activity, answer, setAnswer, submitted }: {
           <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
         </div>
       )}
-      <Input
-        value={answer}
-        onChange={(e) => setAnswer(e.target.value)}
-        placeholder="Complete the sentence..."
-        className="h-12"
-        disabled={submitted}
-      />
+      <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Complete the sentence..." className="h-12" disabled={submitted} />
     </>
   );
 }
@@ -912,9 +1053,7 @@ function SentenceExpansionActivity({ activity, answer, setAnswer, submitted, spe
         <p className="text-sm text-muted-foreground">Say this sentence out loud:</p>
         <p className="text-lg font-bold text-foreground">{activity.baseSentence}</p>
         {activity.expansionHint && (
-          <p className="text-sm text-accent font-medium">
-            ➕ Add: {activity.expansionHint}
-          </p>
+          <p className="text-sm text-accent font-medium">➕ Add: {activity.expansionHint}</p>
         )}
       </div>
       <h3 className="text-base font-medium text-foreground">{activity.question}</h3>
@@ -941,24 +1080,14 @@ function QuickWriteActivity({ activity, answer, setAnswer, submitted }: {
           <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
           <div className="flex flex-wrap gap-2">
             {activity.wordBank.map((word, i) => (
-              <span key={i} className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full font-medium">
-                {word}
-              </span>
+              <span key={i} className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full font-medium">{word}</span>
             ))}
           </div>
         </div>
       )}
       <div>
-        <Textarea
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Write your answer here..."
-          className="min-h-[120px]"
-          disabled={submitted}
-        />
-        <p className="text-xs text-muted-foreground mt-2">
-          ⏱️ Most students finish in about 2 minutes! Write at least 2-3 sentences.
-        </p>
+        <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Write your answer here..." className="min-h-[120px]" disabled={submitted} />
+        <p className="text-xs text-muted-foreground mt-2">⏱️ Most students finish in about 2 minutes! Write at least 2-3 sentences.</p>
       </div>
     </>
   );
