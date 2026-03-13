@@ -137,8 +137,8 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
           student_name: student.name,
           reading: r, writing: w, speaking: s, listening: l,
           overall,
-          widaLevel: wida.level,
-          widaLabel: wida.label,
+          proficiencyLevel: proficiency.level,
+          proficiencyLabel: proficiency.label,
           gradeBand: studentGradeBand,
           completed: hasData,
         });
