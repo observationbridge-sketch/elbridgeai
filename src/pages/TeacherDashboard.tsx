@@ -67,6 +67,7 @@ const TeacherDashboard = () => {
     if (active) {
       setSessionCode(active.code);
       setSessionActive(true);
+      setActiveGradeBand(active.grade_band || "3-5");
       pollStudents(active.id);
     }
   };
