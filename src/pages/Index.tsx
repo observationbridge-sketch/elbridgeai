@@ -69,8 +69,9 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
-          © {new Date().getFullYear()} ElbridgeAI. Aligned to WIDA Can-Do Descriptors for Grades 3–5.
+        <div className="container mx-auto px-4 text-center text-muted-foreground text-sm space-y-2">
+          <p>© {new Date().getFullYear()} ElbridgeAI. Aligned to Academic Can-Do Benchmarks for Grades 3–5.</p>
+          <p className="text-xs">ELBridgeAI is an independent tool designed to support language acquisition.</p>
         </div>
       </footer>
     </div>
