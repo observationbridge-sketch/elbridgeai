@@ -285,9 +285,34 @@ const StudentSession = () => {
         }
       } catch { /* proceed */ }
 
+      // Fetch content history for returning students
+      let fetchedHistory: any = null;
+      try {
+        if (studentData?.student_name) {
+          const { data: historyData } = await supabase
+            .from("student_content_history")
+            .select("theme, topic, key_vocabulary, vocabulary_results, activity_formats, challenge_type")
+            .eq("student_name", studentData.student_name)
+            .order("session_date", { ascending: false })
+            .limit(10);
+
+          if (historyData && historyData.length > 0) {
+            fetchedHistory = {
+              themes: historyData.map((h: any) => h.theme),
+              topics: historyData.map((h: any) => h.topic),
+              vocabulary: historyData.flatMap((h: any) => h.key_vocabulary || []).slice(0, 30),
+              activityFormats: historyData[0]?.activity_formats || [],
+              challengeTypes: historyData.map((h: any) => h.challenge_type).filter(Boolean),
+              vocabularyResults: historyData.flatMap((h: any) => h.vocabulary_results || []),
+            };
+            setContentHistory(fetchedHistory);
+          }
+        }
+      } catch { /* proceed without history */ }
+
       try {
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
-          body: { grade: gradeBand || "3-5" },
+          body: { grade: gradeBand || "3-5", contentHistory: fetchedHistory },
         });
         if (error) throw error;
         const anchorData = data as AnchorSentence;
