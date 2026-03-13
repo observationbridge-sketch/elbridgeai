@@ -248,8 +248,8 @@ const StudentSession = () => {
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
 
   const inPart1 = globalStep < 8;
-  const inPart2 = globalStep >= 8 && globalStep < 14;
-  const inPart3 = globalStep >= 14;
+  const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
+  const inPart3 = globalStep >= 8 + part2Count;
 
   // ─── Load student info, anchor sentence, and history on mount ───
   useEffect(() => {
