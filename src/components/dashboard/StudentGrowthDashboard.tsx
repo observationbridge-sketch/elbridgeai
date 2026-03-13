@@ -296,11 +296,11 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
 
         // Current levels from most recent session
         const latest = sessionScores[0] || { reading: 0, writing: 0, speaking: 0, listening: 0 };
-        const currentLevels: Record<string, WidaLevel> = {
-          reading: pctToWida(latest.reading, latestGradeBand),
-          writing: pctToWida(latest.writing, latestGradeBand),
-          speaking: pctToWida(latest.speaking, latestGradeBand),
-          listening: pctToWida(latest.listening, latestGradeBand),
+        const currentLevels: Record<string, ProficiencyLevel> = {
+          reading: pctToProficiency(latest.reading, latestGradeBand),
+          writing: pctToProficiency(latest.writing, latestGradeBand),
+          speaking: pctToProficiency(latest.speaking, latestGradeBand),
+          listening: pctToProficiency(latest.listening, latestGradeBand),
         };
 
         // Strongest & weakest
