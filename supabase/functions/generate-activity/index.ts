@@ -90,7 +90,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this structure:
   "options": ["<4 options for multiple_choice only>"],
   "correctAnswer": "<exact correct answer for MC, sample answer for speaking/writing>",
   "acceptableKeywords": ["<5-8 keywords for flexible grading on speaking/writing>"],
-  "widaLevel": "${widaLevel}",
+  "proficiencyLevel": "${proficiencyLevel}",
   "theme": "${theme}",
   "audioDescription": "<complete mini-story for LISTENING domain, omit for others>"
 }
