@@ -103,6 +103,65 @@ export type Database = {
         }
         Relationships: []
       }
+      student_content_history: {
+        Row: {
+          activity_formats: string[]
+          challenge_type: string | null
+          created_at: string
+          grade_band: string
+          id: string
+          is_baseline: boolean
+          key_vocabulary: string[]
+          session_date: string
+          session_id: string | null
+          student_name: string
+          teacher_id: string
+          theme: string
+          topic: string
+          vocabulary_results: Json
+        }
+        Insert: {
+          activity_formats?: string[]
+          challenge_type?: string | null
+          created_at?: string
+          grade_band?: string
+          id?: string
+          is_baseline?: boolean
+          key_vocabulary?: string[]
+          session_date?: string
+          session_id?: string | null
+          student_name: string
+          teacher_id: string
+          theme: string
+          topic: string
+          vocabulary_results?: Json
+        }
+        Update: {
+          activity_formats?: string[]
+          challenge_type?: string | null
+          created_at?: string
+          grade_band?: string
+          id?: string
+          is_baseline?: boolean
+          key_vocabulary?: string[]
+          session_date?: string
+          session_id?: string | null
+          student_name?: string
+          teacher_id?: string
+          theme?: string
+          topic?: string
+          vocabulary_results?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_content_history_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_points: {
         Row: {
           created_at: string
