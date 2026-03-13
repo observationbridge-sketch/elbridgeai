@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
         totalSessions: sessionIds.length,
         totalStudents: (students || []).length,
         domainScores,
-        widaLevels,
+        proficiencyLevels,
         strategyBreakdown,
         topStudent,
       };
