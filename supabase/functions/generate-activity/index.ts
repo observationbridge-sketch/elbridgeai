@@ -12,8 +12,8 @@ const DOMAIN_ROTATION_8 = [
   "reading", "listening", "speaking", "writing",
 ];
 
-// WIDA progression across 8 questions (gradual increase)
-const WIDA_PROGRESSION_8 = [
+// Proficiency progression across 8 questions (gradual increase)
+const PROFICIENCY_PROGRESSION_8 = [
   "Entering",    // Q1
   "Entering",    // Q2
   "Emerging",    // Q3
