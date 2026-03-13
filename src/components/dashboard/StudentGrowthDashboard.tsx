@@ -632,8 +632,8 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                             fontSize: 12,
                           }}
                           formatter={(value: number, name: string) => {
-                            const wida = WIDA_SCALE.find((s) => s.level === value);
-                            return [`Level ${value} (${wida?.label || ""})`, name];
+                            const entry = PROFICIENCY_SCALE.find((s) => s.level === value);
+                            return [`Level ${value} (${entry?.label || ""})`, name];
                           }}
                         />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
