@@ -30,7 +30,7 @@ const Index = () => {
               <span className="text-gradient">Every Student</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Engage your K-12 students with adaptive activities across Reading, Writing, Speaking, and Listening — aligned to WIDA standards.
+              Engage your Grades 3–5 students with adaptive activities across Reading, Writing, Speaking, and Listening — aligned to Standard ELD Frameworks. <span className="italic text-sm">K–2 and 6–8 rolling out soon!</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button variant="hero" size="xl" onClick={() => navigate("/teacher/auth")}>
