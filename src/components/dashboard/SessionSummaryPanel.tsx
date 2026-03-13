@@ -11,8 +11,8 @@ interface StudentDomainScores {
   speaking: number;
   listening: number;
   overall: number;
-  widaLevel: number;
-  widaLabel: string;
+  proficiencyLevel: number;
+  proficiencyLabel: string;
   gradeBand: string;
   completed: boolean;
 }
