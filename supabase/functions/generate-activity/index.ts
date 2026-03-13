@@ -40,7 +40,7 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert English Language Development activity generator for grades 3-5 ELL students.
 
-Generate ONE activity for the "${actualDomain}" domain at proficiency level "${widaLevel}".
+Generate ONE activity for the "${actualDomain}" domain at proficiency level "${proficiencyLevel}".
 Theme for this question: "${theme}"
 
 ${STRICT_RULES}
