@@ -32,6 +32,8 @@ const TeacherDashboard = () => {
   const [studentCount, setStudentCount] = useState(0);
   const [sessions, setSessions] = useState<any[]>([]);
   const [topStudents, setTopStudents] = useState<StudentOverview[]>([]);
+  const [gradeBand, setGradeBand] = useState<"K-2" | "3-5">("3-5");
+  const [activeGradeBand, setActiveGradeBand] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
