@@ -106,7 +106,7 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
         });
       }
 
-      const completedStudents = new Set<string>();
+      const completedStudents = new Map<string, string>(); // studentId -> gradeBand
 
       for (const r of (responses || [])) {
         const student = studentMap.get(r.student_id);
