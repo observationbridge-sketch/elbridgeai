@@ -546,8 +546,8 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                           }`}
                         >
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{d.slice(0, 4)}</p>
-                          <p className="text-lg font-bold text-foreground">{wida?.level || 0}</p>
-                          <p className="text-[10px] text-muted-foreground">{wida?.label || "N/A"}</p>
+                          <p className="text-lg font-bold text-foreground">{lvl?.level || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">{lvl?.label || "N/A"}</p>
                           <Sparkline
                             data={sparkData.map((s) => pctToProficiency(s[d as keyof SessionDomainScores] as number, s.gradeBand).level)}
                             color={DOMAIN_COLORS[d]}
