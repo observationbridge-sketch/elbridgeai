@@ -504,7 +504,7 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
           const trend = getTrendArrow(student.sessions);
           const filteredSessions = getFilteredSessions(student.sessions);
 
-          // Sparkline data: WIDA levels for last 8 sessions
+          // Sparkline data: proficiency levels for last 8 sessions
           const sparkData = student.sessions.slice(-8);
 
           return (
