@@ -658,7 +658,7 @@ const StudentSession = () => {
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
       const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
-        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType },
+        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory },
       });
       if (error) throw error;
       setPart3Challenge(data as Part3Challenge);
