@@ -391,7 +391,8 @@ const StudentSession = () => {
         wida_level: widaLevel,
         session_part: sessionPart,
         strategy: strategy || null,
-      });
+        grade_band: effectiveGradeBand,
+      } as any);
     } catch { /* non-blocking */ }
   };
 
