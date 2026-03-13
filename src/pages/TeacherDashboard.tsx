@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode, Send } from "lucide-react";
 import EmailSettings from "@/components/dashboard/EmailSettings";
 import SessionSummaryPanel from "@/components/dashboard/SessionSummaryPanel";
+import ContentHistoryPanel from "@/components/dashboard/ContentHistoryPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getAnimalLevel } from "@/components/gamification/constants";
