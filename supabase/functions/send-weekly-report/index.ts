@@ -78,7 +78,7 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
 
 function buildEmailHtml(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
-  const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
+  const proficiencyLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
 
   let bestDomain = "";
   let bestScore = -1;
