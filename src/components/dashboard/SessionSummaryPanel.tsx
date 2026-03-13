@@ -131,7 +131,7 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
         const overall = Math.round((r + w + s + l) / 4);
         const hasData = completedStudents.has(sid);
         const studentGradeBand = completedStudents.get(sid) || "3-5";
-        const wida = estimateWida(overall, studentGradeBand);
+        const proficiency = estimateProficiency(overall, studentGradeBand);
 
         studentScores.push({
           student_name: student.name,
