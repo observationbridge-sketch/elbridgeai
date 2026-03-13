@@ -510,7 +510,7 @@ const StudentSession = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-part2", {
         body: {
-          grade: "3-5",
+          grade: effectiveGradeBand,
           theme: sessionTheme,
           topic: sessionTopic,
           domainScores,
