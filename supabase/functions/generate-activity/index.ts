@@ -5,23 +5,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Part 2: 8 questions, 2 per domain
-// Domain rotation for 8 questions: R, L, S, W, R, L, S, W
+const STRICT_RULES = `
+ABSOLUTE RULES FOR ALL ACTIVITIES:
+- NEVER mention partners, pair work, group work, or classroom peers — this is a solo digital activity
+- NEVER say "look at the picture", "look at the image", "look at the photo", or reference any visual not displayed on screen
+- NEVER ask a speaking question with one specific correct answer — speaking prompts must be open-ended and accept any reasonable response
+- ALWAYS provide all context needed within the activity — never assume outside knowledge
+- NEVER use "partner", "class", or "teacher" in student-facing text
+- ALWAYS frame activities as solo adventures connected to the session theme
+- Before outputting, verify: "Can a student sitting alone on a device complete this with only what is shown on screen?" If not, rewrite.
+`;
+
 const DOMAIN_ROTATION_8 = [
   "reading", "listening", "speaking", "writing",
   "reading", "listening", "speaking", "writing",
 ];
 
-// Proficiency progression across 8 questions (gradual increase)
 const PROFICIENCY_PROGRESSION_8 = [
-  "Entering",    // Q1
-  "Entering",    // Q2
-  "Emerging",    // Q3
-  "Emerging",    // Q4
-  "Developing",  // Q5
-  "Developing",  // Q6
-  "Expanding",   // Q7
-  "Expanding",   // Q8
+  "Entering", "Entering", "Emerging", "Emerging",
+  "Developing", "Developing", "Expanding", "Expanding",
 ];
 
 serve(async (req) => {
@@ -40,6 +42,8 @@ serve(async (req) => {
 
 Generate ONE activity for the "${actualDomain}" domain at proficiency level "${widaLevel}".
 Theme for this question: "${theme}"
+
+${STRICT_RULES}
 
 CRITICAL RULE: Every question MUST be fully self-contained. The student must have ALL information needed to answer within the question itself. Before outputting, verify: "Does this question contain everything the student needs to answer it?"
 

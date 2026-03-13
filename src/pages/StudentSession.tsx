@@ -61,17 +61,18 @@ interface Part2Activity {
   strategy: Strategy;
   weakestDomain: string;
   strategyReason: string;
+  inputType?: string;
+  options?: string[];
+  audioClip?: string;
 }
 
 interface Part3Challenge {
   challengeType: ChallengeType;
   title: string;
   instruction: string;
-  // Story builder
   scenes?: string[];
   sentenceStarter?: string;
   sequenceWords?: string[];
-  // Speed round
   questions?: Array<{
     domain: string;
     passage?: string;
@@ -80,7 +81,6 @@ interface Part3Challenge {
     options: string[];
     correctAnswer: string;
   }>;
-  // Teach it back
   guidingQuestions?: string[];
   vocabularyHints?: string[];
   acceptableKeywords?: string[];
@@ -94,8 +94,8 @@ const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: strin
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-// Part 1 = 5 steps, Part 2 = 6 activities, Part 3 = 1 challenge = 12 total
-const TOTAL_STEPS = 12;
+// Part 1 = 8 steps, Part 2 = 6 activities, Part 3 = 1 challenge = 15 total
+const TOTAL_STEPS = 15;
 
 // ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
@@ -144,9 +144,38 @@ function flexibleGrade(input: string, keywords: string[]): boolean {
   return false;
 }
 
-// Badge lookup helper
 const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
 BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
+
+function generateBlanks(sentence: string, keyWords: string[]): { blanked: string; missingWords: string[] } {
+  const words = sentence.split(/\s+/);
+  const keyLower = keyWords.map(w => w.toLowerCase());
+  const candidates: number[] = [];
+  words.forEach((w, i) => {
+    const clean = w.toLowerCase().replace(/[^a-z']/g, '');
+    if (keyLower.includes(clean) && clean.length > 2) candidates.push(i);
+  });
+  const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+  const count = Math.min(3, Math.max(2, shuffled.length));
+  const picked = shuffled.slice(0, count).sort((a, b) => a - b);
+  const missingWords = picked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
+  const blanked = words.map((w, i) => picked.includes(i) ? '___' : w).join(' ');
+  return { blanked, missingWords };
+}
+
+function jumbleSentence(passage: string): { original: string; jumbled: string[] } {
+  const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const target = sentences[0] || passage;
+  const clean = target.replace(/[.!?]$/, '').trim();
+  const words = clean.split(/\s+/);
+  let shuffled = [...words].sort(() => Math.random() - 0.5);
+  let attempts = 0;
+  while (shuffled.join(' ') === words.join(' ') && attempts < 10) {
+    shuffled = [...words].sort(() => Math.random() - 0.5);
+    attempts++;
+  }
+  return { original: target.trim(), jumbled: shuffled };
+}
 
 // ═══════════════════════════════════════════════
 // Main Component
@@ -173,7 +202,7 @@ const StudentSession = () => {
 
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
-  const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(1);
   const [part1Feedback, setPart1Feedback] = useState<string | null>(null);
   const [part1ShowSentence, setPart1ShowSentence] = useState(true);
   const [part1Answer, setPart1Answer] = useState("");
@@ -209,9 +238,9 @@ const StudentSession = () => {
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
 
-  const inPart1 = globalStep < 5;
-  const inPart2 = globalStep >= 5 && globalStep < 11;
-  const inPart3 = globalStep >= 11;
+  const inPart1 = globalStep < 8;
+  const inPart2 = globalStep >= 8 && globalStep < 14;
+  const inPart3 = globalStep >= 14;
 
   // ─── Load student info, anchor sentence, and history on mount ───
   useEffect(() => {
@@ -220,7 +249,6 @@ const StudentSession = () => {
       setLoadingMessage("Getting your lesson ready... 📚");
       if (!studentId || !sessionId) return;
 
-      // Load student name and teacher ID
       try {
         const { data: studentData } = await supabase
           .from("session_students")
@@ -230,27 +258,21 @@ const StudentSession = () => {
 
         if (studentData) {
           setStudentName(studentData.student_name);
-
           const { data: sessionData } = await supabase
             .from("sessions")
             .select("teacher_id")
             .eq("id", sessionId)
             .single();
-
-          if (sessionData) {
-            setTeacherId(sessionData.teacher_id);
-          }
+          if (sessionData) setTeacherId(sessionData.teacher_id);
         }
       } catch { /* proceed */ }
 
-      // Load anchor
       try {
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
           body: { grade: "3-5" },
         });
         if (error) throw error;
         const anchorData = data as AnchorSentence;
-        // Ensure topic exists
         if (!anchorData.topic) anchorData.topic = anchorData.theme;
         setAnchor(anchorData);
         setSessionTheme(anchorData.theme);
@@ -270,7 +292,6 @@ const StudentSession = () => {
         setTtsPreloaded(true);
       }
 
-      // Load student history for adaptive Part 2
       try {
         const { data: studentData } = await supabase
           .from("session_students")
@@ -314,22 +335,22 @@ const StudentSession = () => {
     init();
   }, [studentId, sessionId]);
 
-  // Load gamification data once we have student info
   useEffect(() => {
     if (studentName && teacherId) {
       gamification.loadData();
     }
   }, [studentName, teacherId]);
 
-  // Auto-play TTS for Step 1 (preloaded)
+  // Auto-play TTS for Step 1 and Step 5 (Listen Again)
   useEffect(() => {
-    if (!loading && inPart1 && part1Step === 1 && anchor && tts.isSupported && ttsPreloaded) {
-      const timer = setTimeout(() => tts.speak(anchor.sentence), 300);
-      return () => clearTimeout(timer);
+    if (!loading && inPart1 && anchor && tts.isSupported && ttsPreloaded) {
+      if (part1Step === 1 || part1Step === 5) {
+        const timer = setTimeout(() => tts.speak(anchor.sentence), 300);
+        return () => clearTimeout(timer);
+      }
     }
   }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
-  // Sync speech transcript
   useEffect(() => {
     if (speech.transcript) {
       if (inPart1) setPart1Answer(speech.transcript);
@@ -369,14 +390,14 @@ const StudentSession = () => {
     setPart1Feedback(null);
     setPart1ShowSentence(true);
 
-    if (part1Step < 5) {
-      setPart1Step((s) => (s + 1) as 1 | 2 | 3 | 4 | 5);
+    if (part1Step < 8) {
+      setPart1Step((s) => (s + 1) as any);
       setGlobalStep((g) => g + 1);
     } else {
       // Part 1 complete → bonus points
       gamification.addPoints(POINTS.PART1_COMPLETE);
       gamification.awardBadge("first_word");
-      setGlobalStep(5);
+      setGlobalStep(8);
       fetchPart2Activity(0);
     }
   };
@@ -408,7 +429,7 @@ const StudentSession = () => {
     saveResponse("speaking", `Repeat: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
-  const handleStep3Submit = () => {
+  const handleStep6WriteSubmit = () => {
     if (!anchor || !part1Answer.trim()) return;
     const { matched, total } = compareWords(part1Answer, anchor.sentence);
     setPart1Scores((s) => ({ ...s, write: matched, writeTotal: total }));
@@ -427,7 +448,7 @@ const StudentSession = () => {
     saveResponse("writing", `Write from memory: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
-  const handleStep4Submit = () => {
+  const handleStep7RecordSubmit = () => {
     if (!anchor || !part1Answer.trim()) return;
     const { matched, total } = compareWords(part1Answer, anchor.sentence);
     setPart1Scores((s) => ({ ...s, record: matched, recordTotal: total }));
@@ -481,19 +502,27 @@ const StudentSession = () => {
         strategy: "sentence_frames",
         weakestDomain: "none",
         strategyReason: "Default strategy",
+        inputType: "typing",
       });
     } finally {
       setLoading(false);
     }
   }, [sessionTheme, sessionTopic, domainScores]);
 
-  const submitPart2 = () => {
-    if (!part2Activity || !part2Answer.trim()) {
+  const submitPart2 = (overrideAnswer?: string) => {
+    const answerText = overrideAnswer || part2Answer;
+    if (!part2Activity || !answerText.trim()) {
       toast.error("Please provide an answer!");
       return;
     }
+    if (overrideAnswer) setPart2Answer(overrideAnswer);
 
-    const correct = flexibleGrade(part2Answer, part2Activity.acceptableKeywords || []);
+    let correct: boolean;
+    if (part2Activity.inputType === "multiple_choice") {
+      correct = answerText === part2Activity.modelAnswer;
+    } else {
+      correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
+    }
     setPart2IsCorrect(correct);
     if (correct) setPart2Score((s) => s + 1);
 
@@ -520,7 +549,7 @@ const StudentSession = () => {
     saveResponse(
       domain,
       part2Activity.question,
-      part2Answer,
+      answerText,
       part2Activity.modelAnswer,
       correct,
       part2Activity.difficulty <= 2 ? "Entering" : part2Activity.difficulty <= 4 ? "Developing" : "Expanding",
@@ -533,14 +562,13 @@ const StudentSession = () => {
     tts.stop();
     const nextIdx = part2Index + 1;
     if (nextIdx >= 6) {
-      // Part 2 complete → transition to Part 3
-      setGlobalStep(11);
+      setGlobalStep(14);
       setPart3ShowIntro(true);
       fetchPart3Challenge();
       return;
     }
     setPart2Index(nextIdx);
-    setGlobalStep(5 + nextIdx);
+    setGlobalStep(8 + nextIdx);
     fetchPart2Activity(nextIdx);
   };
 
@@ -550,11 +578,7 @@ const StudentSession = () => {
     setLoadingMessage("Preparing your Language Challenge! 🎉");
     try {
       const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
-        body: {
-          grade: "3-5",
-          theme: sessionTheme,
-          topic: sessionTopic,
-        },
+        body: { grade: "3-5", theme: sessionTheme, topic: sessionTopic },
       });
       if (error) throw error;
       setPart3Challenge(data as Part3Challenge);
@@ -619,16 +643,7 @@ const StudentSession = () => {
     }
     setPart3SpeedAnswers((a) => [...a, selectedOption]);
 
-    saveResponse(
-      q.domain as string,
-      q.question,
-      selectedOption,
-      q.correctAnswer,
-      isCorrect,
-      "Developing",
-      "part3",
-      "speed_round"
-    );
+    saveResponse(q.domain, q.question, selectedOption, q.correctAnswer, isCorrect, "Developing", "part3", "speed_round");
 
     if (part3SpeedIndex < 4) {
       setPart3SpeedIndex((i) => i + 1);
@@ -705,7 +720,7 @@ const StudentSession = () => {
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-muted rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Language Builder</p>
-                <p className="text-xl font-bold text-primary">5/5</p>
+                <p className="text-xl font-bold text-primary">✓</p>
               </div>
               <div className="bg-muted rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Practice</p>
@@ -722,9 +737,7 @@ const StudentSession = () => {
               <div className="bg-muted/50 rounded-lg p-4 border border-border text-left space-y-2">
                 <div className="flex items-center gap-2">
                   <Target className={`h-4 w-4 ${strategyMeta.color}`} />
-                  <span className="text-sm font-medium text-foreground">
-                    Strategy: {strategyMeta.label}
-                  </span>
+                  <span className="text-sm font-medium text-foreground">Strategy: {strategyMeta.label}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{part2StrategyReason}</p>
               </div>
@@ -736,9 +749,7 @@ const StudentSession = () => {
                 <div className="flex flex-wrap gap-2 justify-center">
                   {gamification.earnedBadgeIds.slice(-5).map((id) => {
                     const badge = BADGES_LOOKUP[id];
-                    return badge ? (
-                      <span key={id} className="text-2xl" title={badge.name}>{badge.icon}</span>
-                    ) : null;
+                    return badge ? <span key={id} className="text-2xl" title={badge.name}>{badge.icon}</span> : null;
                   })}
                 </div>
               </div>
@@ -783,7 +794,7 @@ const StudentSession = () => {
 
   // ─── Progress label ───
   const getProgressLabel = () => {
-    if (inPart1) return `Part 1 • Step ${part1Step}/5`;
+    if (inPart1) return `Part 1 • Step ${part1Step}/8`;
     if (inPart2) return `Part 2 • Activity ${part2Index + 1}/6`;
     return "Part 3 • Challenge";
   };
@@ -812,7 +823,6 @@ const StudentSession = () => {
             </div>
           </div>
         </div>
-        {/* Theme banner */}
         {sessionTopic && (
           <div className="px-4 py-1 bg-primary/5 border-b border-primary/10">
             <p className="text-xs text-center text-primary font-medium">
@@ -820,12 +830,9 @@ const StudentSession = () => {
             </p>
           </div>
         )}
-        {/* Progress bar */}
         <div className="px-4 pb-2 pt-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {getProgressLabel()}
-            </span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{getProgressLabel()}</span>
             <Progress value={((globalStep + 1) / TOTAL_STEPS) * 100} className="flex-1" />
           </div>
         </div>
@@ -852,8 +859,8 @@ const StudentSession = () => {
             part1Scores={part1Scores}
             onStep1Done={handleStep1Done}
             onStep2Submit={handleStep2Submit}
-            onStep3Submit={handleStep3Submit}
-            onStep4Submit={handleStep4Submit}
+            onStep6WriteSubmit={handleStep6WriteSubmit}
+            onStep7RecordSubmit={handleStep7RecordSubmit}
             onNext={handlePart1Next}
           />
         ) : inPart2 && part2Activity ? (
@@ -868,40 +875,37 @@ const StudentSession = () => {
             isCorrect={part2IsCorrect}
             speech={speech}
             tts={tts}
-            onSubmit={submitPart2}
+            onSubmit={() => submitPart2()}
+            onSubmitMC={(option: string) => submitPart2(option)}
             onNext={nextPart2}
           />
-        ) : inPart3 && part3Challenge ? (
+        ) : inPart3 ? (
           part3ShowIntro ? (
-            <Card className="card-shadow border-border">
-              <CardContent className="pt-8 pb-8 text-center space-y-6">
-                <div className="text-6xl">🎉</div>
-                <h2 className="text-2xl font-bold text-foreground">Almost done!</h2>
+            <Card className="card-shadow border-border text-center">
+              <CardContent className="pt-8 pb-8 space-y-6">
+                <Sparkles className="h-16 w-16 text-warning mx-auto" />
+                <h2 className="text-2xl font-bold text-foreground">🎉 Almost done!</h2>
                 <p className="text-lg text-muted-foreground">Time for your Language Challenge!</p>
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                  <p className="font-bold text-primary text-lg">{part3Challenge.title}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{part3Challenge.instruction}</p>
-                </div>
+                <p className="text-sm text-muted-foreground">One fun final activity about <span className="font-bold text-primary">{sessionTopic}</span></p>
                 <Button variant="hero" size="lg" className="w-full" onClick={startPart3}>
-                  Let's Go! <Sparkles className="h-4 w-4 ml-2" />
+                  Let's Go! 🚀
                 </Button>
               </CardContent>
             </Card>
-          ) : part3Submitted ? (
+          ) : part3Submitted && part3Feedback ? (
             <Card className="card-shadow border-border">
-              <CardContent className="pt-8 pb-8 text-center space-y-6">
-                <div className="text-5xl">🏆</div>
-                <h2 className="text-xl font-bold text-foreground">Challenge Complete!</h2>
-                <div className="bg-success/10 border border-success/20 rounded-lg p-4 text-left">
-                  <CheckCircle className="h-5 w-5 text-success mb-2" />
-                  <p className="text-sm text-foreground">{part3Feedback}</p>
+              <CardContent className="pt-8 pb-8 space-y-6">
+                <div className="text-center">
+                  <Trophy className="h-12 w-12 text-warning mx-auto mb-3" />
+                  <h2 className="text-xl font-bold text-foreground">Challenge Complete! 🎉</h2>
                 </div>
-                <Button variant="hero" size="lg" className="w-full" onClick={finishSession}>
+                <FeedbackBanner feedback={part3Feedback} positive={true} />
+                <Button variant="hero" className="w-full" size="lg" onClick={finishSession}>
                   See My Results <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </CardContent>
             </Card>
-          ) : (
+          ) : part3Challenge ? (
             <Part3ChallengeView
               challenge={part3Challenge}
               answer={part3Answer}
@@ -913,11 +917,10 @@ const StudentSession = () => {
               onSubmitSpeedAnswer={submitPart3SpeedAnswer}
               onSubmitTeach={submitPart3TeachItBack}
             />
-          )
+          ) : null
         ) : null}
       </main>
 
-      {/* Gamification overlays */}
       <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
       {gamification.evolutionData && (
         <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
@@ -930,10 +933,10 @@ const StudentSession = () => {
 };
 
 // ═══════════════════════════════════════════════
-// Part 1 — Daily Language Builder
+// Part 1 — Daily Language Builder (8 steps)
 // ═══════════════════════════════════════════════
 interface Part1Props {
-  step: 1 | 2 | 3 | 4 | 5;
+  step: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   anchor: AnchorSentence;
   tts: ReturnType<typeof useTTS>;
   speech: ReturnType<typeof useSpeechRecognition>;
@@ -946,20 +949,62 @@ interface Part1Props {
   part1Scores: Part1Scores;
   onStep1Done: () => void;
   onStep2Submit: () => void;
-  onStep3Submit: () => void;
-  onStep4Submit: () => void;
+  onStep6WriteSubmit: () => void;
+  onStep7RecordSubmit: () => void;
   onNext: () => void;
 }
 
 function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
   part1Submitted, part1Feedback, part1ShowSentence, setPart1ShowSentence,
-  part1Scores, onStep1Done, onStep2Submit, onStep3Submit, onStep4Submit, onNext,
+  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext,
 }: Part1Props) {
-  const stepTitles = [
-    "", "Step 1: Listen 🎧", "Step 2: Repeat 🗣️", "Step 3: Write ✍️",
-    "Step 4: Record 🎤", "Step 5: Your Results 🏆",
-  ];
+  // Local scaffold state
+  const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[] } | null>(null);
+  const [blankAnswers, setBlankAnswers] = useState<string[]>([]);
+  const [blankSubmitted, setBlankSubmitted] = useState(false);
+  const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
+  const [jumbleAnswer, setJumbleAnswer] = useState("");
+  const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
+
+  // Generate blanks when entering step 3
+  useEffect(() => {
+    if (step === 3 && !blanks) {
+      const b = generateBlanks(anchor.sentence, anchor.keyWords);
+      setBlanks(b);
+      setBlankAnswers(new Array(b.missingWords.length).fill(""));
+      setBlankSubmitted(false);
+    }
+  }, [step, anchor]);
+
+  // Generate jumble when entering step 4
+  useEffect(() => {
+    if (step === 4 && !jumble) {
+      const j = jumbleSentence(anchor.sentence);
+      setJumble(j);
+      setJumbleAnswer("");
+      setJumbleSubmitted(false);
+    }
+  }, [step, anchor]);
+
+  const handleBlankSubmit = () => {
+    setBlankSubmitted(true);
+  };
+
+  const handleJumbleSubmit = () => {
+    setJumbleSubmitted(true);
+  };
+
+  const stepTitles: Record<number, string> = {
+    1: "Step 1: Listen 🎧",
+    2: "Step 2: Repeat 🗣️",
+    3: "Step 3: Fill in the Blanks 🔤",
+    4: "Step 4: Jumbled Sentence 🧩",
+    5: "Step 5: Listen One More Time 🎧",
+    6: "Step 6: Write from Memory ✍️",
+    7: "Step 7: Record 🎤",
+    8: "Step 8: Your Results 🏆",
+  };
 
   return (
     <Card className="card-shadow border-border">
@@ -973,6 +1018,7 @@ function Part1View({
       </div>
 
       <CardContent className="pt-4 space-y-6">
+        {/* Step 1: Listen */}
         {step === 1 && (
           <>
             <div className="bg-muted/50 rounded-lg p-6 border border-border text-center space-y-4">
@@ -991,6 +1037,7 @@ function Part1View({
           </>
         )}
 
+        {/* Step 2: Repeat */}
         {step === 2 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
@@ -1013,7 +1060,131 @@ function Part1View({
           </>
         )}
 
-        {step === 3 && (
+        {/* Step 3: Fill in the Blanks */}
+        {step === 3 && blanks && (
+          <>
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
+              <p className="text-sm text-muted-foreground mb-2">Fill in the missing words:</p>
+              <p className="text-foreground font-medium leading-relaxed text-lg">{blanks.blanked}</p>
+            </div>
+            <div className="space-y-3">
+              {blanks.missingWords.map((word, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-muted-foreground w-16">Blank {i + 1}:</span>
+                  {blankSubmitted ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-foreground font-bold">{word}</span>
+                      {blankAnswers[i]?.toLowerCase().trim() === word.toLowerCase() ? (
+                        <CheckCircle className="h-5 w-5 text-success" />
+                      ) : (
+                        <span className="text-sm text-muted-foreground">(you wrote: {blankAnswers[i] || "—"})</span>
+                      )}
+                    </div>
+                  ) : (
+                    <Input
+                      value={blankAnswers[i] || ""}
+                      onChange={(e) => {
+                        const newAnswers = [...blankAnswers];
+                        newAnswers[i] = e.target.value;
+                        setBlankAnswers(newAnswers);
+                      }}
+                      placeholder="Type the missing word..."
+                      className="flex-1 h-10"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            {!blankSubmitted ? (
+              <Button variant="hero" className="w-full" size="lg" onClick={handleBlankSubmit} disabled={blankAnswers.some(a => !a.trim())}>
+                Check My Answers
+              </Button>
+            ) : (
+              <>
+                <FeedbackBanner feedback="Great — you remember the key words! 🌟" positive={true} />
+                <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
+                  Next Step <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Step 4: Jumbled Sentence */}
+        {step === 4 && jumble && (
+          <>
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
+              <p className="text-sm text-muted-foreground mb-2">Put these words back in the correct order:</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {jumble.jumbled.map((word, i) => (
+                  <span key={i} className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full font-medium border border-primary/20">
+                    {word}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Input
+              value={jumbleAnswer}
+              onChange={(e) => setJumbleAnswer(e.target.value)}
+              placeholder="Type the sentence in the correct order..."
+              className="h-12"
+              disabled={jumbleSubmitted}
+            />
+            {!jumbleSubmitted ? (
+              <Button variant="hero" className="w-full" size="lg" onClick={handleJumbleSubmit} disabled={!jumbleAnswer.trim()}>
+                Check My Sentence
+              </Button>
+            ) : (
+              <>
+                {(() => {
+                  const { matched, total } = compareWords(jumbleAnswer, jumble.original);
+                  const pct = total > 0 ? matched / total : 0;
+                  return (
+                    <>
+                      <FeedbackBanner
+                        feedback={pct >= 0.7 ? "Nice work putting it back together! 🧩🌟" : "Good try! Here's the correct sentence: 🧩"}
+                        positive={pct >= 0.7}
+                      />
+                      <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">Correct sentence:</p>
+                        <p className="text-foreground font-medium">{jumble.original}</p>
+                      </div>
+                    </>
+                  );
+                })()}
+                <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
+                  Next Step <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Step 5: Listen One More Time */}
+        {step === 5 && (
+          <>
+            <div className="bg-muted/50 rounded-lg p-6 border border-border text-center space-y-4">
+              <Headphones className="h-10 w-10 text-warning mx-auto" />
+              <p className="text-sm text-muted-foreground">Listen to the passage one more time:</p>
+              <p className="text-lg font-medium text-foreground leading-relaxed">{anchor.sentence}</p>
+              {tts.isSupported && (
+                <Button variant="outline" onClick={() => tts.speak(anchor.sentence)} disabled={tts.isSpeaking} className="gap-2">
+                  <RefreshCw className={`h-4 w-4 ${tts.isSpeaking ? "animate-spin" : ""}`} />
+                  {tts.isSpeaking ? "Playing..." : "Replay"}
+                </Button>
+              )}
+            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              Listen carefully — you'll write this from memory next! 📝
+            </p>
+            <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
+              I'm ready to write ✓ <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </>
+        )}
+
+        {/* Step 6: Write from Memory */}
+        {step === 6 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <div className="flex items-center justify-between mb-2">
@@ -1029,7 +1200,7 @@ function Part1View({
                 <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
               )}
               {!part1Submitted && (
-                <p className="text-muted-foreground text-xs italic">The passage is hidden — write from memory!</p>
+                <p className="text-muted-foreground text-xs italic">The passage is hidden — write from memory! You've got this after all that practice! 💪</p>
               )}
             </div>
             <Textarea
@@ -1040,7 +1211,7 @@ function Part1View({
               disabled={part1Submitted}
             />
             {!part1Submitted ? (
-              <Button variant="hero" className="w-full" size="lg" onClick={onStep3Submit} disabled={!part1Answer.trim()}>
+              <Button variant="hero" className="w-full" size="lg" onClick={onStep6WriteSubmit} disabled={!part1Answer.trim()}>
                 Check My Writing
               </Button>
             ) : (
@@ -1054,7 +1225,8 @@ function Part1View({
           </>
         )}
 
-        {step === 4 && (
+        {/* Step 7: Record */}
+        {step === 7 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <p className="text-sm text-muted-foreground mb-1">Record yourself saying the full passage — your best try!</p>
@@ -1062,7 +1234,7 @@ function Part1View({
             </div>
             <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
             {!part1Submitted ? (
-              <Button variant="hero" className="w-full" size="lg" onClick={onStep4Submit} disabled={!part1Answer.trim()}>
+              <Button variant="hero" className="w-full" size="lg" onClick={onStep7RecordSubmit} disabled={!part1Answer.trim()}>
                 Check My Recording
               </Button>
             ) : (
@@ -1076,14 +1248,15 @@ function Part1View({
           </>
         )}
 
-        {step === 5 && <Step5Summary anchor={anchor} scores={part1Scores} onContinue={onNext} />}
+        {/* Step 8: Results */}
+        {step === 8 && <Step8Summary anchor={anchor} scores={part1Scores} onContinue={onNext} />}
       </CardContent>
     </Card>
   );
 }
 
-// ─── Step 5 Summary Card ───
-function Step5Summary({ anchor, scores, onContinue }: {
+// ─── Step 8 Summary Card ───
+function Step8Summary({ anchor, scores, onContinue }: {
   anchor: AnchorSentence; scores: Part1Scores; onContinue: () => void;
 }) {
   const badge = getBadge(scores);
@@ -1148,7 +1321,7 @@ function Step5Summary({ anchor, scores, onContinue }: {
 }
 
 // ═══════════════════════════════════════════════
-// Part 2 — Strategy-Based Practice (6 activities)
+// Part 2 — Strategy-Based Practice (6 activities with varied input types)
 // ═══════════════════════════════════════════════
 interface Part2Props {
   activity: Part2Activity;
@@ -1162,15 +1335,17 @@ interface Part2Props {
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
   onSubmit: () => void;
+  onSubmitMC: (option: string) => void;
   onNext: () => void;
 }
 
 function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
-  speech, tts, onSubmit, onNext,
+  speech, tts, onSubmit, onSubmitMC, onNext,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
+  const inputType = activity.inputType || "typing";
 
   return (
     <Card className="card-shadow border-border">
@@ -1184,27 +1359,122 @@ function Part2StrategyView({
             {index + 1} of {totalActivities}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Targeting: {strategyMeta.targetDomain}
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">Targeting: {strategyMeta.targetDomain}</p>
       </div>
 
       <CardContent className="pt-4 space-y-6">
-        {activity.strategy === "sentence_frames" && (
-          <SentenceFrameActivity activity={activity} answer={answer} setAnswer={setAnswer} submitted={submitted} />
-        )}
-        {activity.strategy === "sentence_expansion" && (
-          <SentenceExpansionActivity activity={activity} answer={answer} setAnswer={setAnswer} submitted={submitted} speech={speech} />
-        )}
-        {activity.strategy === "quick_writes" && (
-          <QuickWriteActivity activity={activity} answer={answer} setAnswer={setAnswer} submitted={submitted} />
+        {/* Passage (if present) */}
+        {activity.passage && (
+          <div className="bg-muted/50 rounded-lg p-4 border border-border">
+            <p className="text-xs text-muted-foreground mb-1">📖 Read this passage:</p>
+            <p className="text-foreground leading-relaxed">{activity.passage}</p>
+          </div>
         )}
 
-        {!submitted ? (
-          <Button variant="hero" className="w-full" size="lg" onClick={onSubmit} disabled={!answer.trim()}>
-            Submit Answer
-          </Button>
-        ) : (
+        {/* Audio clip (for listen_then_type) */}
+        {inputType === "listen_then_type" && activity.audioClip && (
+          <div className="bg-warning/5 rounded-lg p-4 border border-warning/20 text-center space-y-3">
+            <Headphones className="h-8 w-8 text-warning mx-auto" />
+            <p className="text-foreground leading-relaxed">{activity.audioClip}</p>
+            {tts.isSupported && (
+              <Button variant="outline" size="sm" onClick={() => tts.speak(activity.audioClip || "")}>
+                <Volume2 className="h-4 w-4 mr-1" /> Play Audio
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Base sentence for expansion */}
+        {activity.baseSentence && (
+          <div className="bg-success/5 rounded-lg p-4 border border-success/20 text-center space-y-2">
+            <Zap className="h-6 w-6 text-success mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              {inputType === "recording" ? "Say this sentence out loud:" : "Build on this sentence:"}
+            </p>
+            <p className="text-lg font-bold text-foreground">{activity.baseSentence}</p>
+            {activity.expansionHint && (
+              <p className="text-sm text-accent font-medium">➕ Add: {activity.expansionHint}</p>
+            )}
+          </div>
+        )}
+
+        {/* Question */}
+        <h3 className="text-lg font-medium text-foreground">{activity.question}</h3>
+
+        {/* Sentence frame */}
+        {activity.sentenceFrame && inputType !== "multiple_choice" && (
+          <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
+            <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
+            <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
+          </div>
+        )}
+
+        {/* Sentence starter */}
+        {activity.sentenceStarter && (
+          <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
+            <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
+            <p className="text-foreground font-medium italic">{activity.sentenceStarter}</p>
+          </div>
+        )}
+
+        {/* Word bank */}
+        {activity.wordBank && activity.wordBank.length > 0 && (
+          <div className="bg-muted/50 rounded-lg p-3 border border-border">
+            <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
+            <div className="flex flex-wrap gap-2">
+              {activity.wordBank.map((word, i) => (
+                <span key={i} className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full font-medium">{word}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input area based on inputType */}
+        {!submitted && (
+          <>
+            {inputType === "multiple_choice" && activity.options ? (
+              <div className="grid grid-cols-1 gap-3">
+                {activity.options.map((option, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    className="justify-start text-left h-auto py-3 px-4 text-foreground hover:bg-primary/10 hover:border-primary/30"
+                    onClick={() => onSubmitMC(option)}
+                  >
+                    <span className="font-bold text-primary mr-2">{String.fromCharCode(65 + i)}.</span>
+                    {option}
+                  </Button>
+                ))}
+              </div>
+            ) : inputType === "recording" ? (
+              <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} />
+            ) : inputType === "record_then_type" ? (
+              <div className="space-y-4">
+                <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer here..." className="min-h-[100px]" disabled={submitted} />
+                <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} />
+                <p className="text-xs text-muted-foreground">✍️ Type your answer, then 🎤 record yourself saying it!</p>
+              </div>
+            ) : inputType === "listen_then_type" ? (
+              <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer..." className="h-12" disabled={submitted} />
+            ) : activity.strategy === "quick_writes" ? (
+              <div>
+                <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Write your answer here..." className="min-h-[120px]" disabled={submitted} />
+                <p className="text-xs text-muted-foreground mt-2">⏱️ Most students finish in about 2 minutes! Write at least 2-3 sentences.</p>
+              </div>
+            ) : (
+              <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer..." className="h-12" disabled={submitted} />
+            )}
+
+            {inputType !== "multiple_choice" && (
+              <Button variant="hero" className="w-full" size="lg" onClick={onSubmit} disabled={!answer.trim()}>
+                Submit Answer
+              </Button>
+            )}
+          </>
+        )}
+
+        {/* Feedback */}
+        {submitted && (
           <div className="space-y-4">
             <div className={`rounded-lg p-4 flex items-start gap-3 ${
               isCorrect ? "bg-success/10 border border-success/20" : "bg-primary/10 border border-primary/20"
@@ -1225,82 +1495,6 @@ function Part2StrategyView({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-// ─── Sentence Frames Activity ───
-function SentenceFrameActivity({ activity, answer, setAnswer, submitted }: {
-  activity: Part2Activity; answer: string; setAnswer: (v: string) => void; submitted: boolean;
-}) {
-  return (
-    <>
-      {activity.passage && (
-        <div className="bg-muted/50 rounded-lg p-4 border border-border">
-          <p className="text-xs text-muted-foreground mb-1">📖 Read this passage:</p>
-          <p className="text-foreground leading-relaxed">{activity.passage}</p>
-        </div>
-      )}
-      <h3 className="text-lg font-medium text-foreground">{activity.question}</h3>
-      {activity.sentenceFrame && (
-        <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
-          <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
-          <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
-        </div>
-      )}
-      <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Complete the sentence..." className="h-12" disabled={submitted} />
-    </>
-  );
-}
-
-// ─── Sentence Expansion Activity ───
-function SentenceExpansionActivity({ activity, answer, setAnswer, submitted, speech }: {
-  activity: Part2Activity; answer: string; setAnswer: (v: string) => void; submitted: boolean;
-  speech: ReturnType<typeof useSpeechRecognition>;
-}) {
-  return (
-    <>
-      <div className="bg-success/5 rounded-lg p-4 border border-success/20 text-center space-y-2">
-        <Zap className="h-6 w-6 text-success mx-auto" />
-        <p className="text-sm text-muted-foreground">Say this sentence out loud:</p>
-        <p className="text-lg font-bold text-foreground">{activity.baseSentence}</p>
-        {activity.expansionHint && (
-          <p className="text-sm text-accent font-medium">➕ Add: {activity.expansionHint}</p>
-        )}
-      </div>
-      <h3 className="text-base font-medium text-foreground">{activity.question}</h3>
-      <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} />
-    </>
-  );
-}
-
-// ─── Quick Write Activity ───
-function QuickWriteActivity({ activity, answer, setAnswer, submitted }: {
-  activity: Part2Activity; answer: string; setAnswer: (v: string) => void; submitted: boolean;
-}) {
-  return (
-    <>
-      <h3 className="text-lg font-medium text-foreground">{activity.question}</h3>
-      {activity.sentenceStarter && (
-        <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
-          <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
-          <p className="text-foreground font-medium italic">{activity.sentenceStarter}</p>
-        </div>
-      )}
-      {activity.wordBank && activity.wordBank.length > 0 && (
-        <div className="bg-muted/50 rounded-lg p-3 border border-border">
-          <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
-          <div className="flex flex-wrap gap-2">
-            {activity.wordBank.map((word, i) => (
-              <span key={i} className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full font-medium">{word}</span>
-            ))}
-          </div>
-        </div>
-      )}
-      <div>
-        <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Write your answer here..." className="min-h-[120px]" disabled={submitted} />
-        <p className="text-xs text-muted-foreground mt-2">⏱️ Most students finish in about 2 minutes! Write at least 2-3 sentences.</p>
-      </div>
-    </>
   );
 }
 
