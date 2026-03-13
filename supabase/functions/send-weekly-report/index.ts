@@ -296,17 +296,21 @@ Deno.serve(async (req) => {
       // Get responses
       const { data: responses } = await supabase
         .from("student_responses")
-        .select("domain, is_correct, wida_level")
+        .select("domain, is_correct, wida_level, strategy")
         .in("session_id", sessionIds);
 
       const domainScores: Record<string, { correct: number; total: number }> = {};
       const widaLevels: Record<string, number> = {};
+      const strategyBreakdown: Record<string, number> = {};
 
       (responses || []).forEach((r: any) => {
         if (!domainScores[r.domain]) domainScores[r.domain] = { correct: 0, total: 0 };
         domainScores[r.domain].total++;
         if (r.is_correct) domainScores[r.domain].correct++;
         widaLevels[r.wida_level] = (widaLevels[r.wida_level] || 0) + 1;
+        if (r.strategy) {
+          strategyBreakdown[r.strategy] = (strategyBreakdown[r.strategy] || 0) + 1;
+        }
       });
 
       const report: TeacherReport = {
@@ -317,6 +321,7 @@ Deno.serve(async (req) => {
         totalStudents: (students || []).length,
         domainScores,
         widaLevels,
+        strategyBreakdown,
       };
 
       const html = buildEmailHtml(report, label);
