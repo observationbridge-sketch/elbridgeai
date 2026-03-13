@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Brain, BookOpen, PenTool, Mic, MicOff, Headphones, CheckCircle,
   ArrowRight, Loader2, Star, Volume2, Trophy, Flame, RefreshCw,
-  Eye, EyeOff, Target, Zap, Award, Users,
+  Eye, EyeOff, Target, Zap, Award, Users, Clock, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,14 +21,16 @@ import { EvolutionCelebration } from "@/components/gamification/EvolutionCelebra
 import { BadgePopup } from "@/components/gamification/BadgePopup";
 import { BadgeCollection } from "@/components/gamification/BadgeCollection";
 import { Leaderboard } from "@/components/gamification/Leaderboard";
-import { POINTS } from "@/components/gamification/constants";
+import { POINTS, BADGES } from "@/components/gamification/constants";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
+type ChallengeType = "story_builder" | "speed_round" | "teach_it_back";
 
 interface AnchorSentence {
   sentence: string;
   theme: string;
+  topic: string;
   category: string;
   keyWords: string[];
 }
@@ -61,13 +63,39 @@ interface Part2Activity {
   strategyReason: string;
 }
 
+interface Part3Challenge {
+  challengeType: ChallengeType;
+  title: string;
+  instruction: string;
+  // Story builder
+  scenes?: string[];
+  sentenceStarter?: string;
+  sequenceWords?: string[];
+  // Speed round
+  questions?: Array<{
+    domain: string;
+    passage?: string;
+    audioDescription?: string;
+    question: string;
+    options: string[];
+    correctAnswer: string;
+  }>;
+  // Teach it back
+  guidingQuestions?: string[];
+  vocabularyHints?: string[];
+  acceptableKeywords?: string[];
+  theme: string;
+  topic: string;
+}
+
 const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: string; targetDomain: string }> = {
   sentence_frames: { label: "Sentence Frames", icon: BookOpen, color: "text-primary", targetDomain: "Reading & Listening" },
   sentence_expansion: { label: "Sentence Expansion", icon: Mic, color: "text-success", targetDomain: "Speaking" },
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-const TOTAL_STEPS = 8;
+// Part 1 = 5 steps, Part 2 = 6 activities, Part 3 = 1 challenge = 12 total
+const TOTAL_STEPS = 12;
 
 // ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
@@ -116,6 +144,10 @@ function flexibleGrade(input: string, keywords: string[]): boolean {
   return false;
 }
 
+// Badge lookup helper
+const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
+BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
+
 // ═══════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════
@@ -127,10 +159,13 @@ const StudentSession = () => {
 
   // Session state
   const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Getting your lesson ready...");
   const [globalStep, setGlobalStep] = useState(0);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const [sessionTheme, setSessionTheme] = useState("");
+  const [sessionTopic, setSessionTopic] = useState("");
 
   // Gamification
   const gamification = useGamification(studentName, teacherId);
@@ -148,6 +183,7 @@ const StudentSession = () => {
   });
   const [hasSpoken, setHasSpoken] = useState(false);
   const [hasWritten, setHasWritten] = useState(false);
+  const [ttsPreloaded, setTtsPreloaded] = useState(false);
 
   // Part 2 state
   const [part2Activity, setPart2Activity] = useState<Part2Activity | null>(null);
@@ -161,13 +197,27 @@ const StudentSession = () => {
   const [part2StrategyReason, setPart2StrategyReason] = useState("");
   const [domainScores, setDomainScores] = useState<Record<string, number> | null>(null);
 
+  // Part 3 state
+  const [part3Challenge, setPart3Challenge] = useState<Part3Challenge | null>(null);
+  const [part3ShowIntro, setPart3ShowIntro] = useState(true);
+  const [part3Answer, setPart3Answer] = useState("");
+  const [part3Submitted, setPart3Submitted] = useState(false);
+  const [part3Feedback, setPart3Feedback] = useState<string | null>(null);
+  const [part3SpeedIndex, setPart3SpeedIndex] = useState(0);
+  const [part3SpeedScore, setPart3SpeedScore] = useState(0);
+  const [part3SpeedAnswers, setPart3SpeedAnswers] = useState<string[]>([]);
+  const [part3StartTime, setPart3StartTime] = useState<number>(0);
+  const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
+
   const inPart1 = globalStep < 5;
-  const inPart2 = globalStep >= 5 && globalStep < 8;
+  const inPart2 = globalStep >= 5 && globalStep < 11;
+  const inPart3 = globalStep >= 11;
 
   // ─── Load student info, anchor sentence, and history on mount ───
   useEffect(() => {
     const init = async () => {
       setLoading(true);
+      setLoadingMessage("Getting your lesson ready... 📚");
       if (!studentId || !sessionId) return;
 
       // Load student name and teacher ID
@@ -181,7 +231,6 @@ const StudentSession = () => {
         if (studentData) {
           setStudentName(studentData.student_name);
 
-          // Get teacher_id from session
           const { data: sessionData } = await supabase
             .from("sessions")
             .select("teacher_id")
@@ -200,14 +249,25 @@ const StudentSession = () => {
           body: { grade: "3-5" },
         });
         if (error) throw error;
-        setAnchor(data as AnchorSentence);
+        const anchorData = data as AnchorSentence;
+        // Ensure topic exists
+        if (!anchorData.topic) anchorData.topic = anchorData.theme;
+        setAnchor(anchorData);
+        setSessionTheme(anchorData.theme);
+        setSessionTopic(anchorData.topic);
+        setTtsPreloaded(true);
       } catch {
-        setAnchor({
-          sentence: "The brave explorer climbed the mountain to discover what was hiding behind the clouds.",
-          theme: "Nature & animals",
+        const fallback: AnchorSentence = {
+          sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
+          theme: "Ancient Egypt",
+          topic: "The building of the ancient pyramids",
           category: "Descriptive language models",
-          keyWords: ["brave", "explorer", "climbed", "mountain", "discover", "hiding", "clouds"],
-        });
+          keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
+        };
+        setAnchor(fallback);
+        setSessionTheme(fallback.theme);
+        setSessionTopic(fallback.topic);
+        setTtsPreloaded(true);
       }
 
       // Load student history for adaptive Part 2
@@ -261,21 +321,22 @@ const StudentSession = () => {
     }
   }, [studentName, teacherId]);
 
-  // Auto-play TTS for Step 1
+  // Auto-play TTS for Step 1 (preloaded)
   useEffect(() => {
-    if (!loading && inPart1 && part1Step === 1 && anchor && tts.isSupported) {
-      const timer = setTimeout(() => tts.speak(anchor.sentence), 600);
+    if (!loading && inPart1 && part1Step === 1 && anchor && tts.isSupported && ttsPreloaded) {
+      const timer = setTimeout(() => tts.speak(anchor.sentence), 300);
       return () => clearTimeout(timer);
     }
-  }, [loading, inPart1, part1Step, anchor]);
+  }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
   // Sync speech transcript
   useEffect(() => {
     if (speech.transcript) {
       if (inPart1) setPart1Answer(speech.transcript);
-      else setPart2Answer(speech.transcript);
+      else if (inPart2) setPart2Answer(speech.transcript);
+      else if (inPart3) setPart3Answer(speech.transcript);
     }
-  }, [speech.transcript, inPart1]);
+  }, [speech.transcript, inPart1, inPart2, inPart3]);
 
   // ─── Save response helper ───
   const saveResponse = async (
@@ -314,10 +375,7 @@ const StudentSession = () => {
     } else {
       // Part 1 complete → bonus points
       gamification.addPoints(POINTS.PART1_COMPLETE);
-
-      // Award "First Word" badge
       gamification.awardBadge("first_word");
-
       setGlobalStep(5);
       fetchPart2Activity(0);
     }
@@ -326,7 +384,7 @@ const StudentSession = () => {
   const handleStep1Done = () => {
     setPart1Scores((s) => ({ ...s, listen: true }));
     gamification.addPoints(POINTS.STEP1_LISTEN);
-    saveResponse("listening", "Listened to anchor sentence", "heard", anchor?.sentence || "", true, "Entering", "part1");
+    saveResponse("listening", "Listened to anchor passage", "heard", anchor?.sentence || "", true, "Entering", "part1");
     handlePart1Next();
   };
 
@@ -338,8 +396,8 @@ const StudentSession = () => {
     const feedback = pct >= 0.8
       ? "Great job! You said it really well! 🌟"
       : pct >= 0.5
-        ? `Nice try! You got ${matched} out of ${total} words. Here's the sentence again: "${anchor.sentence}"`
-        : `Good effort! You got ${matched} out of ${total} words. Here's the sentence again: "${anchor.sentence}"`;
+        ? `Nice try! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`
+        : `Good effort! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
     gamification.addPoints(POINTS.STEP2_REPEAT);
@@ -375,7 +433,7 @@ const StudentSession = () => {
     setPart1Scores((s) => ({ ...s, record: matched, recordTotal: total }));
     const pct = total > 0 ? matched / total : 0;
     const feedback = pct >= 0.9
-      ? `Perfect sentence! You used ${matched} out of ${total} words! 🎤🏆`
+      ? `Perfect! You used ${matched} out of ${total} words! 🎤🏆`
       : pct >= 0.7
         ? `You used ${matched} out of ${total} words — great effort! 🎤🌟`
         : `You used ${matched} out of ${total} words — keep practicing! 🎤💪`;
@@ -388,6 +446,7 @@ const StudentSession = () => {
   // ─── Part 2 handlers ───
   const fetchPart2Activity = useCallback(async (index: number) => {
     setLoading(true);
+    setLoadingMessage("Getting your next activity ready...");
     setPart2Submitted(false);
     setPart2Feedback(null);
     setPart2Answer("");
@@ -398,7 +457,8 @@ const StudentSession = () => {
       const { data, error } = await supabase.functions.invoke("generate-part2", {
         body: {
           grade: "3-5",
-          theme: anchor?.theme,
+          theme: sessionTheme,
+          topic: sessionTopic,
           domainScores,
           questionIndex: index,
         },
@@ -412,12 +472,12 @@ const StudentSession = () => {
       toast.error("Failed to load activity. Using backup.");
       setPart2Activity({
         type: "sentence_frame",
-        question: "Complete this sentence: The forest was ___ because ___.",
-        sentenceFrame: "The forest was ___ because ___.",
-        modelAnswer: "The forest was quiet because all the animals were sleeping.",
-        acceptableKeywords: ["forest", "quiet", "animals", "sleeping", "dark", "peaceful"],
+        question: `Complete this sentence about ${sessionTopic}: The ___ was ___ because ___.`,
+        sentenceFrame: "The ___ was ___ because ___.",
+        modelAnswer: `The ${sessionTopic} was fascinating because it taught us so much.`,
+        acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic", "because", "was"],
         difficulty: index + 1,
-        theme: anchor?.theme || "Nature",
+        theme: sessionTheme,
         strategy: "sentence_frames",
         weakestDomain: "none",
         strategyReason: "Default strategy",
@@ -425,7 +485,7 @@ const StudentSession = () => {
     } finally {
       setLoading(false);
     }
-  }, [anchor, domainScores]);
+  }, [sessionTheme, sessionTopic, domainScores]);
 
   const submitPart2 = () => {
     if (!part2Activity || !part2Answer.trim()) {
@@ -439,7 +499,7 @@ const StudentSession = () => {
 
     let feedback: string;
     if (correct) {
-      const msgs = ["Excellent work! 🌟", "Great job — you nailed it! ✨", "Wonderful response! Keep it up! 🎉"];
+      const msgs = ["Excellent work! 🌟", "Great job — you nailed it! ✨", "Wonderful response! Keep it up! 🎉", "Amazing! 🏆", "You're doing great! 💪", "Fantastic answer! 🌈"];
       feedback = msgs[part2Index % msgs.length];
     } else {
       feedback = "Good effort! Here's a model answer to compare:";
@@ -448,7 +508,6 @@ const StudentSession = () => {
     setPart2Submitted(true);
     tts.stop();
 
-    // Points for Part 2 activity
     gamification.addPoints(POINTS.PART2_ACTIVITY);
 
     const domainMap: Record<string, string> = {
@@ -464,7 +523,7 @@ const StudentSession = () => {
       part2Answer,
       part2Activity.modelAnswer,
       correct,
-      part2Activity.difficulty <= 1 ? "Entering" : part2Activity.difficulty <= 2 ? "Developing" : "Expanding",
+      part2Activity.difficulty <= 2 ? "Entering" : part2Activity.difficulty <= 4 ? "Developing" : "Expanding",
       "part2",
       part2Activity.strategy
     );
@@ -473,27 +532,146 @@ const StudentSession = () => {
   const nextPart2 = () => {
     tts.stop();
     const nextIdx = part2Index + 1;
-    if (nextIdx >= 3) {
-      // Session complete
-      gamification.addPoints(POINTS.SESSION_COMPLETE);
-      gamification.completeSession();
-
-      // Check domain 80% bonus
-      if (domainScores) {
-        for (const [, pct] of Object.entries(domainScores)) {
-          if (pct >= 80) {
-            gamification.addPoints(POINTS.DOMAIN_80_BONUS);
-            break;
-          }
-        }
-      }
-
-      setSessionEnded(true);
+    if (nextIdx >= 6) {
+      // Part 2 complete → transition to Part 3
+      setGlobalStep(11);
+      setPart3ShowIntro(true);
+      fetchPart3Challenge();
       return;
     }
     setPart2Index(nextIdx);
     setGlobalStep(5 + nextIdx);
     fetchPart2Activity(nextIdx);
+  };
+
+  // ─── Part 3 handlers ───
+  const fetchPart3Challenge = useCallback(async () => {
+    setLoading(true);
+    setLoadingMessage("Preparing your Language Challenge! 🎉");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
+        body: {
+          grade: "3-5",
+          theme: sessionTheme,
+          topic: sessionTopic,
+        },
+      });
+      if (error) throw error;
+      setPart3Challenge(data as Part3Challenge);
+    } catch {
+      toast.error("Failed to load challenge. Using backup.");
+      setPart3Challenge({
+        challengeType: "story_builder",
+        title: "Story Builder",
+        instruction: `Write a 4-6 sentence mini story about ${sessionTopic}!`,
+        scenes: [
+          `A bright morning in a place connected to ${sessionTopic}.`,
+          `Something surprising happens related to ${sessionTopic}.`,
+          `A character tries to solve a problem about ${sessionTopic}.`,
+          `Everything works out and the character learns something new.`,
+        ],
+        sentenceStarter: "It all began when...",
+        sequenceWords: ["first", "then", "next", "finally"],
+        acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic"],
+        theme: sessionTheme,
+        topic: sessionTopic,
+      });
+    } finally {
+      setLoading(false);
+      setPart3StartTime(Date.now());
+    }
+  }, [sessionTheme, sessionTopic]);
+
+  const startPart3 = () => {
+    setPart3ShowIntro(false);
+    setPart3StartTime(Date.now());
+  };
+
+  const submitPart3StoryBuilder = () => {
+    if (!part3Challenge || !part3Answer.trim()) {
+      toast.error("Please write your story!");
+      return;
+    }
+    const norm = part3Answer.toLowerCase();
+    const seqWords = part3Challenge.sequenceWords || ["first", "then", "next", "finally"];
+    const usedSeqWords = seqWords.filter((w) => norm.includes(w));
+    const hasSequence = usedSeqWords.length >= 2;
+
+    gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE);
+    if (hasSequence) gamification.addPoints(POINTS.CHALLENGE_STORY_SEQUENCE_BONUS);
+
+    const feedback = hasSequence
+      ? `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`
+      : `Great story! Try using words like "first, then, next, finally" to make it even better! 📝 +${POINTS.CHALLENGE_STORY_COMPLETE} points!`;
+    setPart3Feedback(feedback);
+    setPart3Submitted(true);
+    setChallengeCompleted("Story Builder");
+    saveResponse("writing", "Part 3: Story Builder", part3Answer, part3Challenge.instruction, true, "Developing", "part3", "story_builder");
+  };
+
+  const submitPart3SpeedAnswer = (selectedOption: string) => {
+    if (!part3Challenge?.questions) return;
+    const q = part3Challenge.questions[part3SpeedIndex];
+    const isCorrect = selectedOption === q.correctAnswer;
+    if (isCorrect) {
+      setPart3SpeedScore((s) => s + 1);
+      gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT);
+    }
+    setPart3SpeedAnswers((a) => [...a, selectedOption]);
+
+    saveResponse(
+      q.domain as string,
+      q.question,
+      selectedOption,
+      q.correctAnswer,
+      isCorrect,
+      "Developing",
+      "part3",
+      "speed_round"
+    );
+
+    if (part3SpeedIndex < 4) {
+      setPart3SpeedIndex((i) => i + 1);
+    } else {
+      const elapsed = Math.round((Date.now() - part3StartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${part3SpeedScore + (isCorrect ? 1 : 0)}/5 🏎️`);
+      setPart3Submitted(true);
+      setChallengeCompleted("Speed Round");
+    }
+  };
+
+  const submitPart3TeachItBack = () => {
+    if (!part3Answer.trim()) {
+      toast.error("Please record your explanation!");
+      return;
+    }
+    gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE);
+    const keywords = part3Challenge?.acceptableKeywords || [];
+    const norm = part3Answer.toLowerCase();
+    const usedWords = keywords.filter((kw) => norm.includes(kw.toLowerCase())).slice(0, 3);
+    const feedback = usedWords.length > 0
+      ? `Amazing! You explained ${sessionTopic} really well. You used these great words: ${usedWords.join(", ")}! 🎤🌟 +${POINTS.CHALLENGE_TEACH_COMPLETE} points!`
+      : `Great job explaining ${sessionTopic}! Keep using topic vocabulary to make your explanations even stronger! 🎤 +${POINTS.CHALLENGE_TEACH_COMPLETE} points!`;
+    setPart3Feedback(feedback);
+    setPart3Submitted(true);
+    setChallengeCompleted("Teach It Back");
+    saveResponse("speaking", "Part 3: Teach It Back", part3Answer, sessionTopic, true, "Expanding", "part3", "teach_it_back");
+  };
+
+  const finishSession = () => {
+    gamification.addPoints(POINTS.SESSION_COMPLETE);
+    gamification.completeSession();
+    if (domainScores) {
+      for (const [, pct] of Object.entries(domainScores)) {
+        if (pct >= 80) {
+          gamification.addPoints(POINTS.DOMAIN_80_BONUS);
+          break;
+        }
+      }
+    }
+    setSessionEnded(true);
   };
 
   // ─── Badge/Leaderboard screens ───
@@ -511,29 +689,32 @@ const StudentSession = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md card-shadow text-center">
           <CardContent className="pt-8 pb-8 space-y-6">
-            {/* Animal companion */}
             <AnimalCompanion points={gamification.totalPoints} studentName={studentName} />
 
             <h2 className="text-2xl font-bold text-foreground">Amazing Work! 🎉</h2>
-            <p className="text-lg text-muted-foreground">You completed today's session!</p>
+            <p className="text-lg text-muted-foreground">
+              Great work today, {studentName}! You explored <span className="font-bold text-primary">{sessionTopic}</span> like a true language learner! 🌟
+            </p>
 
-            {/* Points earned */}
             <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
               <p className="text-sm text-muted-foreground">Points earned today</p>
               <p className="text-3xl font-bold text-warning">+{gamification.sessionPoints} ⭐</p>
               <p className="text-sm text-muted-foreground">Total: {gamification.totalPoints} points</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-muted rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">Language Builder</p>
-                <p className="text-2xl font-bold text-primary">5/5</p>
-                <p className="text-xs text-muted-foreground">steps completed</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-muted rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Language Builder</p>
+                <p className="text-xl font-bold text-primary">5/5</p>
               </div>
-              <div className="bg-muted rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">Practice</p>
-                <p className="text-2xl font-bold text-accent">{part2Score}/3</p>
-                <p className="text-xs text-muted-foreground">correct answers</p>
+              <div className="bg-muted rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Practice</p>
+                <p className="text-xl font-bold text-accent">{part2Score}/6</p>
+              </div>
+              <div className="bg-muted rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">Challenge</p>
+                <p className="text-xl font-bold text-success">✓</p>
+                <p className="text-xs text-muted-foreground">{challengeCompleted}</p>
               </div>
             </div>
 
@@ -549,7 +730,6 @@ const StudentSession = () => {
               </div>
             )}
 
-            {/* New badges */}
             {gamification.earnedBadgeIds.length > 0 && (
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
                 <p className="text-sm font-medium text-primary mb-2">🎖️ Your badges:</p>
@@ -567,9 +747,9 @@ const StudentSession = () => {
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-left">
               <p className="text-sm font-medium text-primary mb-1">💡 Growth Tip:</p>
               <p className="text-sm text-foreground">
-                {part2Score >= 3
+                {part2Score >= 5
                   ? "You're doing amazing! Try reading a short book or story tonight to keep building your skills."
-                  : part2Score >= 2
+                  : part2Score >= 3
                     ? "Great progress! Practice writing 2-3 sentences about your day before bed."
                     : "Every practice session makes you stronger! Try saying new English words out loud when you hear them."}
               </p>
@@ -590,27 +770,23 @@ const StudentSession = () => {
           </CardContent>
         </Card>
 
-        {/* Gamification popups */}
         <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
         {gamification.evolutionData && (
-          <EvolutionCelebration
-            show={true}
-            animalEmoji={gamification.evolutionData.emoji}
-            animalName={gamification.evolutionData.name}
-            onClose={() => gamification.setEvolutionData(null)}
-          />
+          <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
         )}
         {gamification.pendingBadge && (
-          <BadgePopup
-            show={true}
-            badgeIcon={gamification.pendingBadge.icon}
-            badgeName={gamification.pendingBadge.name}
-            onClose={() => gamification.setPendingBadge(null)}
-          />
+          <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
         )}
       </div>
     );
   }
+
+  // ─── Progress label ───
+  const getProgressLabel = () => {
+    if (inPart1) return `Part 1 • Step ${part1Step}/5`;
+    if (inPart2) return `Part 2 • Activity ${part2Index + 1}/6`;
+    return "Part 3 • Challenge";
+  };
 
   // ─── Main render ───
   return (
@@ -623,7 +799,6 @@ const StudentSession = () => {
             <span className="font-bold text-foreground">ElbridgeAI</span>
           </div>
           <div className="flex items-center gap-3">
-            {/* Animal companion compact */}
             {gamification.loaded && (
               <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact />
             )}
@@ -637,11 +812,19 @@ const StudentSession = () => {
             </div>
           </div>
         </div>
+        {/* Theme banner */}
+        {sessionTopic && (
+          <div className="px-4 py-1 bg-primary/5 border-b border-primary/10">
+            <p className="text-xs text-center text-primary font-medium">
+              📚 Today's Topic: <span className="font-bold">{sessionTopic}</span>
+            </p>
+          </div>
+        )}
         {/* Progress bar */}
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-2 pt-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {inPart1 ? `Part 1 • Step ${part1Step}/5` : `Part 2 • ${part2Index + 1}/3`}
+              {getProgressLabel()}
             </span>
             <Progress value={((globalStep + 1) / TOTAL_STEPS) * 100} className="flex-1" />
           </div>
@@ -652,9 +835,7 @@ const StudentSession = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
             <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-muted-foreground">
-              {inPart1 ? "Preparing your Daily Language Builder..." : "Getting your next activity ready..."}
-            </p>
+            <p className="text-muted-foreground">{loadingMessage}</p>
           </div>
         ) : inPart1 && anchor ? (
           <Part1View
@@ -679,6 +860,7 @@ const StudentSession = () => {
           <Part2StrategyView
             activity={part2Activity}
             index={part2Index}
+            totalActivities={6}
             answer={part2Answer}
             setAnswer={setPart2Answer}
             submitted={part2Submitted}
@@ -689,35 +871,63 @@ const StudentSession = () => {
             onSubmit={submitPart2}
             onNext={nextPart2}
           />
+        ) : inPart3 && part3Challenge ? (
+          part3ShowIntro ? (
+            <Card className="card-shadow border-border">
+              <CardContent className="pt-8 pb-8 text-center space-y-6">
+                <div className="text-6xl">🎉</div>
+                <h2 className="text-2xl font-bold text-foreground">Almost done!</h2>
+                <p className="text-lg text-muted-foreground">Time for your Language Challenge!</p>
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                  <p className="font-bold text-primary text-lg">{part3Challenge.title}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{part3Challenge.instruction}</p>
+                </div>
+                <Button variant="hero" size="lg" className="w-full" onClick={startPart3}>
+                  Let's Go! <Sparkles className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          ) : part3Submitted ? (
+            <Card className="card-shadow border-border">
+              <CardContent className="pt-8 pb-8 text-center space-y-6">
+                <div className="text-5xl">🏆</div>
+                <h2 className="text-xl font-bold text-foreground">Challenge Complete!</h2>
+                <div className="bg-success/10 border border-success/20 rounded-lg p-4 text-left">
+                  <CheckCircle className="h-5 w-5 text-success mb-2" />
+                  <p className="text-sm text-foreground">{part3Feedback}</p>
+                </div>
+                <Button variant="hero" size="lg" className="w-full" onClick={finishSession}>
+                  See My Results <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Part3ChallengeView
+              challenge={part3Challenge}
+              answer={part3Answer}
+              setAnswer={setPart3Answer}
+              speech={speech}
+              tts={tts}
+              speedIndex={part3SpeedIndex}
+              onSubmitStory={submitPart3StoryBuilder}
+              onSubmitSpeedAnswer={submitPart3SpeedAnswer}
+              onSubmitTeach={submitPart3TeachItBack}
+            />
+          )
         ) : null}
       </main>
 
       {/* Gamification overlays */}
       <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
       {gamification.evolutionData && (
-        <EvolutionCelebration
-          show={true}
-          animalEmoji={gamification.evolutionData.emoji}
-          animalName={gamification.evolutionData.name}
-          onClose={() => gamification.setEvolutionData(null)}
-        />
+        <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
       )}
       {gamification.pendingBadge && (
-        <BadgePopup
-          show={true}
-          badgeIcon={gamification.pendingBadge.icon}
-          badgeName={gamification.pendingBadge.name}
-          onClose={() => gamification.setPendingBadge(null)}
-        />
+        <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
       )}
     </div>
   );
 };
-
-// Badge lookup helper
-import { BADGES } from "@/components/gamification/constants";
-const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
-BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
 // ═══════════════════════════════════════════════
 // Part 1 — Daily Language Builder
@@ -784,8 +994,8 @@ function Part1View({
         {step === 2 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Say this sentence out loud:</p>
-              <p className="text-foreground font-medium">{anchor.sentence}</p>
+              <p className="text-sm text-muted-foreground mb-1">Say this passage out loud:</p>
+              <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
             </div>
             <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
             {!part1Submitted ? (
@@ -807,26 +1017,26 @@ function Part1View({
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-muted-foreground">Type the sentence from memory:</p>
+                <p className="text-sm text-muted-foreground">Type the passage from memory:</p>
                 {part1Submitted && (
                   <button onClick={() => setPart1ShowSentence(!part1ShowSentence)} className="text-xs text-primary flex items-center gap-1">
                     {part1ShowSentence ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                    {part1ShowSentence ? "Hide" : "Show"} sentence
+                    {part1ShowSentence ? "Hide" : "Show"} passage
                   </button>
                 )}
               </div>
               {part1Submitted && part1ShowSentence && (
-                <p className="text-foreground font-medium">{anchor.sentence}</p>
+                <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
               )}
               {!part1Submitted && (
-                <p className="text-muted-foreground text-xs italic">The sentence is hidden — write from memory!</p>
+                <p className="text-muted-foreground text-xs italic">The passage is hidden — write from memory!</p>
               )}
             </div>
-            <Input
+            <Textarea
               value={part1Answer}
               onChange={(e) => setPart1Answer(e.target.value)}
-              placeholder="Type the sentence here..."
-              className="h-12"
+              placeholder="Type the passage here..."
+              className="min-h-[100px]"
               disabled={part1Submitted}
             />
             {!part1Submitted ? (
@@ -847,8 +1057,8 @@ function Part1View({
         {step === 4 && (
           <>
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Record yourself saying the full sentence — your best try!</p>
-              <p className="text-foreground font-medium">{anchor.sentence}</p>
+              <p className="text-sm text-muted-foreground mb-1">Record yourself saying the full passage — your best try!</p>
+              <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
             </div>
             <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
             {!part1Submitted ? (
@@ -927,8 +1137,8 @@ function Step5Summary({ anchor, scores, onContinue }: {
         )}
       </div>
       <div className="bg-muted/50 rounded-lg p-4 border border-border text-center">
-        <p className="text-xs text-muted-foreground mb-1">Today's anchor sentence:</p>
-        <p className="text-foreground font-bold">{anchor.sentence}</p>
+        <p className="text-xs text-muted-foreground mb-1">Today's anchor passage:</p>
+        <p className="text-foreground font-bold leading-relaxed">{anchor.sentence}</p>
       </div>
       <Button variant="hero" className="w-full" size="lg" onClick={onContinue}>
         Continue to Practice <ArrowRight className="h-4 w-4 ml-2" />
@@ -938,11 +1148,12 @@ function Step5Summary({ anchor, scores, onContinue }: {
 }
 
 // ═══════════════════════════════════════════════
-// Part 2 — Strategy-Based Practice
+// Part 2 — Strategy-Based Practice (6 activities)
 // ═══════════════════════════════════════════════
 interface Part2Props {
   activity: Part2Activity;
   index: number;
+  totalActivities: number;
   answer: string;
   setAnswer: (v: string) => void;
   submitted: boolean;
@@ -955,7 +1166,7 @@ interface Part2Props {
 }
 
 function Part2StrategyView({
-  activity, index, answer, setAnswer, submitted, feedback, isCorrect,
+  activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
   speech, tts, onSubmit, onNext,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
@@ -970,7 +1181,7 @@ function Part2StrategyView({
             {strategyMeta.label}
           </span>
           <span className="text-xs text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full">
-            {index + 1} of 3
+            {index + 1} of {totalActivities}
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
@@ -1008,7 +1219,7 @@ function Part2StrategyView({
               </div>
             </div>
             <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
-              {index < 2 ? "Next Activity" : "Finish Session"} <ArrowRight className="h-4 w-4 ml-2" />
+              {index < totalActivities - 1 ? "Next Activity" : "Continue to Challenge! 🎉"} <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         )}
@@ -1091,6 +1302,163 @@ function QuickWriteActivity({ activity, answer, setAnswer, submitted }: {
       </div>
     </>
   );
+}
+
+// ═══════════════════════════════════════════════
+// Part 3 — Fun Challenge
+// ═══════════════════════════════════════════════
+interface Part3Props {
+  challenge: Part3Challenge;
+  answer: string;
+  setAnswer: (v: string) => void;
+  speech: ReturnType<typeof useSpeechRecognition>;
+  tts: ReturnType<typeof useTTS>;
+  speedIndex: number;
+  onSubmitStory: () => void;
+  onSubmitSpeedAnswer: (option: string) => void;
+  onSubmitTeach: () => void;
+}
+
+function Part3ChallengeView({
+  challenge, answer, setAnswer, speech, tts, speedIndex,
+  onSubmitStory, onSubmitSpeedAnswer, onSubmitTeach,
+}: Part3Props) {
+  if (challenge.challengeType === "story_builder") {
+    return (
+      <Card className="card-shadow border-border">
+        <div className="px-6 pt-6">
+          <span className="text-xs font-medium bg-warning/10 text-warning px-2 py-0.5 rounded-full">
+            🏆 Language Challenge: Story Builder
+          </span>
+        </div>
+        <CardContent className="pt-4 space-y-6">
+          <h3 className="text-lg font-bold text-foreground">{challenge.instruction}</h3>
+          <div className="space-y-3">
+            {challenge.scenes?.map((scene, i) => (
+              <div key={i} className="bg-muted/50 rounded-lg p-3 border border-border flex gap-3">
+                <span className="bg-primary/10 text-primary text-sm font-bold rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">
+                  {i + 1}
+                </span>
+                <p className="text-sm text-foreground">{scene}</p>
+              </div>
+            ))}
+          </div>
+          {challenge.sentenceStarter && (
+            <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
+              <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
+              <p className="text-foreground font-medium italic">{challenge.sentenceStarter}</p>
+            </div>
+          )}
+          <div>
+            <Textarea
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Write your story here... (4-6 sentences)"
+              className="min-h-[150px]"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 Tip: Use words like <span className="font-medium">first, then, next, finally</span> to connect your scenes! +10 bonus points!
+            </p>
+          </div>
+          <Button variant="hero" className="w-full" size="lg" onClick={onSubmitStory} disabled={!answer.trim()}>
+            Submit My Story ✨
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (challenge.challengeType === "speed_round" && challenge.questions) {
+    const q = challenge.questions[speedIndex];
+    return (
+      <Card className="card-shadow border-border">
+        <div className="px-6 pt-6">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-medium bg-warning/10 text-warning px-2 py-0.5 rounded-full">
+              🏎️ Speed Round
+            </span>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {speedIndex + 1} of 5
+            </span>
+          </div>
+        </div>
+        <CardContent className="pt-4 space-y-6">
+          {q.passage && (
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
+              <p className="text-xs text-muted-foreground mb-1">📖 Read this:</p>
+              <p className="text-foreground leading-relaxed">{q.passage}</p>
+            </div>
+          )}
+          {q.audioDescription && (
+            <div className="bg-warning/5 rounded-lg p-4 border border-warning/20 text-center space-y-3">
+              <Headphones className="h-8 w-8 text-warning mx-auto" />
+              <p className="text-foreground leading-relaxed">{q.audioDescription}</p>
+              {tts.isSupported && (
+                <Button variant="outline" size="sm" onClick={() => tts.speak(q.audioDescription || "")}>
+                  <Volume2 className="h-4 w-4 mr-1" /> Play Audio
+                </Button>
+              )}
+            </div>
+          )}
+          <h3 className="text-lg font-medium text-foreground">{q.question}</h3>
+          <div className="grid grid-cols-1 gap-3">
+            {q.options.map((option, i) => (
+              <Button
+                key={i}
+                variant="outline"
+                className="justify-start text-left h-auto py-3 px-4 text-foreground hover:bg-primary/10 hover:border-primary/30"
+                onClick={() => onSubmitSpeedAnswer(option)}
+              >
+                <span className="font-bold text-primary mr-2">{String.fromCharCode(65 + i)}.</span>
+                {option}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (challenge.challengeType === "teach_it_back") {
+    return (
+      <Card className="card-shadow border-border">
+        <div className="px-6 pt-6">
+          <span className="text-xs font-medium bg-warning/10 text-warning px-2 py-0.5 rounded-full">
+            🎓 Teach It Back
+          </span>
+        </div>
+        <CardContent className="pt-4 space-y-6">
+          <h3 className="text-lg font-bold text-foreground">{challenge.instruction}</h3>
+          {challenge.guidingQuestions && challenge.guidingQuestions.length > 0 && (
+            <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+              <p className="text-sm font-medium text-primary mb-2">💡 Try to include:</p>
+              <ul className="space-y-1">
+                {challenge.guidingQuestions.map((q, i) => (
+                  <li key={i} className="text-sm text-foreground">• {q}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {challenge.vocabularyHints && challenge.vocabularyHints.length > 0 && (
+            <div className="bg-muted/50 rounded-lg p-3 border border-border">
+              <p className="text-sm text-muted-foreground mb-2">📚 Key vocabulary from today:</p>
+              <div className="flex flex-wrap gap-2">
+                {challenge.vocabularyHints.map((word, i) => (
+                  <span key={i} className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full font-medium">{word}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={false} />
+          <Button variant="hero" className="w-full" size="lg" onClick={onSubmitTeach} disabled={!answer.trim()}>
+            Submit My Explanation 🎤
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return null;
 }
 
 // ═══════════════════════════════════════════════

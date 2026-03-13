@@ -28,11 +28,9 @@ function selectStrategy(domainScores: Record<string, number> | null): { strategy
     }
   }
 
-  // Check if all scores are equal
   const allEqual = domains.every((d) => (domainScores[d] ?? 0) === weakestScore);
 
   if (allEqual) {
-    // Rotate based on current time to vary strategies
     const strategies: Strategy[] = ["sentence_frames", "sentence_expansion", "quick_writes"];
     const idx = Math.floor(Date.now() / 86400000) % 3;
     return {
@@ -56,7 +54,6 @@ function selectStrategy(domainScores: Record<string, number> | null): { strategy
       reason: "Speaking was this student's weakest area so today's session focused on Sentence Expansion.",
     };
   }
-  // writing
   return {
     strategy: "quick_writes",
     weakestDomain: weakest,
@@ -64,120 +61,143 @@ function selectStrategy(domainScores: Record<string, number> | null): { strategy
   };
 }
 
-function buildPrompt(strategy: Strategy, theme: string, questionIndex: number, grade: string): string {
-  const difficultyNotes = [
-    "Question 1 (easiest)",
-    "Question 2 (medium)",
-    "Question 3 (hardest — most open-ended)",
-  ][questionIndex];
+function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string): string {
+  const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
+
+  const difficultyLabels = [
+    "Question 1 of 6 (easiest — heavy scaffolding)",
+    "Question 2 of 6 (easy — moderate scaffolding)",
+    "Question 3 of 6 (medium-easy)",
+    "Question 4 of 6 (medium)",
+    "Question 5 of 6 (medium-hard — less scaffolding)",
+    "Question 6 of 6 (hardest — most open-ended)",
+  ];
+  const difficultyNote = difficultyLabels[questionIndex] || difficultyLabels[5];
 
   if (strategy === "sentence_frames") {
     const scaffolding = [
-      "ONE blank to fill in. Provide a sentence frame like 'The character felt ___ because the story said ___.' with exactly one blank.",
-      "TWO blanks to fill in. Provide a sentence frame like 'I think ___ because ___.' with exactly two blanks.",
-      "The student writes the FULL sentence using the frame as a guide only. Show the frame as a model but ask them to write their own complete sentence.",
+      "ONE blank to fill in. Provide a sentence frame with exactly one blank marked as ___.",
+      "ONE blank but requires more thought. The blank should need a phrase, not just one word.",
+      "TWO blanks to fill in. Provide a sentence frame with two blanks marked as ___.",
+      "TWO blanks requiring longer phrases. More complex frame.",
+      "The student writes a FULL sentence inspired by the frame. Show the frame as a model only.",
+      "The student writes their OWN complete sentence about the topic with NO frame provided — fully open.",
     ][questionIndex];
 
     return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
-Generate a SENTENCE FRAMES activity connected to the theme "${theme}".
-${difficultyNotes}: ${scaffolding}
+${themeDirective}
+
+Generate a SENTENCE FRAMES activity about "${topic}".
+${difficultyNote}: ${scaffolding}
 
 STRUCTURE:
-1. Include a short 3-5 sentence passage (field: "passage") connected to the theme
+1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
 2. Present a sentence frame for the student to complete
 3. The question should clearly show the frame with blanks marked as ___
 
 Return ONLY valid JSON (no markdown):
 {
   "type": "sentence_frame",
-  "passage": "<3-5 sentence passage providing context>",
+  "passage": "<3-5 sentence passage about ${topic}>",
   "question": "<instruction + the sentence frame with ___ blanks>",
-  "sentenceFrame": "<just the frame itself, e.g. 'The character felt ___ because ___.'>",
+  "sentenceFrame": "<just the frame itself>",
   "modelAnswer": "<a fully completed version of the frame>",
   "acceptableKeywords": ["<6-8 words that any reasonable answer might contain>"],
   "difficulty": ${questionIndex + 1},
   "theme": "${theme}"
 }
 
-Use vivid, kid-friendly language. The passage must give enough context to fill in the blanks.`;
+Use vivid, kid-friendly language. ALL content must be about "${topic}".`;
   }
 
   if (strategy === "sentence_expansion") {
     const expansion = [
-      "The student simply REPEATS the base sentence exactly as shown. Keep it short (4-6 words).",
-      "The student repeats the sentence AND adds a location or description (WHERE or WHAT it looks like). Provide the expanded version.",
-      "The student repeats the expanded sentence AND adds a reason or feeling using BECAUSE, SO, or WHEN. Provide the full expanded version.",
+      "The student simply REPEATS the base sentence exactly. Keep it short (4-6 words). About " + topic + ".",
+      "The student repeats + adds WHERE (location). Provide the expanded version.",
+      "The student repeats + adds WHAT it looks like (description). Provide the expanded version.",
+      "The student repeats + adds WHEN (time). Provide the expanded version.",
+      "The student repeats + adds WHY using BECAUSE. Provide the expanded version.",
+      "The student says the FULL expanded sentence with all details combined. Provide the complete version.",
     ][questionIndex];
 
     return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
-Generate a SENTENCE EXPANSION activity connected to the theme "${theme}".
-${difficultyNotes}: ${expansion}
+${themeDirective}
 
-The 3 questions in this strategy build on each other:
-- Q1: base sentence (e.g. "The dragon flew.")
-- Q2: base + location/description (e.g. "The dragon flew over the mountains.")
-- Q3: full expanded (e.g. "The dragon flew over the mountains because he was searching for his family.")
+Generate a SENTENCE EXPANSION activity about "${topic}".
+${difficultyNote}: ${expansion}
+
+The 6 questions build on each other, creating a progressively longer sentence about "${topic}".
 
 Return ONLY valid JSON (no markdown):
 {
   "type": "sentence_expansion",
   "baseSentence": "<the sentence the student should say>",
   "question": "<instruction telling the student what to say and what detail to add>",
-  "expansionHint": "<what was added, e.g. 'where it happened' or 'why it happened'>",
+  "expansionHint": "<what was added, e.g. 'where it happened'>",
   "modelAnswer": "<the full expected sentence>",
   "acceptableKeywords": ["<5-8 key words for flexible scoring>"],
   "difficulty": ${questionIndex + 1},
   "theme": "${theme}"
 }
 
-Use vivid, kid-friendly language connected to the theme.`;
+ALL content must be about "${topic}".`;
   }
 
   // quick_writes
   const scaffold = [
-    "Provide BOTH a sentence starter AND a word bank of 4-6 relevant vocabulary words.",
+    "Provide BOTH a sentence starter AND a word bank of 5-6 vocabulary words about " + topic + ".",
+    "Provide a sentence starter AND a word bank of 4 words.",
     "Provide a sentence starter ONLY (no word bank).",
-    "OPEN prompt — no sentence starter, no word bank. Student writes freely. Still make the prompt specific and vivid.",
+    "Provide a sentence starter ONLY. More complex prompt.",
+    "OPEN prompt — no sentence starter, no word bank. Still specific and vivid about " + topic + ".",
+    "OPEN prompt — student writes freely. Most challenging. About " + topic + ".",
   ][questionIndex];
 
   return `You are an expert ELD activity generator for grades ${grade} ELL students.
 
-Generate a QUICK WRITES activity connected to the theme "${theme}".
-${difficultyNotes}: ${scaffold}
+${themeDirective}
+
+Generate a QUICK WRITES activity about "${topic}".
+${difficultyNote}: ${scaffold}
 
 RULES:
-- The prompt must be clear, specific, and vivid
+- The prompt must be clear, specific, and vivid — specifically about "${topic}"
 - Ask for 2-3 sentences minimum
 - Include an encouraging note like "Most students finish in about 2 minutes!"
-- The topic should be imaginative and fun for kids
 
 Return ONLY valid JSON (no markdown):
 {
   "type": "quick_write",
-  "question": "<the writing prompt with clear instructions>",
-  "sentenceStarter": "<sentence starter like 'The animal I discovered has...' or null if Q3>",
-  "wordBank": ${questionIndex === 0 ? '["<4-6 relevant vocabulary words>"]' : "null"},
+  "question": "<the writing prompt about ${topic}>",
+  "sentenceStarter": "<sentence starter or null if open prompt>",
+  "wordBank": ${questionIndex <= 1 ? '["<4-6 vocabulary words about ' + topic + '>"]' : "null"},
   "modelAnswer": "<a sample 2-3 sentence response>",
   "acceptableKeywords": ["<6-8 words any reasonable answer might contain>"],
   "difficulty": ${questionIndex + 1},
   "theme": "${theme}"
 }
 
-Use vivid, kid-friendly language.`;
+ALL content must be about "${topic}".`;
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { grade, theme, domainScores, questionIndex } = await req.json();
+    const { grade, theme, topic, domainScores, questionIndex } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const { strategy, weakestDomain, reason } = selectStrategy(domainScores);
-    const prompt = buildPrompt(strategy, theme || "Nature & animals", questionIndex || 0, grade || "3-5");
+    const prompt = buildPrompt(
+      strategy,
+      theme || "Nature & animals",
+      topic || theme || "Nature & animals",
+      questionIndex || 0,
+      grade || "3-5"
+    );
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -189,7 +209,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: prompt },
-          { role: "user", content: `Generate activity ${(questionIndex || 0) + 1} of 3 for the ${strategy.replace(/_/g, " ")} strategy with theme "${theme}". Make it engaging and grade-appropriate.` },
+          { role: "user", content: `Generate activity ${(questionIndex || 0) + 1} of 6 for the ${strategy.replace(/_/g, " ")} strategy about "${topic || theme}". Make it engaging and grade-appropriate.` },
         ],
       }),
     });
@@ -222,7 +242,6 @@ serve(async (req) => {
       throw new Error("Invalid AI response format");
     }
 
-    // Attach strategy metadata
     activity.strategy = strategy;
     activity.weakestDomain = weakestDomain;
     activity.strategyReason = reason;

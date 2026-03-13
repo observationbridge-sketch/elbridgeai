@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap, Award, Trophy } from "lucide-react";
+import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap, Award, Trophy, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getAnimalLevel } from "@/components/gamification/constants";
 
@@ -39,6 +39,12 @@ const STRATEGY_LABELS: Record<string, string> = {
   quick_writes: "Quick Writes",
 };
 
+const CHALLENGE_LABELS: Record<string, string> = {
+  story_builder: "Story Builder",
+  speed_round: "Speed Round",
+  teach_it_back: "Teach It Back",
+};
+
 function getWidaLevel(pct: number): string {
   if (pct >= 90) return "Bridging";
   if (pct >= 70) return "Expanding";
@@ -55,10 +61,11 @@ const SessionSummary = () => {
   const [sessionCode, setSessionCode] = useState("");
   const [part1Stats, setPart1Stats] = useState({ total: 0, correct: 0 });
   const [part2Stats, setPart2Stats] = useState({ total: 0, correct: 0 });
+  const [part3Stats, setPart3Stats] = useState({ total: 0, correct: 0 });
   const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
+  const [challenges, setChallenges] = useState<StrategyInfo[]>([]);
   const [weakestDomainNote, setWeakestDomainNote] = useState("");
   const [studentGamification, setStudentGamification] = useState<StudentGamification[]>([]);
-  const [teacherId, setTeacherId] = useState("");
 
   useEffect(() => {
     if (!sessionId) return;
@@ -71,7 +78,6 @@ const SessionSummary = () => {
         .single();
       if (session) {
         setSessionCode(session.code);
-        setTeacherId(session.teacher_id);
       }
 
       const { data: students } = await supabase
@@ -101,14 +107,24 @@ const SessionSummary = () => {
 
         const p1 = responses.filter((r) => r.session_part === "part1");
         const p2 = responses.filter((r) => r.session_part === "part2");
+        const p3 = responses.filter((r) => r.session_part === "part3");
         setPart1Stats({ total: p1.length, correct: p1.filter((r) => r.is_correct).length });
         setPart2Stats({ total: p2.length, correct: p2.filter((r) => r.is_correct).length });
+        setPart3Stats({ total: p3.length, correct: p3.filter((r) => r.is_correct).length });
 
+        // Part 2 strategies
         const strategyMap = new Map<string, number>();
-        for (const r of responses) {
+        for (const r of responses.filter((r) => r.session_part === "part2")) {
           if (r.strategy) strategyMap.set(r.strategy, (strategyMap.get(r.strategy) || 0) + 1);
         }
         setStrategies(Array.from(strategyMap.entries()).map(([strategy, count]) => ({ strategy, count })));
+
+        // Part 3 challenges
+        const challengeMap = new Map<string, number>();
+        for (const r of responses.filter((r) => r.session_part === "part3")) {
+          if (r.strategy) challengeMap.set(r.strategy, (challengeMap.get(r.strategy) || 0) + 1);
+        }
+        setChallenges(Array.from(challengeMap.entries()).map(([strategy, count]) => ({ strategy, count })));
 
         if (summaries.some((s) => s.total > 0)) {
           const withData = summaries.filter((s) => s.total > 0);
@@ -123,7 +139,7 @@ const SessionSummary = () => {
         }
       }
 
-      // Load gamification data for students in this session
+      // Load gamification data
       if (session?.teacher_id && students && students.length > 0) {
         const studentNames = students.map((s) => s.student_name);
 
@@ -181,13 +197,13 @@ const SessionSummary = () => {
           </div>
         </div>
 
-        {/* Part 1 vs Part 2 Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Part 1 / Part 2 / Part 3 Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="card-shadow border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
-                Part 1: Language Builder
+                Part 1: Builder
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -196,7 +212,7 @@ const SessionSummary = () => {
                   {part1Stats.total > 0 ? Math.round((part1Stats.correct / part1Stats.total) * 100) : 0}%
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {part1Stats.correct}/{part1Stats.total} correct
+                  {part1Stats.correct}/{part1Stats.total}
                 </span>
               </div>
             </CardContent>
@@ -206,7 +222,7 @@ const SessionSummary = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Target className="h-4 w-4 text-accent" />
-                Part 2: Adaptive Practice
+                Part 2: Practice
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -215,27 +231,51 @@ const SessionSummary = () => {
                   {part2Stats.total > 0 ? Math.round((part2Stats.correct / part2Stats.total) * 100) : 0}%
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {part2Stats.correct}/{part2Stats.total} correct
+                  {part2Stats.correct}/{part2Stats.total}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="card-shadow border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-warning" />
+                Part 3: Challenge
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end justify-between">
+                <span className="text-3xl font-bold text-foreground">
+                  {part3Stats.total > 0 ? Math.round((part3Stats.correct / part3Stats.total) * 100) : 0}%
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {part3Stats.correct}/{part3Stats.total}
                 </span>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Strategy Info */}
-        {strategies.length > 0 && (
+        {/* Strategy & Challenge Info */}
+        {(strategies.length > 0 || challenges.length > 0) && (
           <Card className="card-shadow border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Target className="h-4 w-4 text-success" />
-                Strategy Used
+                Strategies & Challenges
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {strategies.map((s) => (
                   <span key={s.strategy} className="px-3 py-1.5 bg-accent/10 text-accent rounded-full text-sm font-medium">
-                    {STRATEGY_LABELS[s.strategy] || s.strategy} ({s.count} activities)
+                    {STRATEGY_LABELS[s.strategy] || s.strategy} ({s.count})
+                  </span>
+                ))}
+                {challenges.map((c) => (
+                  <span key={c.strategy} className="px-3 py-1.5 bg-warning/10 text-warning rounded-full text-sm font-medium">
+                    🏆 {CHALLENGE_LABELS[c.strategy] || c.strategy} ({c.count})
                   </span>
                 ))}
               </div>
