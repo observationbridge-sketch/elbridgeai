@@ -73,8 +73,8 @@ interface ProficiencyLevel {
   pct: number;
 }
 
-// ─── WIDA Helpers ───
-const WIDA_SCALE = [
+// ─── Proficiency Helpers ───
+const PROFICIENCY_SCALE = [
   { min: 0, max: 20, level: 1, label: "Entering" },
   { min: 21, max: 40, level: 2, label: "Emerging" },
   { min: 41, max: 60, level: 3, label: "Developing" },
@@ -83,8 +83,8 @@ const WIDA_SCALE = [
   { min: 91, max: 100, level: 6, label: "Reaching" },
 ];
 
-function pctToWida(pct: number, gradeBand: string): WidaLevel {
-  const entry = WIDA_SCALE.find((s) => pct >= s.min && pct <= s.max) || WIDA_SCALE[0];
+function pctToProficiency(pct: number, gradeBand: string): ProficiencyLevel {
+  const entry = PROFICIENCY_SCALE.find((s) => pct >= s.min && pct <= s.max) || PROFICIENCY_SCALE[0];
   if (gradeBand === "K-2" && entry.level > 3) {
     return { level: 3, label: "Developing", pct };
   }
