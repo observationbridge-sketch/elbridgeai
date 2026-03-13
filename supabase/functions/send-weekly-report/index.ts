@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
         .in("session_id", sessionIds);
 
       const domainScores: Record<string, { correct: number; total: number }> = {};
-      const widaLevels: Record<string, number> = {};
+      const proficiencyLevels: Record<string, number> = {};
       const strategyBreakdown: Record<string, number> = {};
 
       (responses || []).forEach((r: any) => {
