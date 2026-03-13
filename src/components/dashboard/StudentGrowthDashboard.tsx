@@ -67,7 +67,7 @@ interface SessionDomainScores {
   gradeBand: string;
 }
 
-interface WidaLevel {
+interface ProficiencyLevel {
   level: number;
   label: string;
   pct: number;
