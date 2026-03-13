@@ -11,9 +11,11 @@ const THEMES = [
   "Sports & games",
   "Superheroes",
   "Fantasy & myths",
-  "Science vocabulary",
-  "Social studies",
-  "ELA reading skills",
+  "Ancient Egypt",
+  "Ocean exploration",
+  "Space & planets",
+  "Rainforest adventures",
+  "Volcanoes & earthquakes",
 ];
 
 serve(async (req) => {
@@ -26,31 +28,38 @@ serve(async (req) => {
 
     const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
 
-    const systemPrompt = `You are an expert English Language Development specialist creating anchor sentences for grades 3-5 ELL students, inspired by Literacy Squared / Kathy Escamilla methodology.
+    const systemPrompt = `You are an expert English Language Development specialist creating anchor passages for grades 3-5 ELL students, inspired by Literacy Squared / Kathy Escamilla methodology.
 
-Generate ONE anchor sentence from one of these approved categories:
-1. Academic sentence frames connected to science or social studies (e.g. "The water cycle begins when water evaporates from the surface of the ocean.")
-2. Compare and contrast structures (e.g. "A reptile is different from a mammal because reptiles are cold-blooded.")
-3. Descriptive language models (e.g. "The ancient forest was filled with towering trees, mysterious shadows, and the sound of rushing water.")
-4. Content obligatory vocabulary sentences (e.g. "Photosynthesis is the process by which plants use sunlight to make their own food.")
-5. Positive character development and motivational statements (e.g. "When I face a challenge, I take a deep breath, try my best, and ask for help when I need it.")
+Generate ONE anchor passage of exactly 2-3 sentences from one of these approved categories:
+1. Academic sentence frames connected to science or social studies
+2. Compare and contrast structures
+3. Descriptive language models
+4. Content obligatory vocabulary sentences
+5. Positive character development and motivational statements
 
 Theme for this session: "${theme}"
 
+You must also create a specific topic within this theme. For example:
+- Theme "Nature & animals" → topic "How butterflies migrate south in autumn"
+- Theme "Ancient Egypt" → topic "The building of the Great Pyramid"
+- Theme "Ocean exploration" → topic "Deep sea creatures that glow in the dark"
+
 RULES:
-- The sentence MUST be grade-appropriate for grades ${grade}
-- The sentence should be 10-20 words long
+- The passage MUST be exactly 2-3 complete sentences
+- Total length should be 20-40 words
+- Grade-appropriate for grades ${grade}
 - Use vivid, specific, kid-friendly language
-- Connect to the theme naturally
-- The sentence must be complete and grammatically correct
-- It should model good academic English patterns
+- Connect directly and specifically to the theme and topic
+- Model good academic English patterns
+- The passage should tell a mini-story or describe something specific
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
-  "sentence": "<the anchor sentence>",
+  "sentence": "<the 2-3 sentence anchor passage>",
   "theme": "${theme}",
+  "topic": "<specific topic within the theme, e.g. 'How butterflies migrate south'>",
   "category": "<which of the 5 categories above>",
-  "keyWords": ["<5-8 important words from the sentence for scoring>"]
+  "keyWords": ["<8-12 important words from the passage for scoring>"]
 }`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -63,7 +72,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate an anchor sentence with theme "${theme}" for grades ${grade}. Make it vivid and educational.` },
+          { role: "user", content: `Generate an anchor passage with theme "${theme}" for grades ${grade}. Make it vivid, educational, and 2-3 sentences long.` },
         ],
       }),
     });
@@ -89,13 +98,18 @@ Return ONLY valid JSON (no markdown, no code blocks):
       result = JSON.parse(cleaned);
     } catch {
       console.error("Failed to parse AI response:", content);
-      // Fallback
       result = {
-        sentence: "The brave explorer climbed the mountain to discover what was hiding behind the clouds.",
+        sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
         theme,
+        topic: "The building of the ancient pyramids",
         category: "Descriptive language models",
-        keyWords: ["brave", "explorer", "climbed", "mountain", "discover", "hiding", "clouds"],
+        keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
       };
+    }
+
+    // Ensure topic field exists
+    if (!result.topic) {
+      result.topic = result.theme;
     }
 
     return new Response(JSON.stringify(result), {
