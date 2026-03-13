@@ -48,6 +48,7 @@ export type Database = {
           code: string
           created_at: string
           ended_at: string | null
+          grade_band: string
           id: string
           status: string
           teacher_id: string
@@ -56,6 +57,7 @@ export type Database = {
           code: string
           created_at?: string
           ended_at?: string | null
+          grade_band?: string
           id?: string
           status?: string
           teacher_id: string
@@ -64,6 +66,7 @@ export type Database = {
           code?: string
           created_at?: string
           ended_at?: string | null
+          grade_band?: string
           id?: string
           status?: string
           teacher_id?: string
@@ -141,6 +144,7 @@ export type Database = {
           correct_answer: string
           created_at: string
           domain: string
+          grade_band: string
           id: string
           is_correct: boolean
           question: string
@@ -155,6 +159,7 @@ export type Database = {
           correct_answer: string
           created_at?: string
           domain: string
+          grade_band?: string
           id?: string
           is_correct?: boolean
           question: string
@@ -169,6 +174,7 @@ export type Database = {
           correct_answer?: string
           created_at?: string
           domain?: string
+          grade_band?: string
           id?: string
           is_correct?: boolean
           question?: string
