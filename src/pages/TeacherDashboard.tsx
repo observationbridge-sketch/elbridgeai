@@ -355,11 +355,16 @@ const TeacherDashboard = () => {
                     className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => session.status === "ended" && navigate(`/teacher/session/${session.id}`)}
                   >
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="font-mono text-sm text-primary">{session.code}</span>
-                      <span className="text-muted-foreground text-sm ml-3">
+                      <span className="text-muted-foreground text-sm">
                         {new Date(session.created_at).toLocaleDateString()}
                       </span>
+                      {(session as any).grade_band && (
+                        <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                          {(session as any).grade_band}
+                        </span>
+                      )}
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
