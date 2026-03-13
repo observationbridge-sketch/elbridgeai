@@ -54,9 +54,9 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
     const pct = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
     text += `  ${d}: ${pct}%\n`;
   }
-  text += `\nWIDA LEVELS\n`;
-  for (const level of widaLevels) {
-    const count = report.widaLevels[level] || 0;
+  text += `\nPROFICIENCY LEVELS\n`;
+  for (const level of proficiencyLevels) {
+    const count = report.proficiencyLevels[level] || 0;
     if (count > 0) text += `  ${level}: ${count}\n`;
   }
   // Strategy breakdown
