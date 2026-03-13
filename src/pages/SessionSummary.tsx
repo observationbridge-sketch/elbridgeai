@@ -291,7 +291,7 @@ const SessionSummary = () => {
           {domainSummaries.map((summary) => {
             const meta = DOMAIN_META[summary.domain];
             const Icon = meta.icon;
-            const widaLevel = getWidaLevel(summary.percentage);
+            const proficiencyLevel = getProficiencyLevel(summary.percentage);
             return (
               <Card key={summary.domain} className="card-shadow border-border">
                 <CardHeader className="pb-2">
