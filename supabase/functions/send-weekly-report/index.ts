@@ -171,11 +171,11 @@ ${worstDomain && worstDomain !== bestDomain ? `<tr><td style="padding:4px 40px 1
   </div>
 </td></tr>` : ""}
 
-<!-- WIDA Levels -->
-${widaRows ? `<tr><td style="padding:16px 40px 8px;">
-  <h2 style="margin:0;font-size:16px;color:#1a3a5c;">WIDA Levels</h2>
+<!-- Proficiency Levels -->
+${proficiencyRows ? `<tr><td style="padding:16px 40px 8px;">
+  <h2 style="margin:0;font-size:16px;color:#1a3a5c;">National Proficiency Standards</h2>
 </td></tr>
-<tr><td style="padding:0 40px 20px;">${widaRows}</td></tr>` : ""}
+<tr><td style="padding:0 40px 20px;">${proficiencyRows}</td></tr>` : ""}
 
 <!-- Adaptive Strategies -->
 ${(() => {
