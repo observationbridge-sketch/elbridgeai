@@ -204,6 +204,36 @@ const TeacherDashboard = () => {
                       </Button>
                     </div>
                   </div>
+                  {/* Join Link */}
+                  <div className="bg-card border border-border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Link className="h-4 w-4 text-primary" />
+                      Student Join Link
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-xs bg-muted px-3 py-2 rounded font-mono truncate text-muted-foreground">
+                        {joinUrl.replace("https://", "")}
+                      </code>
+                      <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0">
+                        {linkCopied ? <><Check className="h-3 w-3 mr-1" /> Copied!</> : <><Copy className="h-3 w-3 mr-1" /> Copy Link</>}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="bg-card border border-border rounded-lg p-4 flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground self-start">
+                      <QrCode className="h-4 w-4 text-primary" />
+                      QR Code — Scan to Join
+                    </div>
+                    <div ref={qrRef} className="bg-white p-4 rounded-xl">
+                      <QRCodeCanvas value={joinUrl} size={220} level="H" />
+                    </div>
+                    <Button variant="outline" size="sm" onClick={downloadQR}>
+                      <Download className="h-3 w-3 mr-1" /> Download QR Code
+                    </Button>
+                  </div>
+
                   <Button variant="destructive" className="w-full" onClick={endSession}>
                     <Square className="h-4 w-4 mr-2" /> End Session
                   </Button>
