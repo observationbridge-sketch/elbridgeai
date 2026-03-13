@@ -533,7 +533,7 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                   {/* Domain Levels */}
                   <div className="grid grid-cols-4 gap-2 flex-1">
                     {DOMAIN_LABELS.map((d) => {
-                      const wida = student.currentLevels[d];
+                      const lvl = student.currentLevels[d];
                       const isStrongest = d === student.strongest;
                       const isWeakest = d === student.weakest;
                       return (
