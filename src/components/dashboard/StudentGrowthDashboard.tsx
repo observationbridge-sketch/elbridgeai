@@ -52,7 +52,7 @@ interface StudentGrowthData {
   totalSessions: number;
   thisMonthSessions: number;
   lastActive: string;
-  currentLevels: Record<string, WidaLevel>;
+  currentLevels: Record<string, ProficiencyLevel>;
   strongest: string;
   weakest: string;
   wasAdjusted: boolean;
@@ -67,14 +67,14 @@ interface SessionDomainScores {
   gradeBand: string;
 }
 
-interface WidaLevel {
+interface ProficiencyLevel {
   level: number;
   label: string;
   pct: number;
 }
 
-// ─── WIDA Helpers ───
-const WIDA_SCALE = [
+// ─── Proficiency Helpers ───
+const PROFICIENCY_SCALE = [
   { min: 0, max: 20, level: 1, label: "Entering" },
   { min: 21, max: 40, level: 2, label: "Emerging" },
   { min: 41, max: 60, level: 3, label: "Developing" },
@@ -83,8 +83,8 @@ const WIDA_SCALE = [
   { min: 91, max: 100, level: 6, label: "Reaching" },
 ];
 
-function pctToWida(pct: number, gradeBand: string): WidaLevel {
-  const entry = WIDA_SCALE.find((s) => pct >= s.min && pct <= s.max) || WIDA_SCALE[0];
+function pctToProficiency(pct: number, gradeBand: string): ProficiencyLevel {
+  const entry = PROFICIENCY_SCALE.find((s) => pct >= s.min && pct <= s.max) || PROFICIENCY_SCALE[0];
   if (gradeBand === "K-2" && entry.level > 3) {
     return { level: 3, label: "Developing", pct };
   }
@@ -124,12 +124,12 @@ function getTrendArrow(sessions: SessionDomainScores[]): "up" | "down" | "stable
 
 // ─── CSV Export ───
 function exportStudentCSV(student: StudentGrowthData) {
-  const headers = ["Date", "Reading %", "Writing %", "Speaking %", "Listening %", "Reading WIDA", "Writing WIDA", "Speaking WIDA", "Listening WIDA", "Grade Band"];
+  const headers = ["Date", "Reading %", "Writing %", "Speaking %", "Listening %", "Reading Level", "Writing Level", "Speaking Level", "Listening Level", "Grade Band"];
   const rows = student.sessions.map((s) => {
-    const rw = pctToWida(s.reading, s.gradeBand);
-    const ww = pctToWida(s.writing, s.gradeBand);
-    const sw = pctToWida(s.speaking, s.gradeBand);
-    const lw = pctToWida(s.listening, s.gradeBand);
+    const rw = pctToProficiency(s.reading, s.gradeBand);
+    const ww = pctToProficiency(s.writing, s.gradeBand);
+    const sw = pctToProficiency(s.speaking, s.gradeBand);
+    const lw = pctToProficiency(s.listening, s.gradeBand);
     return [s.date, s.reading, s.writing, s.speaking, s.listening, `${rw.level} ${rw.label}`, `${ww.level} ${ww.label}`, `${sw.level} ${sw.label}`, `${lw.level} ${lw.label}`, s.gradeBand].join(",");
   });
 
@@ -138,7 +138,7 @@ function exportStudentCSV(student: StudentGrowthData) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${student.name}-wida-progress.csv`;
+  a.download = `${student.name}-proficiency-progress.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -296,11 +296,11 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
 
         // Current levels from most recent session
         const latest = sessionScores[0] || { reading: 0, writing: 0, speaking: 0, listening: 0 };
-        const currentLevels: Record<string, WidaLevel> = {
-          reading: pctToWida(latest.reading, latestGradeBand),
-          writing: pctToWida(latest.writing, latestGradeBand),
-          speaking: pctToWida(latest.speaking, latestGradeBand),
-          listening: pctToWida(latest.listening, latestGradeBand),
+        const currentLevels: Record<string, ProficiencyLevel> = {
+          reading: pctToProficiency(latest.reading, latestGradeBand),
+          writing: pctToProficiency(latest.writing, latestGradeBand),
+          speaking: pctToProficiency(latest.speaking, latestGradeBand),
+          listening: pctToProficiency(latest.listening, latestGradeBand),
         };
 
         // Strongest & weakest
@@ -453,8 +453,8 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                     <Tooltip
                       contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: 12 }}
                       formatter={(value: number) => {
-                        const wida = WIDA_SCALE.find((s) => Math.round(value) === s.level);
-                        return [`Level ${value} ${wida?.label || ""}`, "Avg Level"];
+                        const entry = PROFICIENCY_SCALE.find((s) => Math.round(value) === s.level);
+                        return [`Level ${value} ${entry?.label || ""}`, "Avg Level"];
                       }}
                     />
                     <Bar dataKey="level" fill="hsl(210, 80%, 45%)" radius={[4, 4, 0, 0]} />
@@ -504,7 +504,7 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
           const trend = getTrendArrow(student.sessions);
           const filteredSessions = getFilteredSessions(student.sessions);
 
-          // Sparkline data: WIDA levels for last 8 sessions
+          // Sparkline data: proficiency levels for last 8 sessions
           const sparkData = student.sessions.slice(-8);
 
           return (
@@ -533,7 +533,7 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                   {/* Domain Levels */}
                   <div className="grid grid-cols-4 gap-2 flex-1">
                     {DOMAIN_LABELS.map((d) => {
-                      const wida = student.currentLevels[d];
+                      const lvl = student.currentLevels[d];
                       const isStrongest = d === student.strongest;
                       const isWeakest = d === student.weakest;
                       return (
@@ -546,10 +546,10 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                           }`}
                         >
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{d.slice(0, 4)}</p>
-                          <p className="text-lg font-bold text-foreground">{wida?.level || 0}</p>
-                          <p className="text-[10px] text-muted-foreground">{wida?.label || "N/A"}</p>
+                          <p className="text-lg font-bold text-foreground">{lvl?.level || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">{lvl?.label || "N/A"}</p>
                           <Sparkline
-                            data={sparkData.map((s) => pctToWida(s[d as keyof SessionDomainScores] as number, s.gradeBand).level)}
+                            data={sparkData.map((s) => pctToProficiency(s[d as keyof SessionDomainScores] as number, s.gradeBand).level)}
                             color={DOMAIN_COLORS[d]}
                           />
                         </div>
@@ -601,10 +601,10 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                     <ResponsiveContainer width="100%" height={280}>
                       <LineChart data={filteredSessions.map((s) => ({
                         date: s.date,
-                        Reading: pctToWida(s.reading, s.gradeBand).level,
-                        Writing: pctToWida(s.writing, s.gradeBand).level,
-                        Speaking: pctToWida(s.speaking, s.gradeBand).level,
-                        Listening: pctToWida(s.listening, s.gradeBand).level,
+                        Reading: pctToProficiency(s.reading, s.gradeBand).level,
+                        Writing: pctToProficiency(s.writing, s.gradeBand).level,
+                        Speaking: pctToProficiency(s.speaking, s.gradeBand).level,
+                        Listening: pctToProficiency(s.listening, s.gradeBand).level,
                       }))}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis
@@ -619,8 +619,8 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                           ticks={[1, 2, 3, 4, 5, 6]}
                           tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                           tickFormatter={(v) => {
-                            const wida = WIDA_SCALE.find((s) => s.level === v);
-                            return wida ? `${v} ${wida.label.slice(0, 3)}` : `${v}`;
+                            const entry = PROFICIENCY_SCALE.find((s) => s.level === v);
+                            return entry ? `${v} ${entry.label.slice(0, 3)}` : `${v}`;
                           }}
                           width={65}
                         />
@@ -632,8 +632,8 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                             fontSize: 12,
                           }}
                           formatter={(value: number, name: string) => {
-                            const wida = WIDA_SCALE.find((s) => s.level === value);
-                            return [`Level ${value} (${wida?.label || ""})`, name];
+                            const entry = PROFICIENCY_SCALE.find((s) => s.level === value);
+                            return [`Level ${value} (${entry?.label || ""})`, name];
                           }}
                         />
                         <Legend wrapperStyle={{ fontSize: 12 }} />

@@ -127,7 +127,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "category": "<category>",
   "keyWords": ["<4-6 important words from the sentence>"]
 }`
-      : `You are an expert English Language Development specialist creating anchor passages for grades 3-5 ELL students, inspired by Literacy Squared / Kathy Escamilla methodology.
+      : `You are an expert English Language Development specialist creating anchor passages for grades 3-5 ELL students.
 
 Generate ONE anchor passage of exactly 2-3 sentences from one of these approved categories:
 1. Academic sentence frames connected to science or social studies

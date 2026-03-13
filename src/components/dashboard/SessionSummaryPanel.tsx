@@ -11,8 +11,8 @@ interface StudentDomainScores {
   speaking: number;
   listening: number;
   overall: number;
-  widaLevel: number;
-  widaLabel: string;
+  proficiencyLevel: number;
+  proficiencyLabel: string;
   gradeBand: string;
   completed: boolean;
 }
@@ -36,7 +36,7 @@ const DOMAIN_ICONS: Record<string, any> = {
   listening: Headphones,
 };
 
-function estimateWida(pct: number, gradeBand: string): { level: number; label: string } {
+function estimateProficiency(pct: number, gradeBand: string): { level: number; label: string } {
   if (gradeBand === "K-2") {
     if (pct >= 70) return { level: 3, label: "Developing" };
     if (pct >= 40) return { level: 2, label: "Emerging" };
@@ -131,14 +131,14 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
         const overall = Math.round((r + w + s + l) / 4);
         const hasData = completedStudents.has(sid);
         const studentGradeBand = completedStudents.get(sid) || "3-5";
-        const wida = estimateWida(overall, studentGradeBand);
+        const proficiency = estimateProficiency(overall, studentGradeBand);
 
         studentScores.push({
           student_name: student.name,
           reading: r, writing: w, speaking: s, listening: l,
           overall,
-          widaLevel: wida.level,
-          widaLabel: wida.label,
+          proficiencyLevel: proficiency.level,
+          proficiencyLabel: proficiency.label,
           gradeBand: studentGradeBand,
           completed: hasData,
         });
@@ -291,8 +291,8 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
                               <ScoreCell value={s.listening} />
                             </td>
                             <td className="text-center py-2 px-1">
-                              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full" title={s.widaLabel}>
-                                {s.widaLevel} - {s.widaLabel}
+                              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full" title={s.proficiencyLabel}>
+                                {s.proficiencyLevel} - {s.proficiencyLabel}
                               </span>
                             </td>
                           </tr>

@@ -35,12 +35,12 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const actualDomain = DOMAIN_ROTATION_8[activityIndex] || domain;
-    const widaLevel = PROFICIENCY_PROGRESSION_8[activityIndex] || "Developing";
+    const proficiencyLevel = PROFICIENCY_PROGRESSION_8[activityIndex] || "Developing";
     const theme = sessionTheme || "Nature & animals";
 
     const systemPrompt = `You are an expert English Language Development activity generator for grades 3-5 ELL students.
 
-Generate ONE activity for the "${actualDomain}" domain at proficiency level "${widaLevel}".
+Generate ONE activity for the "${actualDomain}" domain at proficiency level "${proficiencyLevel}".
 Theme for this question: "${theme}"
 
 ${STRICT_RULES}
@@ -90,7 +90,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this structure:
   "options": ["<4 options for multiple_choice only>"],
   "correctAnswer": "<exact correct answer for MC, sample answer for speaking/writing>",
   "acceptableKeywords": ["<5-8 keywords for flexible grading on speaking/writing>"],
-  "widaLevel": "${widaLevel}",
+  "proficiencyLevel": "${proficiencyLevel}",
   "theme": "${theme}",
   "audioDescription": "<complete mini-story for LISTENING domain, omit for others>"
 }
@@ -107,7 +107,7 @@ Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate a ${actualDomain} activity at proficiency level ${widaLevel} with theme "${theme}" for grades ${grade}. Make it engaging, vivid, and fully self-contained.` },
+          { role: "user", content: `Generate a ${actualDomain} activity at proficiency level ${proficiencyLevel} with theme "${theme}" for grades ${grade}. Make it engaging, vivid, and fully self-contained.` },
         ],
       }),
     });
@@ -143,7 +143,7 @@ Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
     }
 
     activity.domain = actualDomain;
-    activity.widaLevel = widaLevel;
+    activity.proficiencyLevel = proficiencyLevel;
 
     return new Response(JSON.stringify(activity), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
