@@ -45,7 +45,7 @@ const CHALLENGE_LABELS: Record<string, string> = {
   teach_it_back: "Teach It Back",
 };
 
-function getWidaLevel(pct: number): string {
+function getProficiencyLevel(pct: number): string {
   if (pct >= 90) return "Bridging";
   if (pct >= 70) return "Expanding";
   if (pct >= 50) return "Developing";
