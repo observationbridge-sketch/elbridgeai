@@ -15,6 +15,7 @@ interface TeacherReport {
   domainScores: Record<string, { correct: number; total: number }>;
   widaLevels: Record<string, number>;
   strategyBreakdown: Record<string, number>;
+  topStudent?: { name: string; points: number; animal: string };
 }
 
 function getWeekRange(): { start: string; end: string; label: string } {
