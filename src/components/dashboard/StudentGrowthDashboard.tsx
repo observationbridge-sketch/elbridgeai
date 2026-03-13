@@ -601,10 +601,10 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                     <ResponsiveContainer width="100%" height={280}>
                       <LineChart data={filteredSessions.map((s) => ({
                         date: s.date,
-                        Reading: pctToWida(s.reading, s.gradeBand).level,
-                        Writing: pctToWida(s.writing, s.gradeBand).level,
-                        Speaking: pctToWida(s.speaking, s.gradeBand).level,
-                        Listening: pctToWida(s.listening, s.gradeBand).level,
+                        Reading: pctToProficiency(s.reading, s.gradeBand).level,
+                        Writing: pctToProficiency(s.writing, s.gradeBand).level,
+                        Speaking: pctToProficiency(s.speaking, s.gradeBand).level,
+                        Listening: pctToProficiency(s.listening, s.gradeBand).level,
                       }))}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis
