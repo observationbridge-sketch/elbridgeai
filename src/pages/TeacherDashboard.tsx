@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Copy, LogOut, Users, Play, Square, History, Trophy } from "lucide-react";
+import { Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode } from "lucide-react";
 import EmailSettings from "@/components/dashboard/EmailSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getAnimalLevel } from "@/components/gamification/constants";
+import { QRCodeCanvas } from "qrcode.react";
 
 function generateCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
