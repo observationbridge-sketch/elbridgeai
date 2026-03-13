@@ -286,6 +286,11 @@ const TeacherDashboard = () => {
                 <p className="text-muted-foreground mt-2">
                   {sessionActive ? "students in session" : "No active session"}
                 </p>
+                {sessionActive && activeGradeBand && (
+                  <span className="inline-block mt-2 text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
+                    Grade Band: {activeGradeBand}
+                  </span>
+                )}
               </div>
             </CardContent>
           </Card>
