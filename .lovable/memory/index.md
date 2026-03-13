@@ -1,7 +1,13 @@
 # Memory: index.md
 Updated: now
 
-ElbridgeAI - K-12 English Language Learning platform for teachers and students (grades 3-5)
+ElbridgeAI - K-12 English Language Learning platform for teachers and students (grades 3-5, K-2 and 6-8 rolling out soon)
+
+## Branding & Legal
+- NEVER use "WIDA" — use "Standard ELD Frameworks" or "National Proficiency Standards"
+- NEVER use "WIDA Can-Do Descriptors" — use "Academic Can-Do Benchmarks"
+- Footer disclaimer: "ELBridgeAI is an independent tool designed to support language acquisition."
+- Focus: Grades 3-5 (K-2 and 6-8 rolling out soon)
 
 ## Design System
 - Primary: ocean blue (210 80% 45%)
@@ -16,26 +22,20 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - Students: anon access, join via 6-char code + first name
 - AI: Lovable AI (gemini-3-flash-preview) generates activities per domain
 - Domains: Reading, Writing, Speaking, Listening
-- WIDA levels: Entering, Emerging, Developing, Expanding, Bridging
+- Proficiency levels: Entering, Emerging, Developing, Expanding, Bridging
 
 ## Session Flow (3 parts, 12 steps, ~25-30 min)
 - Part 1: 5-step Literacy Squared routine with 2-3 sentence anchor passage
-- Part 2: 6 adaptive activities using one of 3 strategies (Sentence Frames / Expansion / Quick Writes)
+- Part 2: 6 adaptive activities using one of 3 strategies
 - Part 3: Fun challenge (Story Builder / Speed Round / Teach It Back)
 - Theme + topic declared at session start, enforced across all parts
 
 ## Edge Functions
-- generate-anchor-sentence: returns 2-3 sentence passage + theme + topic
-- generate-part2: adaptive strategy, 6 activities, theme-enforced
-- generate-part3-challenge: random challenge type, theme-enforced
-- generate-activity: legacy (may be unused)
+- generate-anchor-sentence, generate-part2, generate-part3-challenge, generate-activity (legacy)
 
 ## Gamification
-- Points: accumulate across sessions, Part 3 challenge bonuses (20/25 pts)
-- Animal evolution: 🐣→🐢→🦊→🦅→🐬→🦋
-- Badges: 13 badges across 4 categories
-- Leaderboard: real-time via Supabase Realtime
+- Points, animal evolution (🐣→🦋), 13 badges, real-time leaderboard
 
 ## Database Tables
-- sessions, session_students, student_responses (with session_part, strategy)
+- sessions, session_students, student_responses (session_part, strategy, wida_level column)
 - student_points, student_badges, teacher_preferences

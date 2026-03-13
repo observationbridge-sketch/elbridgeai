@@ -45,7 +45,7 @@ const CHALLENGE_LABELS: Record<string, string> = {
   teach_it_back: "Teach It Back",
 };
 
-function getWidaLevel(pct: number): string {
+function getProficiencyLevel(pct: number): string {
   if (pct >= 90) return "Bridging";
   if (pct >= 70) return "Expanding";
   if (pct >= 50) return "Developing";
@@ -291,7 +291,7 @@ const SessionSummary = () => {
           {domainSummaries.map((summary) => {
             const meta = DOMAIN_META[summary.domain];
             const Icon = meta.icon;
-            const widaLevel = getWidaLevel(summary.percentage);
+            const proficiencyLevel = getProficiencyLevel(summary.percentage);
             return (
               <Card key={summary.domain} className="card-shadow border-border">
                 <CardHeader className="pb-2">
@@ -304,7 +304,7 @@ const SessionSummary = () => {
                   <div className="flex items-end justify-between">
                     <span className="text-3xl font-bold text-foreground">{summary.percentage}%</span>
                     <span className={`text-sm px-2 py-1 rounded-full bg-muted ${meta.color}`}>
-                      {widaLevel}
+                      {proficiencyLevel}
                     </span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">

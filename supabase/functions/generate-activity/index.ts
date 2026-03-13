@@ -12,8 +12,8 @@ const DOMAIN_ROTATION_8 = [
   "reading", "listening", "speaking", "writing",
 ];
 
-// WIDA progression across 8 questions (gradual increase)
-const WIDA_PROGRESSION_8 = [
+// Proficiency progression across 8 questions (gradual increase)
+const PROFICIENCY_PROGRESSION_8 = [
   "Entering",    // Q1
   "Entering",    // Q2
   "Emerging",    // Q3
@@ -33,12 +33,12 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const actualDomain = DOMAIN_ROTATION_8[activityIndex] || domain;
-    const widaLevel = WIDA_PROGRESSION_8[activityIndex] || "Developing";
+    const widaLevel = PROFICIENCY_PROGRESSION_8[activityIndex] || "Developing";
     const theme = sessionTheme || "Nature & animals";
 
     const systemPrompt = `You are an expert English Language Development activity generator for grades 3-5 ELL students.
 
-Generate ONE activity for the "${actualDomain}" domain at WIDA level "${widaLevel}".
+Generate ONE activity for the "${actualDomain}" domain at proficiency level "${widaLevel}".
 Theme for this question: "${theme}"
 
 CRITICAL RULE: Every question MUST be fully self-contained. The student must have ALL information needed to answer within the question itself. Before outputting, verify: "Does this question contain everything the student needs to answer it?"
@@ -67,11 +67,11 @@ SPEAKING (type: speaking_prompt):
 WRITING (type: short_answer):
 - Give a specific, vivid scenario connected to the theme
 - Provide a clear sentence starter the student can use
-- Ask for 1-3 sentences depending on WIDA level (1 for Entering, 2-3 for higher)
+- Ask for 1-3 sentences depending on proficiency level (1 for Entering, 2-3 for higher)
 - The "correctAnswer" should be a SAMPLE answer
 - Include "acceptableKeywords" array with 5-8 key words that a reasonable answer might contain
 
-WIDA LEVEL GUIDELINES:
+PROFICIENCY LEVEL GUIDELINES:
 - Entering (Level 1): Simple vocabulary, short sentences, basic comprehension
 - Emerging (Level 2): Simple sentences, familiar topics, some descriptive words
 - Developing (Level 3): More complex sentences, content vocabulary, paragraph-level text
@@ -103,7 +103,7 @@ Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate a ${actualDomain} activity at WIDA level ${widaLevel} with theme "${theme}" for grades ${grade}. Make it engaging, vivid, and fully self-contained.` },
+          { role: "user", content: `Generate a ${actualDomain} activity at proficiency level ${widaLevel} with theme "${theme}" for grades ${grade}. Make it engaging, vivid, and fully self-contained.` },
         ],
       }),
     });

@@ -13,7 +13,7 @@ interface TeacherReport {
   totalSessions: number;
   totalStudents: number;
   domainScores: Record<string, { correct: number; total: number }>;
-  widaLevels: Record<string, number>;
+  proficiencyLevels: Record<string, number>;
   strategyBreakdown: Record<string, number>;
   topStudent?: { name: string; points: number; animal: string };
 }
@@ -43,7 +43,7 @@ const STRATEGY_LABELS: Record<string, string> = {
 
 function buildPlainText(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
-  const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
+  const proficiencyLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
 
   let text = `Weekly ElbridgeAI Student Report — ${weekLabel}\n\n`;
   text += `Hi ${report.name},\n\nHere's how your students performed this past week.\n\n`;
@@ -54,9 +54,9 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
     const pct = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
     text += `  ${d}: ${pct}%\n`;
   }
-  text += `\nWIDA LEVELS\n`;
-  for (const level of widaLevels) {
-    const count = report.widaLevels[level] || 0;
+  text += `\nPROFICIENCY LEVELS\n`;
+  for (const level of proficiencyLevels) {
+    const count = report.proficiencyLevels[level] || 0;
     if (count > 0) text += `  ${level}: ${count}\n`;
   }
   // Strategy breakdown
@@ -78,7 +78,7 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
 
 function buildEmailHtml(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
-  const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
+  const proficiencyLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
 
   let bestDomain = "";
   let bestScore = -1;
@@ -106,9 +106,9 @@ function buildEmailHtml(report: TeacherReport, weekLabel: string): string {
     })
     .join("");
 
-  const widaRows = widaLevels
+  const proficiencyRows = proficiencyLevels
     .map((level) => {
-      const count = report.widaLevels[level] || 0;
+      const count = report.proficiencyLevels[level] || 0;
       return count > 0
         ? `<span style="display:inline-block;margin:4px 6px;padding:6px 14px;background:#e0f0f5;color:#1a6b5a;border-radius:20px;font-size:13px;font-weight:600;">${level}: ${count}</span>`
         : "";
@@ -171,11 +171,11 @@ ${worstDomain && worstDomain !== bestDomain ? `<tr><td style="padding:4px 40px 1
   </div>
 </td></tr>` : ""}
 
-<!-- WIDA Levels -->
-${widaRows ? `<tr><td style="padding:16px 40px 8px;">
-  <h2 style="margin:0;font-size:16px;color:#1a3a5c;">WIDA Levels</h2>
+<!-- Proficiency Levels -->
+${proficiencyRows ? `<tr><td style="padding:16px 40px 8px;">
+  <h2 style="margin:0;font-size:16px;color:#1a3a5c;">National Proficiency Standards</h2>
 </td></tr>
-<tr><td style="padding:0 40px 20px;">${widaRows}</td></tr>` : ""}
+<tr><td style="padding:0 40px 20px;">${proficiencyRows}</td></tr>` : ""}
 
 <!-- Adaptive Strategies -->
 ${(() => {
@@ -318,14 +318,14 @@ Deno.serve(async (req) => {
         .in("session_id", sessionIds);
 
       const domainScores: Record<string, { correct: number; total: number }> = {};
-      const widaLevels: Record<string, number> = {};
+      const proficiencyLevels: Record<string, number> = {};
       const strategyBreakdown: Record<string, number> = {};
 
       (responses || []).forEach((r: any) => {
         if (!domainScores[r.domain]) domainScores[r.domain] = { correct: 0, total: 0 };
         domainScores[r.domain].total++;
         if (r.is_correct) domainScores[r.domain].correct++;
-        widaLevels[r.wida_level] = (widaLevels[r.wida_level] || 0) + 1;
+        proficiencyLevels[r.wida_level] = (proficiencyLevels[r.wida_level] || 0) + 1;
         if (r.strategy) {
           strategyBreakdown[r.strategy] = (strategyBreakdown[r.strategy] || 0) + 1;
         }
@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
         totalSessions: sessionIds.length,
         totalStudents: (students || []).length,
         domainScores,
-        widaLevels,
+        proficiencyLevels,
         strategyBreakdown,
         topStudent,
       };
