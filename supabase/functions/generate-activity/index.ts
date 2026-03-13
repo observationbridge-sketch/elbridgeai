@@ -67,7 +67,7 @@ SPEAKING (type: speaking_prompt):
 WRITING (type: short_answer):
 - Give a specific, vivid scenario connected to the theme
 - Provide a clear sentence starter the student can use
-- Ask for 1-3 sentences depending on WIDA level (1 for Entering, 2-3 for higher)
+- Ask for 1-3 sentences depending on proficiency level (1 for Entering, 2-3 for higher)
 - The "correctAnswer" should be a SAMPLE answer
 - Include "acceptableKeywords" array with 5-8 key words that a reasonable answer might contain
 
