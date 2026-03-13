@@ -43,7 +43,7 @@ const STRATEGY_LABELS: Record<string, string> = {
 
 function buildPlainText(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
-  const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
+  const proficiencyLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
 
   let text = `Weekly ElbridgeAI Student Report — ${weekLabel}\n\n`;
   text += `Hi ${report.name},\n\nHere's how your students performed this past week.\n\n`;
