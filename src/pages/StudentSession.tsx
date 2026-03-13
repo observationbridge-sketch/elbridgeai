@@ -269,10 +269,15 @@ const StudentSession = () => {
           setStudentName(studentData.student_name);
           const { data: sessionData } = await supabase
             .from("sessions")
-            .select("teacher_id")
+            .select("teacher_id, grade_band")
             .eq("id", sessionId)
             .single();
-          if (sessionData) setTeacherId(sessionData.teacher_id);
+          if (sessionData) {
+            setTeacherId(sessionData.teacher_id);
+            const gb = (sessionData as any).grade_band || "3-5";
+            setGradeBand(gb as GradeBand);
+            setEffectiveGradeBand(gb as GradeBand);
+          }
         }
       } catch { /* proceed */ }
 
