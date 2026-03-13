@@ -610,8 +610,9 @@ const StudentSession = () => {
     setLoading(true);
     setLoadingMessage("Preparing your Language Challenge! 🎉");
     try {
+      const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
       const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
-        body: { grade: "3-5", theme: sessionTheme, topic: sessionTopic },
+        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType },
       });
       if (error) throw error;
       setPart3Challenge(data as Part3Challenge);
