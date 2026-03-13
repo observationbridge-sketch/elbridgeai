@@ -619,8 +619,8 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                           ticks={[1, 2, 3, 4, 5, 6]}
                           tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                           tickFormatter={(v) => {
-                            const wida = WIDA_SCALE.find((s) => s.level === v);
-                            return wida ? `${v} ${wida.label.slice(0, 3)}` : `${v}`;
+                            const entry = PROFICIENCY_SCALE.find((s) => s.level === v);
+                            return entry ? `${v} ${entry.label.slice(0, 3)}` : `${v}`;
                           }}
                           width={65}
                         />
