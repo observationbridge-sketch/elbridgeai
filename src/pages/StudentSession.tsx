@@ -755,7 +755,7 @@ const StudentSession = () => {
     saveResponse("speaking", "Part 3: Teach It Back", part3Answer, sessionTopic, true, "Expanding", "part3", "teach_it_back");
   };
 
-  const finishSession = () => {
+  const finishSession = async () => {
     gamification.addPoints(POINTS.SESSION_COMPLETE);
     gamification.completeSession();
     if (domainScores) {
@@ -766,6 +766,27 @@ const StudentSession = () => {
         }
       }
     }
+
+    // Save content history
+    try {
+      const isBaseline = !contentHistory;
+      await supabase.from("student_content_history").insert({
+        student_name: studentName,
+        teacher_id: teacherId,
+        session_id: sessionId,
+        theme: sessionTheme,
+        topic: sessionTopic,
+        key_vocabulary: usedVocabulary.concat(anchor?.keyWords || []),
+        vocabulary_results: vocabularyResults,
+        activity_formats: usedActivityFormats,
+        challenge_type: challengeCompleted?.toLowerCase().replace(/ /g, "_") || null,
+        grade_band: effectiveGradeBand,
+        is_baseline: isBaseline,
+      } as any);
+    } catch (e) {
+      console.error("Failed to save content history:", e);
+    }
+
     setSessionEnded(true);
   };
 
