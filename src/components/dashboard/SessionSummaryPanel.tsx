@@ -130,12 +130,16 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
         const r = pct("reading"), w = pct("writing"), s = pct("speaking"), l = pct("listening");
         const overall = Math.round((r + w + s + l) / 4);
         const hasData = completedStudents.has(sid);
+        const studentGradeBand = completedStudents.get(sid) || "3-5";
+        const wida = estimateWida(overall, studentGradeBand);
 
         studentScores.push({
           student_name: student.name,
           reading: r, writing: w, speaking: s, listening: l,
           overall,
-          widaLevel: estimateWida(overall),
+          widaLevel: wida.level,
+          widaLabel: wida.label,
+          gradeBand: studentGradeBand,
           completed: hasData,
         });
 
