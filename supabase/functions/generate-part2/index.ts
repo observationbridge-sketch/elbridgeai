@@ -93,6 +93,7 @@ function getInputTypeFields(inputType: string, topic: string): string {
 function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string): string {
   const isK2 = grade === "K-2";
   const inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
+  const k2Override = isK2 ? `\nK-2 RULES: Maximum 1 blank per sentence. Multiple choice must have only 2 options. Use only Tier 1 (everyday) vocabulary. Keep sentences under 10 words. Instructions should be very simple.` : "";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
   const difficultyLabels = [
