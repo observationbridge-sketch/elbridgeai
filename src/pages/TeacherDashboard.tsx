@@ -124,6 +124,7 @@ const TeacherDashboard = () => {
     setSessionActive(false);
     setSessionCode(null);
     setStudentCount(0);
+    setActiveGradeBand(null);
     clearInterval((window as any).__sessionPoll);
     toast.success("Session ended");
     if (user) loadSessions(user.id);
