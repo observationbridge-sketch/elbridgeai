@@ -295,8 +295,6 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
                                 {s.widaLevel} - {s.widaLabel}
                               </span>
                             </td>
-                              </span>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
