@@ -901,7 +901,7 @@ const StudentSession = () => {
           <Part2StrategyView
             activity={part2Activity}
             index={part2Index}
-            totalActivities={6}
+            totalActivities={part2Count}
             answer={part2Answer}
             setAnswer={setPart2Answer}
             submitted={part2Submitted}
