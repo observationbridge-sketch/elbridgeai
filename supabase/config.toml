@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-anchor-sentence]
 verify_jwt = false
+
+[functions.generate-part2]
+verify_jwt = false

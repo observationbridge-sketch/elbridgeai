@@ -14,6 +14,7 @@ interface TeacherReport {
   totalStudents: number;
   domainScores: Record<string, { correct: number; total: number }>;
   widaLevels: Record<string, number>;
+  strategyBreakdown: Record<string, number>;
 }
 
 function getWeekRange(): { start: string; end: string; label: string } {
@@ -33,6 +34,12 @@ function getWeekRange(): { start: string; end: string; label: string } {
   };
 }
 
+const STRATEGY_LABELS: Record<string, string> = {
+  sentence_frames: "Sentence Frames",
+  sentence_expansion: "Sentence Expansion",
+  quick_writes: "Quick Writes",
+};
+
 function buildPlainText(report: TeacherReport, weekLabel: string): string {
   const domains = ["Reading", "Writing", "Speaking", "Listening"];
   const widaLevels = ["Entering", "Emerging", "Developing", "Expanding", "Bridging"];
@@ -50,6 +57,13 @@ function buildPlainText(report: TeacherReport, weekLabel: string): string {
   for (const level of widaLevels) {
     const count = report.widaLevels[level] || 0;
     if (count > 0) text += `  ${level}: ${count}\n`;
+  }
+  // Strategy breakdown
+  if (Object.keys(report.strategyBreakdown).length > 0) {
+    text += `\nADAPTIVE STRATEGIES USED\n`;
+    for (const [strategy, count] of Object.entries(report.strategyBreakdown)) {
+      text += `  ${STRATEGY_LABELS[strategy] || strategy}: ${count} sessions\n`;
+    }
   }
   text += `\nView Full Dashboard: https://elbridgeai.lovable.app/teacher/dashboard\n`;
   text += `\nTo manage email preferences or unsubscribe, visit:\nhttps://elbridgeai.lovable.app/teacher/dashboard#email-settings\n`;
@@ -157,6 +171,19 @@ ${widaRows ? `<tr><td style="padding:16px 40px 8px;">
   <h2 style="margin:0;font-size:16px;color:#1a3a5c;">WIDA Levels</h2>
 </td></tr>
 <tr><td style="padding:0 40px 20px;">${widaRows}</td></tr>` : ""}
+
+<!-- Adaptive Strategies -->
+${(() => {
+  const entries = Object.entries(report.strategyBreakdown);
+  if (entries.length === 0) return "";
+  const strategyChips = entries.map(([s, c]) => 
+    `<span style="display:inline-block;margin:4px 6px;padding:6px 14px;background:#f0e6ff;color:#6b21a8;border-radius:20px;font-size:13px;font-weight:600;">${STRATEGY_LABELS[s] || s}: ${c} sessions</span>`
+  ).join("");
+  return `<tr><td style="padding:16px 40px 8px;">
+    <h2 style="margin:0;font-size:16px;color:#1a3a5c;">🎯 Adaptive Strategies Used</h2>
+  </td></tr>
+  <tr><td style="padding:0 40px 20px;">${strategyChips}</td></tr>`;
+})()}
 
 <!-- CTA -->
 <tr><td style="padding:16px 40px 32px;text-align:center;">
@@ -269,17 +296,21 @@ Deno.serve(async (req) => {
       // Get responses
       const { data: responses } = await supabase
         .from("student_responses")
-        .select("domain, is_correct, wida_level")
+        .select("domain, is_correct, wida_level, strategy")
         .in("session_id", sessionIds);
 
       const domainScores: Record<string, { correct: number; total: number }> = {};
       const widaLevels: Record<string, number> = {};
+      const strategyBreakdown: Record<string, number> = {};
 
       (responses || []).forEach((r: any) => {
         if (!domainScores[r.domain]) domainScores[r.domain] = { correct: 0, total: 0 };
         domainScores[r.domain].total++;
         if (r.is_correct) domainScores[r.domain].correct++;
         widaLevels[r.wida_level] = (widaLevels[r.wida_level] || 0) + 1;
+        if (r.strategy) {
+          strategyBreakdown[r.strategy] = (strategyBreakdown[r.strategy] || 0) + 1;
+        }
       });
 
       const report: TeacherReport = {
@@ -290,6 +321,7 @@ Deno.serve(async (req) => {
         totalStudents: (students || []).length,
         domainScores,
         widaLevels,
+        strategyBreakdown,
       };
 
       const html = buildEmailHtml(report, label);

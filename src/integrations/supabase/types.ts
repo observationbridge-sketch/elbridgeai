@@ -79,6 +79,8 @@ export type Database = {
           is_correct: boolean
           question: string
           session_id: string
+          session_part: string
+          strategy: string | null
           student_answer: string
           student_id: string
           wida_level: string
@@ -91,6 +93,8 @@ export type Database = {
           is_correct?: boolean
           question: string
           session_id: string
+          session_part?: string
+          strategy?: string | null
           student_answer: string
           student_id: string
           wida_level?: string
@@ -103,6 +107,8 @@ export type Database = {
           is_correct?: boolean
           question?: string
           session_id?: string
+          session_part?: string
+          strategy?: string | null
           student_answer?: string
           student_id?: string
           wida_level?: string

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users } from "lucide-react";
+import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type DomainSummary = {
@@ -12,11 +12,22 @@ type DomainSummary = {
   percentage: number;
 };
 
+type StrategyInfo = {
+  strategy: string;
+  count: number;
+};
+
 const DOMAIN_META: Record<string, { icon: any; color: string; label: string }> = {
   reading: { icon: BookOpen, color: "text-primary", label: "Reading" },
   writing: { icon: PenTool, color: "text-accent", label: "Writing" },
   speaking: { icon: Mic, color: "text-success", label: "Speaking" },
   listening: { icon: Headphones, color: "text-warning", label: "Listening" },
+};
+
+const STRATEGY_LABELS: Record<string, string> = {
+  sentence_frames: "Sentence Frames",
+  sentence_expansion: "Sentence Expansion",
+  quick_writes: "Quick Writes",
 };
 
 function getWidaLevel(pct: number): string {
@@ -33,12 +44,15 @@ const SessionSummary = () => {
   const [domainSummaries, setDomainSummaries] = useState<DomainSummary[]>([]);
   const [studentCount, setStudentCount] = useState(0);
   const [sessionCode, setSessionCode] = useState("");
+  const [part1Stats, setPart1Stats] = useState({ total: 0, correct: 0 });
+  const [part2Stats, setPart2Stats] = useState({ total: 0, correct: 0 });
+  const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
+  const [weakestDomainNote, setWeakestDomainNote] = useState("");
 
   useEffect(() => {
     if (!sessionId) return;
 
     const load = async () => {
-      // Get session info
       const { data: session } = await supabase
         .from("sessions")
         .select("code")
@@ -46,20 +60,19 @@ const SessionSummary = () => {
         .single();
       if (session) setSessionCode(session.code);
 
-      // Get student count
       const { count } = await supabase
         .from("session_students")
         .select("*", { count: "exact", head: true })
         .eq("session_id", sessionId);
       setStudentCount(count || 0);
 
-      // Get responses
       const { data: responses } = await supabase
         .from("student_responses")
-        .select("domain, is_correct")
+        .select("domain, is_correct, session_part, strategy")
         .eq("session_id", sessionId);
 
       if (responses) {
+        // Domain summaries
         const domains = ["reading", "writing", "speaking", "listening"];
         const summaries = domains.map((d) => {
           const domainResponses = responses.filter((r) => r.domain === d);
@@ -72,6 +85,34 @@ const SessionSummary = () => {
           };
         });
         setDomainSummaries(summaries);
+
+        // Part 1 vs Part 2 stats
+        const p1 = responses.filter((r) => r.session_part === "part1");
+        const p2 = responses.filter((r) => r.session_part === "part2");
+        setPart1Stats({ total: p1.length, correct: p1.filter((r) => r.is_correct).length });
+        setPart2Stats({ total: p2.length, correct: p2.filter((r) => r.is_correct).length });
+
+        // Strategy info
+        const strategyMap = new Map<string, number>();
+        for (const r of responses) {
+          if (r.strategy) {
+            strategyMap.set(r.strategy, (strategyMap.get(r.strategy) || 0) + 1);
+          }
+        }
+        const strategyList = Array.from(strategyMap.entries()).map(([strategy, count]) => ({ strategy, count }));
+        setStrategies(strategyList);
+
+        // Find weakest domain for note
+        if (summaries.some((s) => s.total > 0)) {
+          const withData = summaries.filter((s) => s.total > 0);
+          const weakest = withData.reduce((min, s) => (s.percentage < min.percentage ? s : min), withData[0]);
+          if (strategyList.length > 0) {
+            const strategyName = STRATEGY_LABELS[strategyList[0].strategy] || strategyList[0].strategy;
+            setWeakestDomainNote(
+              `${weakest.domain.charAt(0).toUpperCase() + weakest.domain.slice(1)} was the weakest area, so Part 2 focused on ${strategyName}.`
+            );
+          }
+        }
       }
     };
 
@@ -102,6 +143,72 @@ const SessionSummary = () => {
           </div>
         </div>
 
+        {/* Part 1 vs Part 2 Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="card-shadow border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                Part 1: Language Builder
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end justify-between">
+                <span className="text-3xl font-bold text-foreground">
+                  {part1Stats.total > 0 ? Math.round((part1Stats.correct / part1Stats.total) * 100) : 0}%
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {part1Stats.correct}/{part1Stats.total} correct
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="card-shadow border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Target className="h-4 w-4 text-accent" />
+                Part 2: Adaptive Practice
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end justify-between">
+                <span className="text-3xl font-bold text-foreground">
+                  {part2Stats.total > 0 ? Math.round((part2Stats.correct / part2Stats.total) * 100) : 0}%
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {part2Stats.correct}/{part2Stats.total} correct
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Strategy Info */}
+        {strategies.length > 0 && (
+          <Card className="card-shadow border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Target className="h-4 w-4 text-success" />
+                Strategy Used
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {strategies.map((s) => (
+                  <span key={s.strategy} className="px-3 py-1.5 bg-accent/10 text-accent rounded-full text-sm font-medium">
+                    {STRATEGY_LABELS[s.strategy] || s.strategy} ({s.count} activities)
+                  </span>
+                ))}
+              </div>
+              {weakestDomainNote && (
+                <p className="text-sm text-muted-foreground italic">{weakestDomainNote}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Domain Scores */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {domainSummaries.map((summary) => {
             const meta = DOMAIN_META[summary.domain];
