@@ -32,6 +32,8 @@ const TeacherDashboard = () => {
   const [studentCount, setStudentCount] = useState(0);
   const [sessions, setSessions] = useState<any[]>([]);
   const [topStudents, setTopStudents] = useState<StudentOverview[]>([]);
+  const [gradeBand, setGradeBand] = useState<"K-2" | "3-5">("3-5");
+  const [activeGradeBand, setActiveGradeBand] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -65,6 +67,7 @@ const TeacherDashboard = () => {
     if (active) {
       setSessionCode(active.code);
       setSessionActive(true);
+      setActiveGradeBand(active.grade_band || "3-5");
       pollStudents(active.id);
     }
   };
@@ -92,7 +95,7 @@ const TeacherDashboard = () => {
     const code = generateCode();
     const { data, error } = await supabase
       .from("sessions")
-      .insert({ teacher_id: user.id, code, status: "active" })
+      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand } as any)
       .select()
       .single();
     if (error) {
@@ -101,8 +104,9 @@ const TeacherDashboard = () => {
     }
     setSessionCode(code);
     setSessionActive(true);
+    setActiveGradeBand(gradeBand);
     setStudentCount(0);
-    toast.success("Session started!");
+    toast.success(`Session started! (${gradeBand})`);
 
     const interval = setInterval(async () => {
       if (data) await pollStudents(data.id);
@@ -120,6 +124,7 @@ const TeacherDashboard = () => {
     setSessionActive(false);
     setSessionCode(null);
     setStudentCount(0);
+    setActiveGradeBand(null);
     clearInterval((window as any).__sessionPoll);
     toast.success("Session ended");
     if (user) loadSessions(user.id);
@@ -240,9 +245,30 @@ const TeacherDashboard = () => {
                   </Button>
                 </>
               ) : (
-                <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
-                  <Play className="h-4 w-4 mr-2" /> Start New Session
-                </Button>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-2">Grade Band</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant={gradeBand === "K-2" ? "default" : "outline"}
+                        className={gradeBand === "K-2" ? "border-2 border-primary" : ""}
+                        onClick={() => setGradeBand("K-2")}
+                      >
+                        K-2
+                      </Button>
+                      <Button
+                        variant={gradeBand === "3-5" ? "default" : "outline"}
+                        className={gradeBand === "3-5" ? "border-2 border-primary" : ""}
+                        onClick={() => setGradeBand("3-5")}
+                      >
+                        3-5
+                      </Button>
+                    </div>
+                  </div>
+                  <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
+                    <Play className="h-4 w-4 mr-2" /> Start New Session ({gradeBand})
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -260,6 +286,11 @@ const TeacherDashboard = () => {
                 <p className="text-muted-foreground mt-2">
                   {sessionActive ? "students in session" : "No active session"}
                 </p>
+                {sessionActive && activeGradeBand && (
+                  <span className="inline-block mt-2 text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
+                    Grade Band: {activeGradeBand}
+                  </span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -324,11 +355,16 @@ const TeacherDashboard = () => {
                     className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => session.status === "ended" && navigate(`/teacher/session/${session.id}`)}
                   >
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="font-mono text-sm text-primary">{session.code}</span>
-                      <span className="text-muted-foreground text-sm ml-3">
+                      <span className="text-muted-foreground text-sm">
                         {new Date(session.created_at).toLocaleDateString()}
                       </span>
+                      {(session as any).grade_band && (
+                        <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
+                          {(session as any).grade_band}
+                        </span>
+                      )}
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"

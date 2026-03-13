@@ -12,6 +12,8 @@ interface StudentDomainScores {
   listening: number;
   overall: number;
   widaLevel: number;
+  widaLabel: string;
+  gradeBand: string;
   completed: boolean;
 }
 
@@ -34,13 +36,16 @@ const DOMAIN_ICONS: Record<string, any> = {
   listening: Headphones,
 };
 
-function estimateWida(pct: number): number {
-  if (pct >= 90) return 6;
-  if (pct >= 75) return 5;
-  if (pct >= 60) return 4;
-  if (pct >= 40) return 3;
-  if (pct >= 20) return 2;
-  return 1;
+function estimateWida(pct: number, gradeBand: string): { level: number; label: string } {
+  if (gradeBand === "K-2") {
+    if (pct >= 70) return { level: 3, label: "Developing" };
+    if (pct >= 40) return { level: 2, label: "Emerging" };
+    return { level: 1, label: "Entering" };
+  }
+  // 3-5
+  if (pct >= 90) return { level: 6, label: "Reaching" };
+  if (pct >= 75) return { level: 5, label: "Bridging" };
+  return { level: 4, label: "Expanding" };
 }
 
 interface Props {
@@ -84,7 +89,7 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
 
       const { data: responses } = await supabase
         .from("student_responses")
-        .select("student_id, domain, is_correct")
+        .select("student_id, domain, is_correct, grade_band")
         .eq("session_id", session.id);
 
       const studentMap = new Map<string, { name: string; domains: Record<string, { correct: number; total: number }> }>();
@@ -101,12 +106,12 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
         });
       }
 
-      const completedStudents = new Set<string>();
+      const completedStudents = new Map<string, string>(); // studentId -> gradeBand
 
       for (const r of (responses || [])) {
         const student = studentMap.get(r.student_id);
         if (!student) continue;
-        completedStudents.add(r.student_id);
+        completedStudents.set(r.student_id, (r as any).grade_band || "3-5");
         const d = r.domain as string;
         if (student.domains[d]) {
           student.domains[d].total++;
@@ -125,12 +130,16 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
         const r = pct("reading"), w = pct("writing"), s = pct("speaking"), l = pct("listening");
         const overall = Math.round((r + w + s + l) / 4);
         const hasData = completedStudents.has(sid);
+        const studentGradeBand = completedStudents.get(sid) || "3-5";
+        const wida = estimateWida(overall, studentGradeBand);
 
         studentScores.push({
           student_name: student.name,
           reading: r, writing: w, speaking: s, listening: l,
           overall,
-          widaLevel: estimateWida(overall),
+          widaLevel: wida.level,
+          widaLabel: wida.label,
+          gradeBand: studentGradeBand,
           completed: hasData,
         });
 
@@ -265,6 +274,9 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
                             <td className="py-2 px-2 font-medium text-foreground">
                               {s.student_name}
                               {!s.completed && <span className="text-xs text-muted-foreground ml-1">(incomplete)</span>}
+                              {s.gradeBand !== "3-5" && (
+                                <span className="text-xs bg-accent/10 text-accent ml-1 px-1.5 py-0.5 rounded-full">{s.gradeBand}</span>
+                              )}
                             </td>
                             <td className="text-center py-2 px-1">
                               <ScoreCell value={s.reading} />
@@ -279,8 +291,8 @@ const SessionSummaryPanel = ({ teacherId }: Props) => {
                               <ScoreCell value={s.listening} />
                             </td>
                             <td className="text-center py-2 px-1">
-                              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                {s.widaLevel}
+                              <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full" title={s.widaLabel}>
+                                {s.widaLevel} - {s.widaLabel}
                               </span>
                             </td>
                           </tr>

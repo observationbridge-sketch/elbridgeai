@@ -94,8 +94,11 @@ const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: strin
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-// Part 1 = 8 steps, Part 2 = 6 activities, Part 3 = 1 challenge = 15 total
-const TOTAL_STEPS = 15;
+// Part 1 = 8 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
+const TOTAL_STEPS_3_5 = 15;
+const TOTAL_STEPS_K2 = 13; // 8 + 4 + 1
+
+type GradeBand = "K-2" | "3-5";
 
 // ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
@@ -195,6 +198,12 @@ const StudentSession = () => {
   const [teacherId, setTeacherId] = useState("");
   const [sessionTheme, setSessionTheme] = useState("");
   const [sessionTopic, setSessionTopic] = useState("");
+  const [gradeBand, setGradeBand] = useState<GradeBand>("3-5");
+  const [effectiveGradeBand, setEffectiveGradeBand] = useState<GradeBand>("3-5");
+  const [gradeBandAdjusted, setGradeBandAdjusted] = useState(false);
+
+  const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
+  const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
 
   // Gamification
   const gamification = useGamification(studentName, teacherId);
@@ -239,8 +248,8 @@ const StudentSession = () => {
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
 
   const inPart1 = globalStep < 8;
-  const inPart2 = globalStep >= 8 && globalStep < 14;
-  const inPart3 = globalStep >= 14;
+  const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
+  const inPart3 = globalStep >= 8 + part2Count;
 
   // ─── Load student info, anchor sentence, and history on mount ───
   useEffect(() => {
@@ -260,16 +269,21 @@ const StudentSession = () => {
           setStudentName(studentData.student_name);
           const { data: sessionData } = await supabase
             .from("sessions")
-            .select("teacher_id")
+            .select("teacher_id, grade_band")
             .eq("id", sessionId)
             .single();
-          if (sessionData) setTeacherId(sessionData.teacher_id);
+          if (sessionData) {
+            setTeacherId(sessionData.teacher_id);
+            const gb = (sessionData as any).grade_band || "3-5";
+            setGradeBand(gb as GradeBand);
+            setEffectiveGradeBand(gb as GradeBand);
+          }
         }
       } catch { /* proceed */ }
 
       try {
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
-          body: { grade: "3-5" },
+          body: { grade: gradeBand || "3-5" },
         });
         if (error) throw error;
         const anchorData = data as AnchorSentence;
@@ -377,7 +391,8 @@ const StudentSession = () => {
         wida_level: widaLevel,
         session_part: sessionPart,
         strategy: strategy || null,
-      });
+        grade_band: effectiveGradeBand,
+      } as any);
     } catch { /* non-blocking */ }
   };
 
@@ -394,9 +409,28 @@ const StudentSession = () => {
       setPart1Step((s) => (s + 1) as any);
       setGlobalStep((g) => g + 1);
     } else {
-      // Part 1 complete → bonus points
+      // Part 1 complete → bonus points + grade band auto-adjustment
       gamification.addPoints(POINTS.PART1_COMPLETE);
       gamification.awardBadge("first_word");
+
+      // Auto-adjust grade band based on Part 1 performance
+      const totalPossible = part1Scores.repeatTotal + part1Scores.writeTotal + part1Scores.recordTotal;
+      const totalEarned = part1Scores.repeat + part1Scores.write + part1Scores.record;
+      const pct = totalPossible > 0 ? (totalEarned / totalPossible) * 100 : 50;
+
+      let newBand = effectiveGradeBand;
+      if (gradeBand === "3-5" && pct < 50) {
+        newBand = "K-2";
+        setEffectiveGradeBand("K-2");
+        setGradeBandAdjusted(true);
+        console.log("Auto-adjusted student to K-2 band (Part 1 score:", Math.round(pct), "%)");
+      } else if (gradeBand === "K-2" && pct > 85) {
+        newBand = "3-5";
+        setEffectiveGradeBand("3-5");
+        setGradeBandAdjusted(true);
+        console.log("Auto-adjusted student to 3-5 band (Part 1 score:", Math.round(pct), "%)");
+      }
+
       setGlobalStep(8);
       fetchPart2Activity(0);
     }
@@ -477,7 +511,7 @@ const StudentSession = () => {
     try {
       const { data, error } = await supabase.functions.invoke("generate-part2", {
         body: {
-          grade: "3-5",
+          grade: effectiveGradeBand,
           theme: sessionTheme,
           topic: sessionTopic,
           domainScores,
@@ -561,8 +595,8 @@ const StudentSession = () => {
   const nextPart2 = () => {
     tts.stop();
     const nextIdx = part2Index + 1;
-    if (nextIdx >= 6) {
-      setGlobalStep(14);
+    if (nextIdx >= part2Count) {
+      setGlobalStep(8 + part2Count);
       setPart3ShowIntro(true);
       fetchPart3Challenge();
       return;
@@ -577,8 +611,9 @@ const StudentSession = () => {
     setLoading(true);
     setLoadingMessage("Preparing your Language Challenge! 🎉");
     try {
+      const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
       const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
-        body: { grade: "3-5", theme: sessionTheme, topic: sessionTopic },
+        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType },
       });
       if (error) throw error;
       setPart3Challenge(data as Part3Challenge);
@@ -724,7 +759,7 @@ const StudentSession = () => {
               </div>
               <div className="bg-muted rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Practice</p>
-                <p className="text-xl font-bold text-accent">{part2Score}/6</p>
+                <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
               </div>
               <div className="bg-muted rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">Challenge</p>
@@ -732,6 +767,14 @@ const StudentSession = () => {
                 <p className="text-xs text-muted-foreground">{challengeCompleted}</p>
               </div>
             </div>
+
+            {gradeBandAdjusted && (
+              <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground">
+                  📊 Grade band adjusted to <span className="font-bold text-accent">{effectiveGradeBand}</span> based on your performance
+                </p>
+              </div>
+            )}
 
             {strategyMeta && (
               <div className="bg-muted/50 rounded-lg p-4 border border-border text-left space-y-2">
@@ -795,13 +838,15 @@ const StudentSession = () => {
   // ─── Progress label ───
   const getProgressLabel = () => {
     if (inPart1) return `Part 1 • Step ${part1Step}/8`;
-    if (inPart2) return `Part 2 • Activity ${part2Index + 1}/6`;
+    if (inPart2) return `Part 2 • Activity ${part2Index + 1}/${part2Count}`;
     return "Part 3 • Challenge";
   };
 
+  const isK2 = effectiveGradeBand === "K-2";
+
   // ─── Main render ───
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${isK2 ? "text-xl" : ""}`}>
       {/* Top bar */}
       <div className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
@@ -833,7 +878,7 @@ const StudentSession = () => {
         <div className="px-4 pb-2 pt-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground whitespace-nowrap">{getProgressLabel()}</span>
-            <Progress value={((globalStep + 1) / TOTAL_STEPS) * 100} className="flex-1" />
+            <Progress value={((globalStep + 1) / totalSteps) * 100} className="flex-1" />
           </div>
         </div>
       </div>
@@ -867,7 +912,7 @@ const StudentSession = () => {
           <Part2StrategyView
             activity={part2Activity}
             index={part2Index}
-            totalActivities={6}
+            totalActivities={part2Count}
             answer={part2Answer}
             setAnswer={setPart2Answer}
             submitted={part2Submitted}

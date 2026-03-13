@@ -91,7 +91,9 @@ function getInputTypeFields(inputType: string, topic: string): string {
 }
 
 function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string): string {
+  const isK2 = grade === "K-2";
   const inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
+  const k2Override = isK2 ? `\nK-2 RULES: Maximum 1 blank per sentence. Multiple choice must have only 2 options. Use only Tier 1 (everyday) vocabulary. Keep sentences under 10 words. Instructions should be very simple.` : "";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
   const difficultyLabels = [
@@ -104,10 +106,10 @@ function buildPrompt(strategy: Strategy, theme: string, topic: string, questionI
   ];
   const difficultyNote = difficultyLabels[questionIndex] || difficultyLabels[5];
 
-  const inputTypeNote = `INPUT FORMAT: "${inputType}"
+  const inputTypeNote = `INPUT FORMAT: "${inputType}"${k2Override}
 ${inputType === "typing" ? "The student will TYPE their answer in a text field." : ""}
 ${inputType === "listen_then_type" ? "The student will LISTEN to an audio clip (via TTS), then TYPE their answer. You MUST include an 'audioClip' field with 2-3 sentences to be read aloud." : ""}
-${inputType === "multiple_choice" ? "The student will SELECT from 4 options. You MUST include an 'options' array with exactly 4 choices. 'modelAnswer' must exactly match one option text." : ""}
+${inputType === "multiple_choice" ? `The student will SELECT from ${isK2 ? "2" : "4"} options. You MUST include an 'options' array with exactly ${isK2 ? "2" : "4"} choices. 'modelAnswer' must exactly match one option text.` : ""}
 ${inputType === "recording" ? "The student will RECORD themselves speaking. 'modelAnswer' is what they should say." : ""}
 ${inputType === "record_then_type" ? "The student will TYPE their answer AND THEN RECORD themselves saying the full sentence aloud." : ""}`;
 

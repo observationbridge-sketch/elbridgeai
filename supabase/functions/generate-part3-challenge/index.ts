@@ -22,12 +22,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { grade, theme, topic } = await req.json();
+    const { grade, theme, topic, forceType } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const challenges: ChallengeType[] = ["story_builder", "speed_round", "teach_it_back"];
-    const challengeType = challenges[Math.floor(Math.random() * challenges.length)];
+    const isK2 = grade === "K-2";
+    const challenges: ChallengeType[] = isK2 ? ["speed_round"] : ["story_builder", "speed_round", "teach_it_back"];
+    const challengeType = forceType || challenges[Math.floor(Math.random() * challenges.length)];
 
     const themeDirective = `CRITICAL: This challenge is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only.`;
 
@@ -66,7 +67,7 @@ Return ONLY valid JSON (no markdown):
 ${themeDirective}
 ${STRICT_RULES}
 
-Generate a SPEED ROUND challenge with exactly 5 multiple-choice questions about "${topic}".
+Generate a SPEED ROUND challenge with exactly ${isK2 ? "3" : "5"} multiple-choice questions about "${topic}".${isK2 ? "\nK-2 RULES: Each question must have exactly 2 options only. Use simple Tier 1 vocabulary. Short sentences under 10 words." : ""}
 - 2 reading comprehension (include a short 2-3 sentence passage each)
 - 1 listening comprehension (include an audioDescription field with a 2-3 sentence story)
 - 1 speaking prompt (open-ended, multiple reasonable answers — frame as multiple choice for speed)
