@@ -201,6 +201,10 @@ const StudentSession = () => {
   const [gradeBand, setGradeBand] = useState<GradeBand>("3-5");
   const [effectiveGradeBand, setEffectiveGradeBand] = useState<GradeBand>("3-5");
   const [gradeBandAdjusted, setGradeBandAdjusted] = useState(false);
+  const [contentHistory, setContentHistory] = useState<any>(null);
+  const [usedActivityFormats, setUsedActivityFormats] = useState<string[]>([]);
+  const [usedVocabulary, setUsedVocabulary] = useState<string[]>([]);
+  const [vocabularyResults, setVocabularyResults] = useState<Array<{ word: string; correct: boolean }>>([]);
 
   const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
   const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
