@@ -22,12 +22,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { grade, theme, topic } = await req.json();
+    const { grade, theme, topic, forceType } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const challenges: ChallengeType[] = ["story_builder", "speed_round", "teach_it_back"];
-    const challengeType = challenges[Math.floor(Math.random() * challenges.length)];
+    const isK2 = grade === "K-2";
+    const challenges: ChallengeType[] = isK2 ? ["speed_round"] : ["story_builder", "speed_round", "teach_it_back"];
+    const challengeType = forceType || challenges[Math.floor(Math.random() * challenges.length)];
 
     const themeDirective = `CRITICAL: This challenge is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only.`;
 

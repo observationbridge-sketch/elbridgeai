@@ -37,7 +37,38 @@ serve(async (req) => {
 
     const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
 
-    const systemPrompt = `You are an expert English Language Development specialist creating anchor passages for grades 3-5 ELL students, inspired by Literacy Squared / Kathy Escamilla methodology.
+    const isK2 = grade === "K-2";
+
+    const systemPrompt = isK2
+      ? `You are an expert English Language Development specialist creating anchor sentences for K-2 ELL students.
+
+Generate ONE anchor sentence of exactly 1 sentence, maximum 8 words. Use simple subject-verb-object structure.
+Use only Tier 1 (common everyday) vocabulary.
+
+Theme for this session: "${theme}"
+
+Create a specific topic within this theme. For example:
+- Theme "Nature & animals" → topic "A butterfly in the garden"
+- Theme "School & classroom life" → topic "Playing at recess"
+
+${STRICT_RULES}
+
+RULES:
+- Exactly 1 sentence, maximum 8 words
+- Simple subject-verb-object structure
+- Tier 1 vocabulary only (common everyday words)
+- Grade-appropriate for K-2
+- Vivid, specific, kid-friendly language
+
+Return ONLY valid JSON (no markdown, no code blocks):
+{
+  "sentence": "<the 1 sentence anchor, max 8 words>",
+  "theme": "${theme}",
+  "topic": "<specific topic>",
+  "category": "<category>",
+  "keyWords": ["<4-6 important words from the sentence>"]
+}`
+      : `You are an expert English Language Development specialist creating anchor passages for grades 3-5 ELL students, inspired by Literacy Squared / Kathy Escamilla methodology.
 
 Generate ONE anchor passage of exactly 2-3 sentences from one of these approved categories:
 1. Academic sentence frames connected to science or social studies
