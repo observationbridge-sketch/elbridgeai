@@ -143,7 +143,7 @@ Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
     }
 
     activity.domain = actualDomain;
-    activity.widaLevel = widaLevel;
+    activity.proficiencyLevel = proficiencyLevel;
 
     return new Response(JSON.stringify(activity), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
