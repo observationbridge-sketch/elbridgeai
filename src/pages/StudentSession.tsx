@@ -262,6 +262,8 @@ const StudentSession = () => {
       setLoadingMessage("Getting your lesson ready... 📚");
       if (!studentId || !sessionId) return;
 
+      let currentStudentName = "";
+
       try {
         const { data: studentData } = await supabase
           .from("session_students")
@@ -270,6 +272,7 @@ const StudentSession = () => {
           .single();
 
         if (studentData) {
+          currentStudentName = studentData.student_name;
           setStudentName(studentData.student_name);
           const { data: sessionData } = await supabase
             .from("sessions")
@@ -288,11 +291,11 @@ const StudentSession = () => {
       // Fetch content history for returning students
       let fetchedHistory: any = null;
       try {
-        if (studentData?.student_name) {
+        if (currentStudentName) {
           const { data: historyData } = await supabase
             .from("student_content_history")
             .select("theme, topic, key_vocabulary, vocabulary_results, activity_formats, challenge_type")
-            .eq("student_name", studentData.student_name)
+            .eq("student_name", currentStudentName)
             .order("session_date", { ascending: false })
             .limit(10);
 
