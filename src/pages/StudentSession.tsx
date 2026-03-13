@@ -774,7 +774,6 @@ const StudentSession = () => {
                 </p>
               </div>
             )}
-            </div>
 
             {strategyMeta && (
               <div className="bg-muted/50 rounded-lg p-4 border border-border text-left space-y-2">
