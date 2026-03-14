@@ -533,11 +533,6 @@ const TeacherDashboard = () => {
                           {(session as any).grade_band && (
                             <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{(session as any).grade_band}</span>
                           )}
-                          {(session as any).theme && (
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                              {ALL_THEMES.find(t => t.label === (session as any).theme)?.emoji} {(session as any).theme}
-                            </span>
-                          )}
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
                           {session.status}
