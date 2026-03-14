@@ -1147,6 +1147,7 @@ const StudentSession = () => {
         <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
       )}
     </div>
+    </ThemePageWrapper>
   );
 };
 
