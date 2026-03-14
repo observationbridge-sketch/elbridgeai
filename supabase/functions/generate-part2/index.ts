@@ -15,6 +15,12 @@ ABSOLUTE RULES FOR ALL ACTIVITIES:
 - ALWAYS frame activities as solo adventures connected to the session theme
 - Before outputting, verify: "Can a student sitting alone on a device complete this with only what is shown on screen?" If not, rewrite.
 - No two consecutive activities should use the exact same input format.
+
+IMPORTANT SESSION DIFFICULTY CURVE:
+Activity 1: Easy (warm up) → Activity 2: Easy-Medium → Activity 3: Medium-Hard → Activity 4: HARDEST (peak) → Activity 5: Medium-Easy (wind down) → Activity 6: Easy and fun (end on a win)
+Students MUST always finish a session feeling successful, not stuck.
+
+CRITICAL RULE FOR POSITIONS 5 AND 6: For activity positions 5 and 6, you MUST ONLY generate light, low-cognitive-load activities. NEVER generate multi-sentence organizing tasks, story sequencing, multi-scene writing, or any task requiring 3+ sentences of original writing for these positions. The session must end feeling easy and fun. The 4-scene sequential story writing prompt is BANNED from positions 5 and 6 — it may ONLY appear in positions 2, 3, or 4.
 `;
 
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
@@ -25,6 +31,72 @@ const INPUT_TYPES: Record<Strategy, string[]> = {
   sentence_expansion: ["recording", "typing", "recording", "multiple_choice", "typing", "typing"],
   quick_writes: ["typing", "listen_then_type", "typing", "typing", "multiple_choice", "typing"],
 };
+
+// HARD RULE: Activities banned from positions 5 and 6
+const HEAVY_ACTIVITY_PATTERNS = [
+  "sequential story", "4-scene", "multi-scene", "organize sentences",
+  "story writing", "multiple paragraphs", "write a story with",
+  "arrange the scenes", "put the story in order", "write 4",
+  "write three or more sentences", "write 3 or more",
+];
+
+function isHeavyActivity(activity: any): boolean {
+  const text = JSON.stringify(activity).toLowerCase();
+  if (HEAVY_ACTIVITY_PATTERNS.some(p => text.includes(p))) return true;
+  // Check if question asks for 3+ sentences
+  const sentenceMatch = (activity.question || "").match(/write\s+(\d+)\s+sentence/i);
+  if (sentenceMatch && parseInt(sentenceMatch[1]) >= 3) return true;
+  if ((activity.scenes && activity.scenes.length >= 3)) return true;
+  return false;
+}
+
+// Fallback light activities for positions 5 and 6
+function generateFallbackActivity(position: number, theme: string, topic: string, grade: string, strategy: Strategy): any {
+  const isK2 = grade === "K-2";
+  if (position === 5) {
+    // Position 6 (0-indexed 5) — light & fun
+    if (isK2) {
+      return {
+        type: "light_fun",
+        inputType: "recording",
+        question: `Tell your animal companion: "My favorite thing about ${topic} is ___!" Say it out loud! 🎤`,
+        modelAnswer: `My favorite thing about ${topic} is how fun it is!`,
+        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "favorite"],
+        difficulty: 6,
+        theme,
+        strategy,
+        weakestDomain: "speaking",
+        strategyReason: "Light ending activity",
+      };
+    }
+    return {
+      type: "light_fun",
+      inputType: "typing",
+      question: `🎉 Finish this silly sentence about ${topic}: "If I could _____, I would _____ because _____!"`,
+      modelAnswer: `If I could fly to ${topic}, I would explore everything because it would be amazing!`,
+      acceptableKeywords: ["if", "would", "because", topic.split(" ")[0]?.toLowerCase() || "fun"],
+      difficulty: 6,
+      theme,
+      strategy,
+      weakestDomain: "writing",
+      strategyReason: "Light ending activity",
+    };
+  }
+  // Position 5 (0-indexed 4) — medium-easy
+  return {
+    type: "true_false",
+    inputType: isK2 ? "recording" : "multiple_choice",
+    question: `True or False: ${topic} is something you might find in a story about ${theme}. Explain why in one sentence.`,
+    options: isK2 ? undefined : ["True — it fits the theme!", "False — it doesn't fit.", "True — definitely!", "False — not at all."],
+    modelAnswer: `True — ${topic} fits perfectly with ${theme}!`,
+    acceptableKeywords: ["true", "because", topic.split(" ")[0]?.toLowerCase() || "yes"],
+    difficulty: 5,
+    theme,
+    strategy,
+    weakestDomain: "reading",
+    strategyReason: "Wind-down activity",
+  };
+}
 
 function selectStrategy(domainScores: Record<string, number> | null): { strategy: Strategy; weakestDomain: string; reason: string } {
   if (!domainScores || Object.keys(domainScores).length === 0) {
@@ -121,56 +193,67 @@ function getPositionConstraint(questionIndex: number, grade: string, theme: stri
   // Difficulty arc labels
   const arcLabels = [
     "Activity 1 of 6 — WARM UP (easy, heavy scaffolding, build confidence)",
-    "Activity 2 of 6 — WARM UP (easy, moderate scaffolding)",
-    "Activity 3 of 6 — PEAK CHALLENGE (hardest, most complex task)",
-    "Activity 4 of 6 — PEAK CHALLENGE (hard, less scaffolding)",
-    "Activity 5 of 6 — WIND DOWN (medium-easy, relaxed)",
-    "Activity 6 of 6 — LIGHT & FUN (lightest, creative, no wrong answer)",
+    "Activity 2 of 6 — EASY-MEDIUM (moderate scaffolding)",
+    "Activity 3 of 6 — MEDIUM-HARD (increasing complexity)",
+    "Activity 4 of 6 — HARDEST (peak challenge, most complex task, this is the summit!)",
+    "Activity 5 of 6 — WIND DOWN (medium-easy, relaxed, winding down)",
+    "Activity 6 of 6 — EASY & FUN (lightest, creative, no wrong answer, end on a win!)",
   ];
 
   let constraint = arcLabels[questionIndex] || arcLabels[5];
 
-  // Position 3-4: mini story MUST go here if applicable (never at 5 or 6)
+  // Position 3-4: multi-scene story MUST go here if applicable (BANNED from 5 or 6)
   if (questionIndex === 2 || questionIndex === 3) {
-    constraint += `\nNOTE: If generating a multi-scene story connecting scenes, it MUST be placed at position 3 or 4 (this one). A 4-6 sentence mini story is appropriate here.`;
+    constraint += `\nNOTE: If generating a multi-scene story or 4-scene sequential writing task, it MUST be placed at position 3 or 4 (this one). This is the appropriate position for the heaviest cognitive load.`;
   }
 
   // Position 5 (second-to-last): medium-easy formats only
   if (questionIndex === 4) {
-    constraint += `\nFORMAT RESTRICTION for position 5: Select ONLY from these medium-easy formats:
+    constraint += `\n
+HARD FORMAT RESTRICTION for position 5 — ONLY these formats are allowed:
 - True/False with a one-sentence explanation
-- Match the word to the picture description
-- "What happened first/next/last?" ordering (1 sentence each)
-Keep it simple and short.`;
+- "What happened first/next/last?" — one sentence each
+- Match the word to its meaning — single answer
+- Fill-in-one-blank sentence
+NO multi-sentence writing. NO story sequencing. NO scene organization. Maximum 1-2 sentences expected from student.`;
     if (isK2) {
-      constraint += `\nK-2 OVERRIDE: This should be a Speaking activity (not Writing). Use recording input type.`;
+      constraint += `\nK-2 OVERRIDE: This MUST be a Speaking activity (not Writing). Use recording input type. Maximum 1 sentence.`;
     }
   }
 
   // Position 6 (last): light & fun only
   if (questionIndex === 5) {
     const lightFormats = isK2
-      ? `FORMAT RESTRICTION for last activity (K-2): This MUST be a SPEAKING activity using recording input. Select ONLY from:
+      ? `HARD FORMAT RESTRICTION for last activity (K-2) — ONLY these are allowed:
 - "Tell your animal companion one thing you learned today!" (1 sentence, recording)
 - "If you were the ${theme} character today, what would you do?" (1 sentence, recording)
 - "Say your favorite word from today and use it in a silly sentence!" (1 sentence, recording)
 Max 1 sentence response expected. Must involve the student's animal companion.
-Set inputType to "recording".`
-      : `FORMAT RESTRICTION for last activity: Select ONLY from these light, fun formats:
+Set inputType to "recording". This is NON-NEGOTIABLE.`
+      : `HARD FORMAT RESTRICTION for last activity — ONLY these are allowed:
 - "Finish this silly sentence:" (one creative sentence, no wrong answer)
-- "Pick your favorite word from today and draw it with words" (1-2 sentences)
+- "Pick your favorite word from today and use it in one sentence"
 - "Write one thing your animal/character would say right now" (1 sentence)
-- "If you were the superhero/animal/character today, what would you do?" (2-3 sentences max)
-- Fill-in-the-blank with a fun themed sentence (single answer)
-- Emoji story: "Tell what happened using only 3 emojis then one sentence"
-This MUST feel light, fun, creative. No wrong answers. Short response only.`;
+- Fill-in-the-blank with a fun themed sentence (single word answer)
+- Emoji story: "Pick 3 emojis then write one sentence about them"
+- "What would your character say right now?" (1 sentence)
+This MUST feel light, fun, creative. No wrong answers. Maximum 1-2 sentences. 
+Students must end the session feeling successful, not stuck.`;
 
     constraint += `\n${lightFormats}`;
   }
 
-  // Never put mini story at position 5 or 6
+  // ABSOLUTE BAN on heavy writing for positions 5 and 6
   if (questionIndex >= 4) {
-    constraint += `\nCRITICAL: Do NOT generate a multi-scene mini story or 4-6 sentence story for this position. Keep it short and light.`;
+    constraint += `\n
+ABSOLUTE BAN FOR POSITIONS 5-6:
+- NEVER generate a 4-scene sequential story writing prompt
+- NEVER generate multi-scene story organization tasks  
+- NEVER ask students to write and organize multiple sentences in order
+- NEVER generate any activity requiring 3+ sentences of original writing
+- NEVER generate story sequencing or scene ordering tasks
+- The session MUST end feeling easy and fun. Students must finish feeling successful.
+If you violate this rule, the activity will be rejected and replaced with a fallback.`;
   }
 
   return constraint;
@@ -390,6 +473,25 @@ serve(async (req) => {
       let expectedInputType = INPUT_TYPES[strategy]?.[(questionIndex || 0)] || "typing";
       if (isK2 && (questionIndex || 0) >= 4) expectedInputType = "recording";
       activity.inputType = expectedInputType;
+    }
+
+    // HARD VALIDATION: If position 5 or 6, reject heavy activities and use fallback
+    const qIdx = questionIndex || 0;
+    if (qIdx >= 4 && isHeavyActivity(activity)) {
+      console.warn(`Position ${qIdx + 1} had heavy activity — replacing with fallback`);
+      const fallback = generateFallbackActivity(
+        qIdx,
+        theme || "Nature & animals",
+        topic || theme || "Nature & animals",
+        grade || "3-5",
+        strategy
+      );
+      fallback.strategy = strategy;
+      fallback.weakestDomain = weakestDomain;
+      fallback.strategyReason = reason;
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify(activity), {
