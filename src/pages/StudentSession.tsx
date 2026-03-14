@@ -756,6 +756,8 @@ const StudentSession = () => {
     if (isCorrect) {
       setPart3SpeedScore((s) => s + 1);
       gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 2200);
     }
     setPart3SpeedAnswers((a) => [...a, selectedOption]);
 
