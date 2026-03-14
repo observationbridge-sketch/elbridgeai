@@ -1056,7 +1056,7 @@ const StudentSession = () => {
             <p className="text-muted-foreground">{loadingMessage}</p>
           </div>
         ) : (
-          <ThemeBackground theme={sessionTheme}>
+          <>
             <div className="p-1">
               {inPart1 && anchor ? (
                 <Part1View
