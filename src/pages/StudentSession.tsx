@@ -669,6 +669,7 @@ const StudentSession = () => {
 
   // ─── Part 3 handlers ───
   const fetchPart3Challenge = useCallback(async () => {
+    killSpeech();
     setLoading(true);
     setLoadingMessage("Preparing your Language Challenge! 🎉");
     try {
