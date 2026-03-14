@@ -118,11 +118,11 @@ const TeacherDashboard = () => {
   const pollStudents = async (sid: string) => {
     const { data, count } = await supabase
       .from("session_students")
-      .select("id, student_name, joined_at", { count: "exact" })
+      .select("id, student_name, joined_at, theme", { count: "exact" })
       .eq("session_id", sid)
       .order("joined_at", { ascending: true });
     setStudentCount(count || 0);
-    if (data) setConnectedStudents(data);
+    if (data) setConnectedStudents(data as any);
   };
 
   // Polling interval for active session
