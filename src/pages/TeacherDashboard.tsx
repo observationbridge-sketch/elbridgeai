@@ -292,11 +292,6 @@ const TeacherDashboard = () => {
                             {activeGradeBand}
                           </span>
                         )}
-                        {activeTheme && (
-                          <span className="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">
-                            {ALL_THEMES.find(t => t.label === activeTheme)?.emoji} {activeTheme}
-                          </span>
-                        )}
                       </div>
 
                       {/* Code display */}
