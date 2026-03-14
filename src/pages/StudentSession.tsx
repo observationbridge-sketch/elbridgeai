@@ -1012,36 +1012,38 @@ const StudentSession = () => {
     <ThemePageWrapper theme={sessionTheme}>
     <div className={`min-h-screen ${isK2 ? "text-xl" : ""}`}>
       {/* Top bar */}
-      <div className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            <span className="font-bold text-foreground">ElbridgeAI</span>
+            <Brain className="h-6 w-6 text-white/80" />
+            <span className="font-bold text-white">ElbridgeAI</span>
           </div>
           <div className="flex items-center gap-3">
             {gamification.loaded && (
-              <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact />
+              <ThemedCompanionGlow theme={sessionTheme}>
+                <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact />
+              </ThemedCompanionGlow>
             )}
             <div className="hidden sm:flex items-center gap-2">
-              <button onClick={() => setShowView("badges")} className="text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 flex items-center gap-1">
+              <button onClick={() => setShowView("badges")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
                 <Award className="h-3 w-3" /> Badges
               </button>
-              <button onClick={() => setShowView("leaderboard")} className="text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 flex items-center gap-1">
+              <button onClick={() => setShowView("leaderboard")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
                 <Users className="h-3 w-3" /> Rank
               </button>
             </div>
           </div>
         </div>
         {sessionTopic && (
-          <div className="px-4 py-1 bg-primary/5 border-b border-primary/10">
-            <p className="text-xs text-center text-primary font-medium">
+          <div className="px-4 py-1 border-b border-white/5" style={{ background: getThemeStyles(sessionTheme).topicBannerBg }}>
+            <p className="text-xs text-center font-medium" style={{ color: getThemeStyles(sessionTheme).topicBannerText }}>
               📚 Today's Topic: <span className="font-bold">{sessionTopic}</span>
             </p>
           </div>
         )}
         <div className="px-4 pb-2 pt-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{getProgressLabel()}</span>
+            <span className="text-xs text-white/60 whitespace-nowrap">{getProgressLabel()}</span>
             <Progress value={((globalStep + 1) / totalSteps) * 100} className="flex-1" />
           </div>
         </div>
