@@ -52,6 +52,7 @@ export type Database = {
           id: string
           status: string
           teacher_id: string
+          theme: string | null
         }
         Insert: {
           code: string
@@ -61,6 +62,7 @@ export type Database = {
           id?: string
           status?: string
           teacher_id: string
+          theme?: string | null
         }
         Update: {
           code?: string
@@ -70,6 +72,7 @@ export type Database = {
           id?: string
           status?: string
           teacher_id?: string
+          theme?: string | null
         }
         Relationships: []
       }

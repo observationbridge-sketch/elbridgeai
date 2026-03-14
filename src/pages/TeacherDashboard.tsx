@@ -2,7 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode, Send, BarChart3 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode, BarChart3,
+  Palette, GraduationCap, Loader2, AlertTriangle,
+} from "lucide-react";
 import EmailSettings from "@/components/dashboard/EmailSettings";
 import SessionSummaryPanel from "@/components/dashboard/SessionSummaryPanel";
 import ContentHistoryPanel from "@/components/dashboard/ContentHistoryPanel";
@@ -19,6 +26,17 @@ function generateCode() {
   return code;
 }
 
+const ALL_THEMES = [
+  { label: "Nature & animals", emoji: "🌿" },
+  { label: "Superheroes", emoji: "⚡" },
+  { label: "Fantasy & myths", emoji: "🧙" },
+  { label: "Sports & games", emoji: "⚽" },
+  { label: "Science", emoji: "🔬" },
+  { label: "School & classroom life", emoji: "📚" },
+  { label: "Social studies", emoji: "🗺️" },
+  { label: "Character development", emoji: "💖" },
+] as const;
+
 interface StudentOverview {
   student_name: string;
   total_points: number;
@@ -26,34 +44,44 @@ interface StudentOverview {
   sessions_completed: number;
 }
 
+interface ConnectedStudent {
+  id: string;
+  student_name: string;
+  joined_at: string;
+}
+
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionActive, setSessionActive] = useState(false);
+  const [sessionStarted, setSessionStarted] = useState(false); // "live" vs "waiting"
   const [studentCount, setStudentCount] = useState(0);
+  const [connectedStudents, setConnectedStudents] = useState<ConnectedStudent[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
   const [topStudents, setTopStudents] = useState<StudentOverview[]>([]);
   const [gradeBand, setGradeBand] = useState<"K-2" | "3-5">("3-5");
+  const [selectedTheme, setSelectedTheme] = useState<string>("");
   const [activeGradeBand, setActiveGradeBand] = useState<string | null>(null);
+  const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<"sessions" | "growth">("sessions");
+  const [generating, setGenerating] = useState(false);
+  const [endConfirmOpen, setEndConfirmOpen] = useState(false);
+  const [gradeBandChangeOpen, setGradeBandChangeOpen] = useState(false);
+  const [pendingGradeBand, setPendingGradeBand] = useState<"K-2" | "3-5" | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/teacher/auth");
-        return;
-      }
+      if (!session) { navigate("/teacher/auth"); return; }
       setUser(session.user);
       loadSessions(session.user.id);
       loadTopStudents(session.user.id);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) navigate("/teacher/auth");
       else setUser(session.user);
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
@@ -69,8 +97,10 @@ const TeacherDashboard = () => {
     const active = data?.find((s: any) => s.status === "active");
     if (active) {
       setSessionCode(active.code);
+      setSessionId(active.id);
       setSessionActive(true);
       setActiveGradeBand(active.grade_band || "3-5");
+      setActiveTheme((active as any).theme || null);
       pollStudents(active.id);
     }
   };
@@ -85,36 +115,52 @@ const TeacherDashboard = () => {
     if (data) setTopStudents(data);
   };
 
-  const pollStudents = async (sessionId: string) => {
-    const { count } = await supabase
+  const pollStudents = async (sid: string) => {
+    const { data, count } = await supabase
       .from("session_students")
-      .select("*", { count: "exact", head: true })
-      .eq("session_id", sessionId);
+      .select("id, student_name, joined_at", { count: "exact" })
+      .eq("session_id", sid)
+      .order("joined_at", { ascending: true });
     setStudentCount(count || 0);
+    if (data) setConnectedStudents(data);
   };
 
-  const startSession = async () => {
-    if (!user) return;
+  // Polling interval for active session
+  useEffect(() => {
+    if (!sessionActive || !sessionId) return;
+    const interval = setInterval(() => pollStudents(sessionId), 4000);
+    return () => clearInterval(interval);
+  }, [sessionActive, sessionId]);
+
+  const createSession = async () => {
+    if (!user || !selectedTheme) return;
+    setGenerating(true);
     const code = generateCode();
     const { data, error } = await supabase
       .from("sessions")
-      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand } as any)
+      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand, theme: selectedTheme } as any)
       .select()
       .single();
     if (error) {
-      toast.error("Failed to start session");
+      toast.error("Failed to create session");
+      setGenerating(false);
       return;
     }
     setSessionCode(code);
+    setSessionId(data.id);
     setSessionActive(true);
+    setSessionStarted(false);
     setActiveGradeBand(gradeBand);
+    setActiveTheme(selectedTheme);
     setStudentCount(0);
-    toast.success(`Session started! (${gradeBand})`);
+    setConnectedStudents([]);
+    setGenerating(false);
+    toast.success(`Session created! Share the code with students.`);
+  };
 
-    const interval = setInterval(async () => {
-      if (data) await pollStudents(data.id);
-    }, 5000);
-    (window as any).__sessionPoll = interval;
+  const handleStartLive = () => {
+    setSessionStarted(true);
+    toast.success("Session is now live! Students can begin activities.");
   };
 
   const endSession = async () => {
@@ -125,34 +171,49 @@ const TeacherDashboard = () => {
       .eq("code", sessionCode)
       .eq("teacher_id", user.id);
     setSessionActive(false);
+    setSessionStarted(false);
     setSessionCode(null);
+    setSessionId(null);
     setStudentCount(0);
+    setConnectedStudents([]);
     setActiveGradeBand(null);
-    clearInterval((window as any).__sessionPoll);
+    setActiveTheme(null);
+    setEndConfirmOpen(false);
     toast.success("Session ended");
     if (user) loadSessions(user.id);
   };
 
-  const [linkCopied, setLinkCopied] = useState(false);
-  const qrRef = useRef<HTMLDivElement>(null);
-
-  const joinUrl = sessionCode ? `https://elbridgeai.lovable.app/join/${sessionCode}` : "";
-
-  const copyCode = () => {
-    if (sessionCode) {
-      navigator.clipboard.writeText(sessionCode);
-      toast.success("Code copied!");
+  const handleGradeBandChange = (newBand: "K-2" | "3-5") => {
+    if (sessionActive && studentCount > 0) {
+      setPendingGradeBand(newBand);
+      setGradeBandChangeOpen(true);
+    } else {
+      setGradeBand(newBand);
     }
   };
 
-  const copyLink = useCallback(() => {
-    if (joinUrl) {
-      navigator.clipboard.writeText(joinUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
+  const confirmGradeBandChange = async () => {
+    if (!pendingGradeBand) return;
+    setGradeBand(pendingGradeBand);
+    setActiveGradeBand(pendingGradeBand);
+    if (sessionCode && user) {
+      await supabase.from("sessions").update({ grade_band: pendingGradeBand } as any).eq("code", sessionCode).eq("teacher_id", user.id);
     }
-  }, [joinUrl]);
+    setPendingGradeBand(null);
+    setGradeBandChangeOpen(false);
+    toast.success(`Grade band changed to ${pendingGradeBand}`);
+  };
 
+  const [linkCopied, setLinkCopied] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
+  const joinUrl = sessionCode ? `https://elbridgeai.lovable.app/join/${sessionCode}` : "";
+
+  const copyCode = () => {
+    if (sessionCode) { navigator.clipboard.writeText(sessionCode); toast.success("Code copied!"); }
+  };
+  const copyLink = useCallback(() => {
+    if (joinUrl) { navigator.clipboard.writeText(joinUrl); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }
+  }, [joinUrl]);
   const downloadQR = useCallback(() => {
     const canvas = qrRef.current?.querySelector("canvas");
     if (!canvas) return;
@@ -163,10 +224,13 @@ const TeacherDashboard = () => {
     a.click();
   }, [sessionCode]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-  };
+  const handleLogout = async () => { await supabase.auth.signOut(); navigate("/"); };
+
+  const sessionStatus = !sessionActive
+    ? "No active session"
+    : !sessionStarted
+    ? "Waiting for students…"
+    : "Session Live 🟢";
 
   return (
     <div className="min-h-screen bg-background">
@@ -191,20 +255,10 @@ const TeacherDashboard = () => {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <h1 className="text-3xl font-bold text-foreground">Teacher Dashboard</h1>
           <div className="flex bg-muted rounded-lg p-1 gap-1">
-            <Button
-              variant={dashboardTab === "sessions" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setDashboardTab("sessions")}
-              className="gap-1.5"
-            >
+            <Button variant={dashboardTab === "sessions" ? "default" : "ghost"} size="sm" onClick={() => setDashboardTab("sessions")} className="gap-1.5">
               <Play className="h-4 w-4" /> Sessions
             </Button>
-            <Button
-              variant={dashboardTab === "growth" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setDashboardTab("growth")}
-              className="gap-1.5"
-            >
+            <Button variant={dashboardTab === "growth" ? "default" : "ghost"} size="sm" onClick={() => setDashboardTab("growth")} className="gap-1.5">
               <BarChart3 className="h-4 w-4" /> Student Growth
             </Button>
           </div>
@@ -214,34 +268,48 @@ const TeacherDashboard = () => {
           user && <StudentGrowthDashboard teacherId={user.id} />
         ) : (
           <>
-            {/* Session Control */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* ─── Left Panel: Session Setup / Active Session ─── */}
               <Card className="card-shadow border-border">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     {sessionActive ? <Square className="h-5 w-5 text-destructive" /> : <Play className="h-5 w-5 text-success" />}
-                    Live Session
+                    {sessionActive ? "Live Session" : "New Session Setup"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {sessionActive && sessionCode ? (
                     <>
+                      {/* Session info bar */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${sessionStarted ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
+                          {sessionStatus}
+                        </span>
+                        {activeGradeBand && (
+                          <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
+                            {activeGradeBand}
+                          </span>
+                        )}
+                        {activeTheme && (
+                          <span className="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">
+                            {ALL_THEMES.find(t => t.label === activeTheme)?.emoji} {activeTheme}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Code display */}
                       <div className="bg-muted rounded-lg p-6 text-center">
                         <p className="text-sm text-muted-foreground mb-1">Share this code with students</p>
                         <div className="flex items-center justify-center gap-3">
-                          <span className="text-5xl font-mono font-bold tracking-[0.2em] text-primary">
-                            {sessionCode}
-                          </span>
-                          <Button variant="ghost" size="icon" onClick={copyCode}>
-                            <Copy className="h-5 w-5" />
-                          </Button>
+                          <span className="text-5xl font-mono font-bold tracking-[0.2em] text-primary">{sessionCode}</span>
+                          <Button variant="ghost" size="icon" onClick={copyCode}><Copy className="h-5 w-5" /></Button>
                         </div>
                       </div>
+
                       {/* Join Link */}
                       <div className="bg-card border border-border rounded-lg p-4 space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                          <Link className="h-4 w-4 text-primary" />
-                          Student Join Link
+                          <Link className="h-4 w-4 text-primary" /> Student Join Link
                         </div>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 text-xs bg-muted px-3 py-2 rounded font-mono truncate text-muted-foreground">
@@ -256,50 +324,86 @@ const TeacherDashboard = () => {
                       {/* QR Code */}
                       <div className="bg-card border border-border rounded-lg p-4 flex flex-col items-center gap-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-foreground self-start">
-                          <QrCode className="h-4 w-4 text-primary" />
-                          QR Code — Scan to Join
+                          <QrCode className="h-4 w-4 text-primary" /> QR Code — Scan to Join
                         </div>
                         <div ref={qrRef} className="bg-white p-4 rounded-xl">
-                          <QRCodeCanvas value={joinUrl} size={220} level="H" />
+                          <QRCodeCanvas value={joinUrl} size={180} level="H" />
                         </div>
                         <Button variant="outline" size="sm" onClick={downloadQR}>
                           <Download className="h-3 w-3 mr-1" /> Download QR Code
                         </Button>
                       </div>
 
-                      <Button variant="destructive" className="w-full" onClick={endSession}>
-                        <Square className="h-4 w-4 mr-2" /> End Session
+                      <Button variant="destructive" className="w-full" onClick={() => setEndConfirmOpen(true)}>
+                        <Square className="h-4 w-4 mr-2" /> End Session Early
                       </Button>
                     </>
                   ) : (
-                    <div className="space-y-4">
+                    /* ─── Session Setup Form ─── */
+                    <div className="space-y-5">
+                      {/* Grade Band Selector */}
                       <div>
-                        <p className="text-sm font-medium text-foreground mb-2">Grade Band</p>
+                        <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
+                          <GraduationCap className="h-4 w-4 text-primary" /> Grade Band <span className="text-destructive">*</span>
+                        </label>
                         <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            variant={gradeBand === "K-2" ? "default" : "outline"}
-                            className={gradeBand === "K-2" ? "border-2 border-primary" : ""}
-                            onClick={() => setGradeBand("K-2")}
-                          >
-                            K-2
-                          </Button>
-                          <Button
-                            variant={gradeBand === "3-5" ? "default" : "outline"}
-                            className={gradeBand === "3-5" ? "border-2 border-primary" : ""}
-                            onClick={() => setGradeBand("3-5")}
-                          >
-                            3-5
-                          </Button>
+                          {(["K-2", "3-5"] as const).map((band) => (
+                            <Button
+                              key={band}
+                              variant={gradeBand === band ? "default" : "outline"}
+                              className={`text-base py-3 ${gradeBand === band ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                              onClick={() => setGradeBand(band)}
+                            >
+                              {band}
+                            </Button>
+                          ))}
                         </div>
                       </div>
-                      <Button variant="hero" className="w-full" size="lg" onClick={startSession}>
-                        <Play className="h-4 w-4 mr-2" /> Start New Session ({gradeBand})
+
+                      {/* Theme Selector */}
+                      <div>
+                        <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
+                          <Palette className="h-4 w-4 text-accent" /> Session Theme <span className="text-destructive">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {ALL_THEMES.map((theme) => (
+                            <Button
+                              key={theme.label}
+                              variant={selectedTheme === theme.label ? "default" : "outline"}
+                              size="sm"
+                              className={`justify-start gap-2 text-left h-auto py-2.5 px-3 ${selectedTheme === theme.label ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
+                              onClick={() => setSelectedTheme(theme.label)}
+                            >
+                              <span className="text-lg">{theme.emoji}</span>
+                              <span className="text-xs leading-tight">{theme.label}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Generate button */}
+                      <Button
+                        variant="hero"
+                        className="w-full"
+                        size="lg"
+                        onClick={createSession}
+                        disabled={!selectedTheme || generating}
+                      >
+                        {generating ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating Session…</>
+                        ) : (
+                          <><Play className="h-4 w-4 mr-2" /> Generate Session Code</>
+                        )}
                       </Button>
+                      {!selectedTheme && (
+                        <p className="text-xs text-muted-foreground text-center">Select a grade band and theme to continue</p>
+                      )}
                     </div>
                   )}
                 </CardContent>
               </Card>
 
+              {/* ─── Right Panel: Students Connected ─── */}
               <Card className="card-shadow border-border">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -307,18 +411,49 @@ const TeacherDashboard = () => {
                     Students Connected
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center py-6">
+                <CardContent className="space-y-4">
+                  {/* Large count */}
+                  <div className="text-center">
                     <span className="text-6xl font-bold text-accent">{studentCount}</span>
-                    <p className="text-muted-foreground mt-2">
-                      {sessionActive ? "students in session" : "No active session"}
-                    </p>
-                    {sessionActive && activeGradeBand && (
-                      <span className="inline-block mt-2 text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">
-                        Grade Band: {activeGradeBand}
-                      </span>
-                    )}
+                    <p className="text-sm text-muted-foreground mt-1">{sessionStatus}</p>
                   </div>
+
+                  {/* Student list */}
+                  {sessionActive && (
+                    <>
+                      <ScrollArea className="h-48 border border-border rounded-lg">
+                        <div className="p-3 space-y-1.5">
+                          {connectedStudents.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-6">Waiting for students to join…</p>
+                          ) : (
+                            connectedStudents.map((s) => (
+                              <div key={s.id} className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-md">
+                                <span className="h-2 w-2 rounded-full bg-success shrink-0" />
+                                <span className="text-sm font-medium text-foreground truncate">{s.student_name}</span>
+                                <span className="text-xs text-muted-foreground ml-auto">
+                                  {new Date(s.joined_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </ScrollArea>
+
+                      {/* Start Session button */}
+                      {!sessionStarted && (
+                        <Button
+                          variant="hero"
+                          className="w-full"
+                          size="lg"
+                          disabled={studentCount === 0}
+                          onClick={handleStartLive}
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Start Session {studentCount > 0 && `(${studentCount} student${studentCount > 1 ? "s" : ""})`}
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -328,8 +463,7 @@ const TeacherDashboard = () => {
               <Card className="card-shadow border-border">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-warning" />
-                    Top Students
+                    <Trophy className="h-5 w-5 text-warning" /> Top Students
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -357,21 +491,15 @@ const TeacherDashboard = () => {
               </Card>
             )}
 
-            {/* Session Summary Panel */}
             {user && <SessionSummaryPanel teacherId={user.id} />}
-
-            {/* Content History Panel */}
             {user && <ContentHistoryPanel teacherId={user.id} />}
-
-            {/* Email Settings */}
             {user && <EmailSettings userId={user.id} />}
 
             {/* Session History */}
             <Card className="card-shadow border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5 text-muted-foreground" />
-                  Session History
+                  <History className="h-5 w-5 text-muted-foreground" /> Session History
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -385,20 +513,21 @@ const TeacherDashboard = () => {
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
                         onClick={() => session.status === "ended" && navigate(`/teacher/session/${session.id}`)}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-sm text-primary">{session.code}</span>
                           <span className="text-muted-foreground text-sm">
                             {new Date(session.created_at).toLocaleDateString()}
                           </span>
                           {(session as any).grade_band && (
-                            <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">
-                              {(session as any).grade_band}
+                            <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{(session as any).grade_band}</span>
+                          )}
+                          {(session as any).theme && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                              {ALL_THEMES.find(t => t.label === (session as any).theme)?.emoji} {(session as any).theme}
                             </span>
                           )}
                         </div>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
-                        }`}>
+                        <span className={`text-xs px-2 py-1 rounded-full ${session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
                           {session.status}
                         </span>
                       </div>
@@ -410,6 +539,46 @@ const TeacherDashboard = () => {
           </>
         )}
       </main>
+
+      {/* End Session Confirmation Dialog */}
+      <Dialog open={endConfirmOpen} onOpenChange={setEndConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" /> End Session Early?
+            </DialogTitle>
+            <DialogDescription>
+              This will end the session for all {studentCount} connected student{studentCount !== 1 ? "s" : ""}. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={endSession}>End Session</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grade Band Change Confirmation Dialog */}
+      <Dialog open={gradeBandChangeOpen} onOpenChange={setGradeBandChangeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Change Grade Band?
+            </DialogTitle>
+            <DialogDescription>
+              Changing grade band will affect all {studentCount} current student{studentCount !== 1 ? "s" : ""}. Are you sure?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={confirmGradeBandChange}>Change to {pendingGradeBand}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
