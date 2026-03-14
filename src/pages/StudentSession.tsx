@@ -594,7 +594,7 @@ const StudentSession = () => {
         const isHeavy = 
           (activityText.includes("4-scene") || activityText.includes("sequential story") || 
            activityText.includes("multi-scene") || activityText.includes("organize sentences") ||
-           (activity.scenes && activity.scenes.length >= 3));
+           (activityText.includes("scenes") && activityText.includes("order")));
         const sentenceMatch = (activity.question || "").match(/write\s+(\d+)\s+sentence/i);
         const tooManySentences = sentenceMatch && parseInt(sentenceMatch[1]) >= 3;
         
