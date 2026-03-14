@@ -15,6 +15,12 @@ ABSOLUTE RULES FOR ALL ACTIVITIES:
 - ALWAYS frame activities as solo adventures connected to the session theme
 - Before outputting, verify: "Can a student sitting alone on a device complete this with only what is shown on screen?" If not, rewrite.
 - No two consecutive activities should use the exact same input format.
+
+IMPORTANT SESSION DIFFICULTY CURVE:
+Activity 1: Easy (warm up) → Activity 2: Easy-Medium → Activity 3: Medium-Hard → Activity 4: HARDEST (peak) → Activity 5: Medium-Easy (wind down) → Activity 6: Easy and fun (end on a win)
+Students MUST always finish a session feeling successful, not stuck.
+
+CRITICAL RULE FOR POSITIONS 5 AND 6: For activity positions 5 and 6, you MUST ONLY generate light, low-cognitive-load activities. NEVER generate multi-sentence organizing tasks, story sequencing, multi-scene writing, or any task requiring 3+ sentences of original writing for these positions. The session must end feeling easy and fun. The 4-scene sequential story writing prompt is BANNED from positions 5 and 6 — it may ONLY appear in positions 2, 3, or 4.
 `;
 
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
