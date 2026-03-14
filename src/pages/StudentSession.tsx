@@ -22,6 +22,7 @@ import { BadgePopup } from "@/components/gamification/BadgePopup";
 import { BadgeCollection } from "@/components/gamification/BadgeCollection";
 import { Leaderboard } from "@/components/gamification/Leaderboard";
 import { POINTS, BADGES } from "@/components/gamification/constants";
+import { getAnimalLevel, getNextLevel } from "@/components/gamification/constants";
 import { ThemeBackground, ConfettiCelebration, MotivationalBanner } from "@/components/session/ThemeBackground";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
