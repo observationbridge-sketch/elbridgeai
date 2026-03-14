@@ -397,12 +397,21 @@ const StudentSession = () => {
     }
   }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
-  // Global cleanup: stop speech recognition on unmount and activity transitions
+  // Global cleanup: stop speech recognition on unmount
   useEffect(() => {
     return () => {
       speech.stopListening();
     };
   }, []);
+
+  // Reactive cleanup: kill speech + reset state on every activity/question/part change
+  useEffect(() => {
+    speech.stopListening();
+    speech.resetTranscript();
+    setPart1Answer("");
+    setPart2Answer("");
+    setPart3Answer("");
+  }, [globalStep, part1Step, part2Index, part3SpeedIndex]);
 
   useEffect(() => {
     if (speech.transcript) {
