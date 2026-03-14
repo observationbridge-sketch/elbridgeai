@@ -6,9 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode, BarChart3,
-  Palette, GraduationCap, Loader2, AlertTriangle,
+  GraduationCap, Loader2, AlertTriangle,
 } from "lucide-react";
 import EmailSettings from "@/components/dashboard/EmailSettings";
 import SessionSummaryPanel from "@/components/dashboard/SessionSummaryPanel";
@@ -48,6 +49,7 @@ interface ConnectedStudent {
   id: string;
   student_name: string;
   joined_at: string;
+  theme?: string | null;
 }
 
 const TeacherDashboard = () => {
@@ -62,9 +64,8 @@ const TeacherDashboard = () => {
   const [sessions, setSessions] = useState<any[]>([]);
   const [topStudents, setTopStudents] = useState<StudentOverview[]>([]);
   const [gradeBand, setGradeBand] = useState<"K-2" | "3-5">("3-5");
-  const [selectedTheme, setSelectedTheme] = useState<string>("");
+  const [themeOptions, setThemeOptions] = useState<string[]>(["Nature & animals", "Superheroes", "Fantasy & myths"]);
   const [activeGradeBand, setActiveGradeBand] = useState<string | null>(null);
-  const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<"sessions" | "growth">("sessions");
   const [generating, setGenerating] = useState(false);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
@@ -100,7 +101,6 @@ const TeacherDashboard = () => {
       setSessionId(active.id);
       setSessionActive(true);
       setActiveGradeBand(active.grade_band || "3-5");
-      setActiveTheme((active as any).theme || null);
       pollStudents(active.id);
     }
   };
@@ -118,11 +118,11 @@ const TeacherDashboard = () => {
   const pollStudents = async (sid: string) => {
     const { data, count } = await supabase
       .from("session_students")
-      .select("id, student_name, joined_at", { count: "exact" })
+      .select("id, student_name, joined_at, theme", { count: "exact" })
       .eq("session_id", sid)
       .order("joined_at", { ascending: true });
     setStudentCount(count || 0);
-    if (data) setConnectedStudents(data);
+    if (data) setConnectedStudents(data as any);
   };
 
   // Polling interval for active session
@@ -133,12 +133,16 @@ const TeacherDashboard = () => {
   }, [sessionActive, sessionId]);
 
   const createSession = async () => {
-    if (!user || !selectedTheme) return;
+    if (!user) return;
+    if (gradeBand === "K-2" && themeOptions.length < 1) {
+      toast.error("Select at least 1 theme option for K-2 students");
+      return;
+    }
     setGenerating(true);
     const code = generateCode();
     const { data, error } = await supabase
       .from("sessions")
-      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand, theme: selectedTheme } as any)
+      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand, theme_options: themeOptions } as any)
       .select()
       .single();
     if (error) {
@@ -151,7 +155,6 @@ const TeacherDashboard = () => {
     setSessionActive(true);
     setSessionStarted(false);
     setActiveGradeBand(gradeBand);
-    setActiveTheme(selectedTheme);
     setStudentCount(0);
     setConnectedStudents([]);
     setGenerating(false);
@@ -177,9 +180,9 @@ const TeacherDashboard = () => {
     setStudentCount(0);
     setConnectedStudents([]);
     setActiveGradeBand(null);
-    setActiveTheme(null);
     setEndConfirmOpen(false);
     toast.success("Session ended");
+    if (user) loadSessions(user.id);
     if (user) loadSessions(user.id);
   };
 
@@ -290,11 +293,6 @@ const TeacherDashboard = () => {
                             {activeGradeBand}
                           </span>
                         )}
-                        {activeTheme && (
-                          <span className="text-xs bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">
-                            {ALL_THEMES.find(t => t.label === activeTheme)?.emoji} {activeTheme}
-                          </span>
-                        )}
                       </div>
 
                       {/* Code display */}
@@ -360,26 +358,40 @@ const TeacherDashboard = () => {
                         </div>
                       </div>
 
-                      {/* Theme Selector */}
-                      <div>
-                        <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
-                          <Palette className="h-4 w-4 text-accent" /> Session Theme <span className="text-destructive">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {ALL_THEMES.map((theme) => (
-                            <Button
-                              key={theme.label}
-                              variant={selectedTheme === theme.label ? "default" : "outline"}
-                              size="sm"
-                              className={`justify-start gap-2 text-left h-auto py-2.5 px-3 ${selectedTheme === theme.label ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
-                              onClick={() => setSelectedTheme(theme.label)}
-                            >
-                              <span className="text-lg">{theme.emoji}</span>
-                              <span className="text-xs leading-tight">{theme.label}</span>
-                            </Button>
-                          ))}
+                      {/* K-2 Theme Options (checkboxes) */}
+                      {gradeBand === "K-2" && (
+                        <div>
+                          <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
+                            🎨 Theme Options for Students
+                          </label>
+                          <p className="text-xs text-muted-foreground mb-2">K-2 students will pick from these (select up to 3)</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {ALL_THEMES.map((theme) => {
+                              const checked = themeOptions.includes(theme.label);
+                              return (
+                                <label
+                                  key={theme.label}
+                                  className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/30"}`}
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(v) => {
+                                      if (v) {
+                                        if (themeOptions.length < 3) setThemeOptions([...themeOptions, theme.label]);
+                                      } else {
+                                        setThemeOptions(themeOptions.filter(t => t !== theme.label));
+                                      }
+                                    }}
+                                    disabled={!checked && themeOptions.length >= 3}
+                                  />
+                                  <span className="text-base">{theme.emoji}</span>
+                                  <span className="text-xs text-foreground leading-tight">{theme.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Generate button */}
                       <Button
@@ -387,7 +399,7 @@ const TeacherDashboard = () => {
                         className="w-full"
                         size="lg"
                         onClick={createSession}
-                        disabled={!selectedTheme || generating}
+                        disabled={generating}
                       >
                         {generating ? (
                           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating Session…</>
@@ -395,9 +407,6 @@ const TeacherDashboard = () => {
                           <><Play className="h-4 w-4 mr-2" /> Generate Session Code</>
                         )}
                       </Button>
-                      {!selectedTheme && (
-                        <p className="text-xs text-muted-foreground text-center">Select a grade band and theme to continue</p>
-                      )}
                     </div>
                   )}
                 </CardContent>
@@ -429,7 +438,10 @@ const TeacherDashboard = () => {
                             connectedStudents.map((s) => (
                               <div key={s.id} className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-md">
                                 <span className="h-2 w-2 rounded-full bg-success shrink-0" />
-                                <span className="text-sm font-medium text-foreground truncate">{s.student_name}</span>
+                                <span className="text-sm font-medium text-foreground truncate">
+                                  {s.student_name}
+                                  {s.theme && ` ${ALL_THEMES.find(t => t.label === s.theme)?.emoji || ""}`}
+                                </span>
                                 <span className="text-xs text-muted-foreground ml-auto">
                                   {new Date(s.joined_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                 </span>
@@ -520,11 +532,6 @@ const TeacherDashboard = () => {
                           </span>
                           {(session as any).grade_band && (
                             <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{(session as any).grade_band}</span>
-                          )}
-                          {(session as any).theme && (
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                              {ALL_THEMES.find(t => t.label === (session as any).theme)?.emoji} {(session as any).theme}
-                            </span>
                           )}
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>

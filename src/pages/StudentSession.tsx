@@ -274,16 +274,19 @@ const StudentSession = () => {
       try {
         const { data: studentData } = await supabase
           .from("session_students")
-          .select("student_name, session_id")
+          .select("student_name, session_id, theme")
           .eq("id", studentId)
           .single();
 
         if (studentData) {
           currentStudentName = studentData.student_name;
           setStudentName(studentData.student_name);
+          if ((studentData as any).theme) {
+            sessionForcedTheme = (studentData as any).theme;
+          }
           const { data: sessionData } = await supabase
             .from("sessions")
-            .select("teacher_id, grade_band, theme")
+            .select("teacher_id, grade_band")
             .eq("id", sessionId)
             .single();
           if (sessionData) {
@@ -291,9 +294,6 @@ const StudentSession = () => {
             const gb = (sessionData as any).grade_band || "3-5";
             setGradeBand(gb as GradeBand);
             setEffectiveGradeBand(gb as GradeBand);
-            if ((sessionData as any).theme) {
-              sessionForcedTheme = (sessionData as any).theme;
-            }
           }
         }
       } catch { /* proceed */ }

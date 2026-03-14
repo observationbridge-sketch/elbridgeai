@@ -20,18 +20,21 @@ export type Database = {
           joined_at: string
           session_id: string
           student_name: string
+          theme: string | null
         }
         Insert: {
           id?: string
           joined_at?: string
           session_id: string
           student_name: string
+          theme?: string | null
         }
         Update: {
           id?: string
           joined_at?: string
           session_id?: string
           student_name?: string
+          theme?: string | null
         }
         Relationships: [
           {
@@ -53,6 +56,7 @@ export type Database = {
           status: string
           teacher_id: string
           theme: string | null
+          theme_options: string[] | null
         }
         Insert: {
           code: string
@@ -63,6 +67,7 @@ export type Database = {
           status?: string
           teacher_id: string
           theme?: string | null
+          theme_options?: string[] | null
         }
         Update: {
           code?: string
@@ -73,6 +78,7 @@ export type Database = {
           status?: string
           teacher_id?: string
           theme?: string | null
+          theme_options?: string[] | null
         }
         Relationships: []
       }
