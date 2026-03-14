@@ -230,7 +230,7 @@ export function ThemePageWrapper({ theme, children }: { theme: string; children:
   }, [theme, visual.gradient]);
 
   return (
-    <div className="relative min-h-screen transition-all duration-[600ms]">
+    <div className="relative min-h-screen transition-all duration-[600ms] dark">
       {/* Pattern overlay on full page */}
       <div
         className="fixed inset-0 pointer-events-none transition-opacity duration-[600ms]"
