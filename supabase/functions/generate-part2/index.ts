@@ -19,10 +19,11 @@ ABSOLUTE RULES FOR ALL ACTIVITIES:
 
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
 
+// Difficulty arc: 1-2 warmup, 3-4 peak, 5 wind-down, 6 light/fun
 const INPUT_TYPES: Record<Strategy, string[]> = {
-  sentence_frames: ["typing", "listen_then_type", "typing", "multiple_choice", "record_then_type", "typing"],
+  sentence_frames: ["typing", "listen_then_type", "typing", "multiple_choice", "multiple_choice", "typing"],
   sentence_expansion: ["recording", "typing", "recording", "multiple_choice", "typing", "typing"],
-  quick_writes: ["typing", "listen_then_type", "typing", "typing", "record_then_type", "typing"],
+  quick_writes: ["typing", "listen_then_type", "typing", "typing", "multiple_choice", "typing"],
 };
 
 function selectStrategy(domainScores: Record<string, number> | null): { strategy: Strategy; weakestDomain: string; reason: string } {
@@ -113,21 +114,79 @@ function buildHistoryContext(contentHistory: any): string {
   return parts.join("\n");
 }
 
+// Position-specific format constraints
+function getPositionConstraint(questionIndex: number, grade: string, theme: string): string {
+  const isK2 = grade === "K-2";
+
+  // Difficulty arc labels
+  const arcLabels = [
+    "Activity 1 of 6 — WARM UP (easy, heavy scaffolding, build confidence)",
+    "Activity 2 of 6 — WARM UP (easy, moderate scaffolding)",
+    "Activity 3 of 6 — PEAK CHALLENGE (hardest, most complex task)",
+    "Activity 4 of 6 — PEAK CHALLENGE (hard, less scaffolding)",
+    "Activity 5 of 6 — WIND DOWN (medium-easy, relaxed)",
+    "Activity 6 of 6 — LIGHT & FUN (lightest, creative, no wrong answer)",
+  ];
+
+  let constraint = arcLabels[questionIndex] || arcLabels[5];
+
+  // Position 3-4: mini story MUST go here if applicable (never at 5 or 6)
+  if (questionIndex === 2 || questionIndex === 3) {
+    constraint += `\nNOTE: If generating a multi-scene story connecting scenes, it MUST be placed at position 3 or 4 (this one). A 4-6 sentence mini story is appropriate here.`;
+  }
+
+  // Position 5 (second-to-last): medium-easy formats only
+  if (questionIndex === 4) {
+    constraint += `\nFORMAT RESTRICTION for position 5: Select ONLY from these medium-easy formats:
+- True/False with a one-sentence explanation
+- Match the word to the picture description
+- "What happened first/next/last?" ordering (1 sentence each)
+Keep it simple and short.`;
+    if (isK2) {
+      constraint += `\nK-2 OVERRIDE: This should be a Speaking activity (not Writing). Use recording input type.`;
+    }
+  }
+
+  // Position 6 (last): light & fun only
+  if (questionIndex === 5) {
+    const lightFormats = isK2
+      ? `FORMAT RESTRICTION for last activity (K-2): This MUST be a SPEAKING activity using recording input. Select ONLY from:
+- "Tell your animal companion one thing you learned today!" (1 sentence, recording)
+- "If you were the ${theme} character today, what would you do?" (1 sentence, recording)
+- "Say your favorite word from today and use it in a silly sentence!" (1 sentence, recording)
+Max 1 sentence response expected. Must involve the student's animal companion.
+Set inputType to "recording".`
+      : `FORMAT RESTRICTION for last activity: Select ONLY from these light, fun formats:
+- "Finish this silly sentence:" (one creative sentence, no wrong answer)
+- "Pick your favorite word from today and draw it with words" (1-2 sentences)
+- "Write one thing your animal/character would say right now" (1 sentence)
+- "If you were the superhero/animal/character today, what would you do?" (2-3 sentences max)
+- Fill-in-the-blank with a fun themed sentence (single answer)
+- Emoji story: "Tell what happened using only 3 emojis then one sentence"
+This MUST feel light, fun, creative. No wrong answers. Short response only.`;
+
+    constraint += `\n${lightFormats}`;
+  }
+
+  // Never put mini story at position 5 or 6
+  if (questionIndex >= 4) {
+    constraint += `\nCRITICAL: Do NOT generate a multi-scene mini story or 4-6 sentence story for this position. Keep it short and light.`;
+  }
+
+  return constraint;
+}
+
 function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string, contentHistory?: any): string {
   const isK2 = grade === "K-2";
-  const inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
+  // Override input type for K-2 last activity to recording
+  let inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
+  if (isK2 && questionIndex === 5) inputType = "recording";
+  if (isK2 && questionIndex === 4) inputType = "recording";
+
   const k2Override = isK2 ? `\nK-2 RULES: Maximum 1 blank per sentence. Multiple choice must have only 2 options. Use only Tier 1 (everyday) vocabulary. Keep sentences under 10 words. Instructions should be very simple.` : "";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
-  const difficultyLabels = [
-    "Question 1 of 6 (easiest — heavy scaffolding)",
-    "Question 2 of 6 (easy — moderate scaffolding)",
-    "Question 3 of 6 (medium-easy)",
-    "Question 4 of 6 (medium)",
-    "Question 5 of 6 (medium-hard — less scaffolding)",
-    "Question 6 of 6 (hardest — most open-ended)",
-  ];
-  const difficultyNote = difficultyLabels[questionIndex] || difficultyLabels[5];
+  const positionConstraint = getPositionConstraint(questionIndex, grade, theme);
 
   const inputTypeNote = `INPUT FORMAT: "${inputType}"${k2Override}
 ${inputType === "typing" ? "The student will TYPE their answer in a text field." : ""}
@@ -142,10 +201,10 @@ ${inputType === "record_then_type" ? "The student will TYPE their answer AND THE
     const scaffolding = [
       "ONE blank to fill in. Provide a sentence frame with exactly one blank marked as ___.",
       "LISTEN THEN TYPE: After hearing the audio clip, the student completes a sentence frame with one blank. Include the audioClip field.",
-      "Read a passage then fill TWO blanks in a sentence frame. Provide a passage and a frame with two blanks.",
-      "MULTIPLE CHOICE: Provide 4 word options to complete the sentence frame. Include the options array.",
-      "Complete the sentence frame by typing, then record saying the full completed sentence aloud.",
-      "The student writes their OWN complete sentence about the topic with NO frame provided — fully open.",
+      "Read a passage then fill TWO blanks in a sentence frame. Provide a passage and a frame with two blanks. This is the HARDEST activity — make it challenging!",
+      "MULTIPLE CHOICE: Provide 4 word options to complete the sentence frame. Include the options array. This is PEAK difficulty — make the distractors tricky.",
+      "WIND DOWN: Medium-easy format. See FORMAT RESTRICTION below.",
+      "LIGHT & FUN: See FORMAT RESTRICTION below. Keep it playful and creative!",
     ][questionIndex];
 
     const histCtx = buildHistoryContext(contentHistory);
@@ -158,11 +217,12 @@ ${inputTypeNote}
 ${histCtx}
 
 Generate a SENTENCE FRAMES activity about "${topic}".
-${difficultyNote}: ${scaffolding}
+DIFFICULTY ARC: ${positionConstraint}
+Task: ${scaffolding}
 
 STRUCTURE:
 1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
-2. Present a sentence frame for the student to complete (unless this is a free production activity)
+2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
 
 Return ONLY valid JSON (no markdown):
@@ -185,10 +245,10 @@ Use vivid, kid-friendly language. ALL content must be about "${topic}".`;
     const expansion = [
       "RECORDING: The student simply REPEATS the base sentence by recording themselves. Keep the sentence short (4-6 words). About " + topic + ".",
       "TYPING: The student reads the expanded version and fills in the missing expansion word by typing.",
-      "RECORDING: The student records the expanded sentence with a new detail added (WHERE).",
-      "MULTIPLE CHOICE: The student chooses which expansion makes the most sense from 4 options. Include the options array.",
-      "TYPING: The student writes the fully expanded sentence from memory.",
-      "TYPING: The student creates their own expanded sentence about the session theme using the same structure.",
+      "RECORDING: The student records the expanded sentence with a new detail added (WHERE). This is PEAK difficulty — make the expansion challenging!",
+      "MULTIPLE CHOICE: The student chooses which expansion makes the most sense from 4 options. Include the options array. PEAK difficulty — tricky distractors!",
+      "WIND DOWN: Medium-easy format. See FORMAT RESTRICTION below.",
+      "LIGHT & FUN: See FORMAT RESTRICTION below. Keep it playful and creative!",
     ][questionIndex];
 
     return `You are an expert ELD activity generator for grades ${grade} ELL students.
@@ -198,7 +258,8 @@ ${STRICT_RULES}
 ${inputTypeNote}
 
 Generate a SENTENCE EXPANSION activity about "${topic}".
-${difficultyNote}: ${expansion}
+DIFFICULTY ARC: ${positionConstraint}
+Task: ${expansion}
 
 The 6 questions build on each other, creating a progressively longer sentence about "${topic}".
 
@@ -222,10 +283,10 @@ ALL content must be about "${topic}".`;
   const scaffold = [
     "TYPING: Provide BOTH a sentence starter AND a word bank of 5-6 vocabulary words about " + topic + ".",
     "LISTEN THEN TYPE: Include an audioClip with a prompt read aloud. Student listens then writes their response. Include the audioClip field.",
-    "TYPING: Provide a sentence starter ONLY (no word bank).",
-    "TYPING: Include a short passage to read, then ask the student to write what happens next in 2 sentences.",
-    "RECORD THEN TYPE: Student first thinks about their answer, types it, then records themselves saying it aloud.",
-    "TYPING: OPEN prompt — student writes freely. Most challenging. About " + topic + ".",
+    "TYPING: Provide a sentence starter ONLY (no word bank). This is PEAK difficulty — the prompt should be challenging and require critical thinking!",
+    "TYPING: Include a short passage to read, then ask the student to write what happens next in 2 sentences. PEAK difficulty — complex passage!",
+    "WIND DOWN: Medium-easy format. See FORMAT RESTRICTION below.",
+    "LIGHT & FUN: See FORMAT RESTRICTION below. Keep it playful and creative!",
   ][questionIndex];
 
   return `You are an expert ELD activity generator for grades ${grade} ELL students.
@@ -235,11 +296,12 @@ ${STRICT_RULES}
 ${inputTypeNote}
 
 Generate a QUICK WRITES activity about "${topic}".
-${difficultyNote}: ${scaffold}
+DIFFICULTY ARC: ${positionConstraint}
+Task: ${scaffold}
 
 RULES:
 - The prompt must be clear, specific, and vivid — specifically about "${topic}"
-- Ask for 2-3 sentences minimum
+- Ask for 2-3 sentences minimum (unless this is the LIGHT & FUN last activity — then 1-2 sentences max)
 - Include an encouraging note like "Most students finish in about 2 minutes!"
 
 Return ONLY valid JSON (no markdown):
@@ -249,7 +311,7 @@ Return ONLY valid JSON (no markdown):
   "question": "<the writing prompt about ${topic}>",
   "sentenceStarter": "<sentence starter or null if open prompt>",
   "wordBank": ${questionIndex === 0 ? '["<5-6 vocabulary words about ' + topic + '>"]' : "null"},
-  "modelAnswer": "<a sample 2-3 sentence response>",
+  "modelAnswer": "<a sample response>",
   "acceptableKeywords": ["<6-8 words any reasonable answer might contain>"],
   "difficulty": ${questionIndex + 1},
   "theme": "${theme}"
@@ -324,7 +386,10 @@ serve(async (req) => {
     activity.strategyReason = reason;
     // Ensure inputType is set
     if (!activity.inputType) {
-      activity.inputType = INPUT_TYPES[strategy]?.[questionIndex || 0] || "typing";
+      const isK2 = (grade || "3-5") === "K-2";
+      let expectedInputType = INPUT_TYPES[strategy]?.[(questionIndex || 0)] || "typing";
+      if (isK2 && (questionIndex || 0) >= 4) expectedInputType = "recording";
+      activity.inputType = expectedInputType;
     }
 
     return new Response(JSON.stringify(activity), {
