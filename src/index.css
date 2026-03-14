@@ -113,6 +113,29 @@
   }
 }
 
+/* Glass card styling in themed dark contexts */
+.dark .card-shadow {
+  background: rgba(255, 255, 255, 0.07) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.05);
+}
+
+/* Keep inputs readable on dark themed backgrounds */
+.dark .card-shadow input,
+.dark .card-shadow textarea,
+.dark .card-shadow select {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #1a1a2e !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.dark .card-shadow input::placeholder,
+.dark .card-shadow textarea::placeholder {
+  color: #6b7280 !important;
+}
+
 /* Confetti fall animation */
 @keyframes confetti-fall {
   0% {
