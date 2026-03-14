@@ -397,20 +397,29 @@ const StudentSession = () => {
     }
   }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
-  // Global cleanup: stop speech recognition on unmount and activity transitions
+  // Global cleanup: stop speech recognition on unmount
   useEffect(() => {
     return () => {
       speech.stopListening();
     };
   }, []);
 
+  // Reactive cleanup: kill speech + reset state on every activity/question/part change
+  useEffect(() => {
+    speech.stopListening();
+    speech.resetTranscript();
+    setPart1Answer("");
+    setPart2Answer("");
+    setPart3Answer("");
+  }, [globalStep, part1Step, part2Index, part3SpeedIndex]);
+
   useEffect(() => {
     if (speech.transcript) {
       if (inPart1) setPart1Answer(speech.transcript);
-      else if (inPart2) setPart2Answer(speech.transcript);
+      else if (inPart2 && part2Activity?.strategy !== "quick_writes") setPart2Answer(speech.transcript);
       else if (inPart3) setPart3Answer(speech.transcript);
     }
-  }, [speech.transcript, inPart1, inPart2, inPart3]);
+  }, [speech.transcript, inPart1, inPart2, inPart3, part2Activity?.strategy]);
 
   // ─── Save response helper ───
   const saveResponse = async (
