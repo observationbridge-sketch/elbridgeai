@@ -325,7 +325,7 @@ const StudentSession = () => {
 
       try {
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
-          body: { grade: gradeBand || "3-5", contentHistory: fetchedHistory },
+          body: { grade: gradeBand || "3-5", contentHistory: fetchedHistory, forcedTheme: sessionForcedTheme },
         });
         if (error) throw error;
         const anchorData = data as AnchorSentence;
