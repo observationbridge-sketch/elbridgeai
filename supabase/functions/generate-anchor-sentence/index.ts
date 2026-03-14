@@ -93,7 +93,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const history = contentHistory as ContentHistory | null;
-    const theme = selectTheme(history);
+    const theme = forcedTheme || selectTheme(history);
     const historyContext = buildHistoryContext(history);
 
     const isK2 = grade === "K-2";
