@@ -438,7 +438,10 @@ const TeacherDashboard = () => {
                             connectedStudents.map((s) => (
                               <div key={s.id} className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-md">
                                 <span className="h-2 w-2 rounded-full bg-success shrink-0" />
-                                <span className="text-sm font-medium text-foreground truncate">{s.student_name}</span>
+                                <span className="text-sm font-medium text-foreground truncate">
+                                  {s.student_name}
+                                  {s.theme && ` ${ALL_THEMES.find(t => t.label === s.theme)?.emoji || ""}`}
+                                </span>
                                 <span className="text-xs text-muted-foreground ml-auto">
                                   {new Date(s.joined_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                 </span>
