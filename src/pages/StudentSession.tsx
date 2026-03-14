@@ -646,6 +646,7 @@ const StudentSession = () => {
   };
 
   const nextPart2 = () => {
+    killSpeech();
     tts.stop();
     const nextIdx = part2Index + 1;
     if (nextIdx >= part2Count) {
