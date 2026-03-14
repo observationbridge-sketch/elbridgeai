@@ -586,7 +586,56 @@ const StudentSession = () => {
         },
       });
       if (error) throw error;
-      const activity = data as Part2Activity;
+      let activity = data as Part2Activity;
+      
+      // CLIENT-SIDE VALIDATION: Ensure positions 5-6 don't have heavy writing tasks
+      if (index >= 4) {
+        const activityText = JSON.stringify(activity).toLowerCase();
+        const isHeavy = 
+          (activityText.includes("4-scene") || activityText.includes("sequential story") || 
+           activityText.includes("multi-scene") || activityText.includes("organize sentences") ||
+           (activity.scenes && activity.scenes.length >= 3));
+        const sentenceMatch = (activity.question || "").match(/write\s+(\d+)\s+sentence/i);
+        const tooManySentences = sentenceMatch && parseInt(sentenceMatch[1]) >= 3;
+        
+        if (isHeavy || tooManySentences) {
+          console.warn(`Position ${index + 1} had heavy activity — using light fallback`);
+          const isK2 = effectiveGradeBand === "K-2";
+          if (index === 5) {
+            // Position 6 — light & fun
+            activity = {
+              type: "light_fun",
+              inputType: isK2 ? "recording" : "typing",
+              question: isK2 
+                ? `Tell your animal companion: "My favorite thing about ${sessionTopic} is ___!" Say it out loud! 🎤`
+                : `🎉 Finish this silly sentence about ${sessionTopic}: "If I could _____, I would _____ because _____!"`,
+              modelAnswer: `My favorite thing about ${sessionTopic} is how amazing it is!`,
+              acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "fun", "favorite", "because"],
+              difficulty: 6,
+              theme: sessionTheme,
+              strategy: activity.strategy || "sentence_frames",
+              weakestDomain: activity.weakestDomain || "none",
+              strategyReason: "Light ending activity (client fallback)",
+            };
+          } else {
+            // Position 5 — medium-easy
+            activity = {
+              type: "true_false",
+              inputType: isK2 ? "recording" : "multiple_choice",
+              question: `True or False: ${sessionTopic} is something you might find in a story about ${sessionTheme}. Explain why in one sentence.`,
+              options: isK2 ? undefined : ["True — it fits the theme!", "False — it doesn't fit.", "True — definitely!", "False — not at all."],
+              modelAnswer: `True — ${sessionTopic} fits perfectly with ${sessionTheme}!`,
+              acceptableKeywords: ["true", "because", sessionTopic.split(" ")[0]?.toLowerCase() || "yes"],
+              difficulty: 5,
+              theme: sessionTheme,
+              strategy: activity.strategy || "sentence_frames",
+              weakestDomain: activity.weakestDomain || "none",
+              strategyReason: "Wind-down activity (client fallback)",
+            };
+          }
+        }
+      }
+      
       setPart2Activity(activity);
       setPart2Strategy(activity.strategy);
       setPart2StrategyReason(activity.strategyReason);
