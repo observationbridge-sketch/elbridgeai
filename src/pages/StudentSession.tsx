@@ -1009,7 +1009,8 @@ const StudentSession = () => {
 
   // ─── Main render ───
   return (
-    <div className={`min-h-screen bg-background ${isK2 ? "text-xl" : ""}`}>
+    <ThemePageWrapper theme={sessionTheme}>
+    <div className={`min-h-screen ${isK2 ? "text-xl" : ""}`}>
       {/* Top bar */}
       <div className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
