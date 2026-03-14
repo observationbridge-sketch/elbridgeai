@@ -100,7 +100,6 @@ const TeacherDashboard = () => {
       setSessionId(active.id);
       setSessionActive(true);
       setActiveGradeBand(active.grade_band || "3-5");
-      setActiveTheme((active as any).theme || null);
       pollStudents(active.id);
     }
   };
