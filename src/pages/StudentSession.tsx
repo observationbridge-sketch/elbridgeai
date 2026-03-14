@@ -1134,7 +1134,7 @@ const StudentSession = () => {
                 ) : null
               ) : null}
             </div>
-          </ThemeBackground>
+          </>
         )}
       </main>
 
