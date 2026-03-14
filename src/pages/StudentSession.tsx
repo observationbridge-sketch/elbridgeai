@@ -23,7 +23,7 @@ import { BadgeCollection } from "@/components/gamification/BadgeCollection";
 import { Leaderboard } from "@/components/gamification/Leaderboard";
 import { POINTS, BADGES } from "@/components/gamification/constants";
 import { getAnimalLevel, getNextLevel } from "@/components/gamification/constants";
-import { ThemeBackground, ConfettiCelebration, MotivationalBanner } from "@/components/session/ThemeBackground";
+import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
