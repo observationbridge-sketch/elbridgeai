@@ -187,56 +187,67 @@ function getPositionConstraint(questionIndex: number, grade: string, theme: stri
   // Difficulty arc labels
   const arcLabels = [
     "Activity 1 of 6 — WARM UP (easy, heavy scaffolding, build confidence)",
-    "Activity 2 of 6 — WARM UP (easy, moderate scaffolding)",
-    "Activity 3 of 6 — PEAK CHALLENGE (hardest, most complex task)",
-    "Activity 4 of 6 — PEAK CHALLENGE (hard, less scaffolding)",
-    "Activity 5 of 6 — WIND DOWN (medium-easy, relaxed)",
-    "Activity 6 of 6 — LIGHT & FUN (lightest, creative, no wrong answer)",
+    "Activity 2 of 6 — EASY-MEDIUM (moderate scaffolding)",
+    "Activity 3 of 6 — MEDIUM-HARD (increasing complexity)",
+    "Activity 4 of 6 — HARDEST (peak challenge, most complex task, this is the summit!)",
+    "Activity 5 of 6 — WIND DOWN (medium-easy, relaxed, winding down)",
+    "Activity 6 of 6 — EASY & FUN (lightest, creative, no wrong answer, end on a win!)",
   ];
 
   let constraint = arcLabels[questionIndex] || arcLabels[5];
 
-  // Position 3-4: mini story MUST go here if applicable (never at 5 or 6)
+  // Position 3-4: multi-scene story MUST go here if applicable (BANNED from 5 or 6)
   if (questionIndex === 2 || questionIndex === 3) {
-    constraint += `\nNOTE: If generating a multi-scene story connecting scenes, it MUST be placed at position 3 or 4 (this one). A 4-6 sentence mini story is appropriate here.`;
+    constraint += `\nNOTE: If generating a multi-scene story or 4-scene sequential writing task, it MUST be placed at position 3 or 4 (this one). This is the appropriate position for the heaviest cognitive load.`;
   }
 
   // Position 5 (second-to-last): medium-easy formats only
   if (questionIndex === 4) {
-    constraint += `\nFORMAT RESTRICTION for position 5: Select ONLY from these medium-easy formats:
+    constraint += `\n
+HARD FORMAT RESTRICTION for position 5 — ONLY these formats are allowed:
 - True/False with a one-sentence explanation
-- Match the word to the picture description
-- "What happened first/next/last?" ordering (1 sentence each)
-Keep it simple and short.`;
+- "What happened first/next/last?" — one sentence each
+- Match the word to its meaning — single answer
+- Fill-in-one-blank sentence
+NO multi-sentence writing. NO story sequencing. NO scene organization. Maximum 1-2 sentences expected from student.`;
     if (isK2) {
-      constraint += `\nK-2 OVERRIDE: This should be a Speaking activity (not Writing). Use recording input type.`;
+      constraint += `\nK-2 OVERRIDE: This MUST be a Speaking activity (not Writing). Use recording input type. Maximum 1 sentence.`;
     }
   }
 
   // Position 6 (last): light & fun only
   if (questionIndex === 5) {
     const lightFormats = isK2
-      ? `FORMAT RESTRICTION for last activity (K-2): This MUST be a SPEAKING activity using recording input. Select ONLY from:
+      ? `HARD FORMAT RESTRICTION for last activity (K-2) — ONLY these are allowed:
 - "Tell your animal companion one thing you learned today!" (1 sentence, recording)
 - "If you were the ${theme} character today, what would you do?" (1 sentence, recording)
 - "Say your favorite word from today and use it in a silly sentence!" (1 sentence, recording)
 Max 1 sentence response expected. Must involve the student's animal companion.
-Set inputType to "recording".`
-      : `FORMAT RESTRICTION for last activity: Select ONLY from these light, fun formats:
+Set inputType to "recording". This is NON-NEGOTIABLE.`
+      : `HARD FORMAT RESTRICTION for last activity — ONLY these are allowed:
 - "Finish this silly sentence:" (one creative sentence, no wrong answer)
-- "Pick your favorite word from today and draw it with words" (1-2 sentences)
+- "Pick your favorite word from today and use it in one sentence"
 - "Write one thing your animal/character would say right now" (1 sentence)
-- "If you were the superhero/animal/character today, what would you do?" (2-3 sentences max)
-- Fill-in-the-blank with a fun themed sentence (single answer)
-- Emoji story: "Tell what happened using only 3 emojis then one sentence"
-This MUST feel light, fun, creative. No wrong answers. Short response only.`;
+- Fill-in-the-blank with a fun themed sentence (single word answer)
+- Emoji story: "Pick 3 emojis then write one sentence about them"
+- "What would your character say right now?" (1 sentence)
+This MUST feel light, fun, creative. No wrong answers. Maximum 1-2 sentences. 
+Students must end the session feeling successful, not stuck.`;
 
     constraint += `\n${lightFormats}`;
   }
 
-  // Never put mini story at position 5 or 6
+  // ABSOLUTE BAN on heavy writing for positions 5 and 6
   if (questionIndex >= 4) {
-    constraint += `\nCRITICAL: Do NOT generate a multi-scene mini story or 4-6 sentence story for this position. Keep it short and light.`;
+    constraint += `\n
+ABSOLUTE BAN FOR POSITIONS 5-6:
+- NEVER generate a 4-scene sequential story writing prompt
+- NEVER generate multi-scene story organization tasks  
+- NEVER ask students to write and organize multiple sentences in order
+- NEVER generate any activity requiring 3+ sentences of original writing
+- NEVER generate story sequencing or scene ordering tasks
+- The session MUST end feeling easy and fun. Students must finish feeling successful.
+If you violate this rule, the activity will be rejected and replaced with a fallback.`;
   }
 
   return constraint;
