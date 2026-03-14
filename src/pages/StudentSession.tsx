@@ -22,6 +22,7 @@ import { BadgePopup } from "@/components/gamification/BadgePopup";
 import { BadgeCollection } from "@/components/gamification/BadgeCollection";
 import { Leaderboard } from "@/components/gamification/Leaderboard";
 import { POINTS, BADGES } from "@/components/gamification/constants";
+import { getAnimalLevel, getNextLevel } from "@/components/gamification/constants";
 import { ThemeBackground, ConfettiCelebration, MotivationalBanner } from "@/components/session/ThemeBackground";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
@@ -836,97 +837,151 @@ const StudentSession = () => {
     return <Leaderboard teacherId={teacherId} currentStudentName={studentName} onBack={() => setShowView("session")} />;
   }
 
-  // ─── Session ended screen ───
+  // ─── Session ended — FULL CELEBRATION SCREEN ───
   if (sessionEnded) {
-    const strategyMeta = part2Strategy ? STRATEGY_LABELS[part2Strategy] : null;
+    const animalLevel = getAnimalLevel(gamification.totalPoints);
+    const nextLevel = getNextLevel(gamification.totalPoints);
+    const overallPct = domainScores
+      ? Math.round(Object.values(domainScores).reduce((a, b) => a + b, 0) / Math.max(Object.keys(domainScores).length, 1))
+      : 0;
+    const widaLabel = overallPct >= 90 ? "Bridging ⭐⭐⭐⭐⭐"
+      : overallPct >= 70 ? "Expanding ⭐⭐⭐⭐"
+      : overallPct >= 50 ? "Developing ⭐⭐⭐"
+      : overallPct >= 30 ? "Emerging ⭐⭐"
+      : "Entering ⭐";
+
+    const companionMessages = [
+      `"You did amazing today, ${studentName}! I'm so proud of you!" 💬`,
+      `"Wow, ${studentName}! We learned so much together!" 💬`,
+      `"Great job today, ${studentName}! Can't wait for next time!" 💬`,
+      `"You're getting stronger every day, ${studentName}!" 💬`,
+    ];
+    const companionMsg = companionMessages[Math.floor(Math.random() * companionMessages.length)];
+
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md card-shadow text-center">
-          <CardContent className="pt-8 pb-8 space-y-6">
-            <AnimalCompanion points={gamification.totalPoints} studentName={studentName} />
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        {/* Floating celebration emojis background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {["🌟", "⭐", "🎉", "✨", "💫", "🏆", "🎊", "💪"].map((emoji, i) => (
+            <span
+              key={i}
+              className="absolute text-2xl animate-celebration-sparkle"
+              style={{
+                left: `${10 + (i * 12) % 80}%`,
+                top: `${5 + (i * 17) % 70}%`,
+                animationDelay: `${i * 0.3}s`,
+              }}
+            >
+              {emoji}
+            </span>
+          ))}
+        </div>
 
-            <h2 className="text-2xl font-bold text-foreground">Amazing Work! 🎉</h2>
-            <p className="text-lg text-muted-foreground">
-              Great work today, {studentName}! You explored <span className="font-bold text-primary">{sessionTopic}</span> like a true language learner! 🌟
-            </p>
-
-            <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
-              <p className="text-sm text-muted-foreground">Points earned today</p>
-              <p className="text-3xl font-bold text-warning">+{gamification.sessionPoints} ⭐</p>
-              <p className="text-sm text-muted-foreground">Total: {gamification.totalPoints} points</p>
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
+          {/* Main celebration card */}
+          <div className="w-full max-w-md space-y-5">
+            {/* Hero section - "You finished!" */}
+            <div className="text-center animate-celebration-slide-up">
+              <div className="text-7xl mb-3 animate-celebration-float">{animalLevel.emoji}</div>
+              <h1 className="text-3xl font-bold text-foreground mb-1">
+                You finished! 🎉
+              </h1>
+              <p className="text-xl text-primary font-bold">{studentName}</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-muted rounded-lg p-3">
-                <p className="text-xs text-muted-foreground">Language Builder</p>
-                <p className="text-xl font-bold text-primary">✓</p>
-              </div>
-              <div className="bg-muted rounded-lg p-3">
-                <p className="text-xs text-muted-foreground">Practice</p>
-                <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
-              </div>
-              <div className="bg-muted rounded-lg p-3">
-                <p className="text-xs text-muted-foreground">Challenge</p>
-                <p className="text-xl font-bold text-success">✓</p>
-                <p className="text-xs text-muted-foreground">{challengeCompleted}</p>
-              </div>
-            </div>
-
-            {gradeBandAdjusted && (
-              <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
-                <p className="text-xs text-muted-foreground">
-                  📊 Grade band adjusted to <span className="font-bold text-accent">{effectiveGradeBand}</span> based on your performance
-                </p>
-              </div>
-            )}
-
-            {strategyMeta && (
-              <div className="bg-muted/50 rounded-lg p-4 border border-border text-left space-y-2">
-                <div className="flex items-center gap-2">
-                  <Target className={`h-4 w-4 ${strategyMeta.color}`} />
-                  <span className="text-sm font-medium text-foreground">Strategy: {strategyMeta.label}</span>
+            {/* Animal companion message */}
+            <Card className="card-shadow border-primary/20 animate-celebration-slide-up" style={{ animationDelay: "0.15s" }}>
+              <CardContent className="py-4 px-5">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl animate-celebration-pulse">{animalLevel.emoji}</span>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground font-medium">{animalLevel.name} says:</p>
+                    <p className="text-sm text-foreground font-medium italic">{companionMsg}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">{part2StrategyReason}</p>
-              </div>
-            )}
+              </CardContent>
+            </Card>
 
+            {/* Points earned */}
+            <Card className="card-shadow border-warning/30 bg-warning/5 animate-celebration-slide-up" style={{ animationDelay: "0.3s" }}>
+              <CardContent className="py-5 text-center">
+                <p className="text-sm text-muted-foreground mb-1">Points earned today</p>
+                <p className="text-4xl font-bold text-warning animate-celebration-pulse">+{gamification.sessionPoints} ⭐</p>
+                <p className="text-sm text-muted-foreground mt-1">Total: <span className="font-bold text-foreground">{gamification.totalPoints} points</span></p>
+                {nextLevel && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {nextLevel.min - gamification.totalPoints} pts to become {nextLevel.emoji} {nextLevel.name}!
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* WIDA Level */}
+            <Card className="card-shadow border-border animate-celebration-slide-up" style={{ animationDelay: "0.45s" }}>
+              <CardContent className="py-4 text-center">
+                <p className="text-xs text-muted-foreground mb-1">Your WIDA Level</p>
+                <p className="text-lg font-bold text-primary">{widaLabel}</p>
+              </CardContent>
+            </Card>
+
+            {/* Badges unlocked */}
             {gamification.earnedBadgeIds.length > 0 && (
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                <p className="text-sm font-medium text-primary mb-2">🎖️ Your badges:</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {gamification.earnedBadgeIds.slice(-5).map((id) => {
-                    const badge = BADGES_LOOKUP[id];
-                    return badge ? <span key={id} className="text-2xl" title={badge.name}>{badge.icon}</span> : null;
-                  })}
-                </div>
-              </div>
+              <Card className="card-shadow border-border animate-celebration-slide-up" style={{ animationDelay: "0.6s" }}>
+                <CardContent className="py-4">
+                  <p className="text-sm font-medium text-foreground mb-3 text-center">🎖️ Your Badges</p>
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    {gamification.earnedBadgeIds.map((id) => {
+                      const badge = BADGES_LOOKUP[id];
+                      return badge ? (
+                        <div key={id} className="flex flex-col items-center gap-1">
+                          <span className="text-3xl">{badge.icon}</span>
+                          <span className="text-[10px] text-muted-foreground">{badge.name}</span>
+                        </div>
+                      ) : null;
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-left">
-              <p className="text-sm font-medium text-primary mb-1">💡 Growth Tip:</p>
-              <p className="text-sm text-foreground">
-                {part2Score >= 5
-                  ? "You're doing amazing! Try reading a short book or story tonight to keep building your skills."
-                  : part2Score >= 3
-                    ? "Great progress! Practice writing 2-3 sentences about your day before bed."
-                    : "Every practice session makes you stronger! Try saying new English words out loud when you hear them."}
-              </p>
+            {/* Session breakdown */}
+            <div className="grid grid-cols-3 gap-3 animate-celebration-slide-up" style={{ animationDelay: "0.75s" }}>
+              <Card className="card-shadow border-border">
+                <CardContent className="py-3 text-center px-2">
+                  <p className="text-[10px] text-muted-foreground">Builder</p>
+                  <p className="text-xl font-bold text-primary">✓</p>
+                </CardContent>
+              </Card>
+              <Card className="card-shadow border-border">
+                <CardContent className="py-3 text-center px-2">
+                  <p className="text-[10px] text-muted-foreground">Practice</p>
+                  <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
+                </CardContent>
+              </Card>
+              <Card className="card-shadow border-border">
+                <CardContent className="py-3 text-center px-2">
+                  <p className="text-[10px] text-muted-foreground">Challenge</p>
+                  <p className="text-xl font-bold text-success">✓</p>
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" onClick={() => setShowView("badges")} className="gap-2">
-                <Award className="h-4 w-4" /> My Badges
-              </Button>
-              <Button variant="outline" onClick={() => setShowView("leaderboard")} className="gap-2">
-                <Users className="h-4 w-4" /> Leaderboard
+            {/* Actions */}
+            <div className="space-y-3 animate-celebration-slide-up" style={{ animationDelay: "0.9s" }}>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" onClick={() => setShowView("badges")} className="gap-2">
+                  <Award className="h-4 w-4" /> My Badges
+                </Button>
+                <Button variant="outline" onClick={() => setShowView("leaderboard")} className="gap-2">
+                  <Users className="h-4 w-4" /> Leaderboard
+                </Button>
+              </div>
+              <Button variant="hero" onClick={() => navigate("/")} className="w-full text-lg py-6">
+                🏠 Back to Home
               </Button>
             </div>
-
-            <Button variant="hero" onClick={() => navigate("/")} className="w-full">
-              Back to Home
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
         {gamification.evolutionData && (
