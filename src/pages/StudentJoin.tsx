@@ -77,7 +77,7 @@ const StudentJoin = () => {
       }
 
       toast.success(`Welcome, ${name}! 🎉`);
-      navigate(`/student/session/${session.id}/${student.id}`);
+      navigate(`/student/theme/${session.id}/${student.id}`);
     } catch {
       toast.error("Something went wrong.");
     } finally {

@@ -27,6 +27,7 @@ const App = () => (
           <Route path="/teacher/session/:sessionId" element={<SessionSummary />} />
           <Route path="/student/join" element={<StudentJoin />} />
           <Route path="/join/:code" element={<StudentJoin />} />
+          <Route path="/student/theme/:sessionId/:studentId" element={<StudentThemePicker />} />
           <Route path="/student/session/:sessionId/:studentId" element={<StudentSession />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
