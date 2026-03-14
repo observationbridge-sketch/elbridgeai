@@ -49,6 +49,7 @@ interface ConnectedStudent {
   id: string;
   student_name: string;
   joined_at: string;
+  theme?: string | null;
 }
 
 const TeacherDashboard = () => {
