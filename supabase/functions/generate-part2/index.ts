@@ -475,6 +475,25 @@ serve(async (req) => {
       activity.inputType = expectedInputType;
     }
 
+    // HARD VALIDATION: If position 5 or 6, reject heavy activities and use fallback
+    const qIdx = questionIndex || 0;
+    if (qIdx >= 4 && isHeavyActivity(activity)) {
+      console.warn(`Position ${qIdx + 1} had heavy activity — replacing with fallback`);
+      const fallback = generateFallbackActivity(
+        qIdx,
+        theme || "Nature & animals",
+        topic || theme || "Nature & animals",
+        grade || "3-5",
+        strategy
+      );
+      fallback.strategy = strategy;
+      fallback.weakestDomain = weakestDomain;
+      fallback.strategyReason = reason;
+      return new Response(JSON.stringify(fallback), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify(activity), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
