@@ -252,6 +252,10 @@ const StudentSession = () => {
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
 
+  // Theme visual state
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showMotivational, setShowMotivational] = useState(false);
+
   const inPart1 = globalStep < 8;
   const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
   const inPart3 = globalStep >= 8 + part2Count;
