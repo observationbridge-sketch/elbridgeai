@@ -1052,8 +1052,8 @@ const StudentSession = () => {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-muted-foreground">{loadingMessage}</p>
+            <Loader2 className="h-10 w-10 text-white/70 animate-spin" />
+            <p className="text-white/60">{loadingMessage}</p>
           </div>
         ) : (
           <>
