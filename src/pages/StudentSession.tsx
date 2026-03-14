@@ -545,7 +545,7 @@ const StudentSession = () => {
     setPart2Submitted(false);
     setPart2Feedback(null);
     setPart2Answer("");
-    speech.resetTranscript();
+    killSpeech();
     tts.stop();
 
     try {
