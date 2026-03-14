@@ -269,6 +269,7 @@ const StudentSession = () => {
       if (!studentId || !sessionId) return;
 
       let currentStudentName = "";
+      let sessionForcedTheme: string | undefined;
 
       try {
         const { data: studentData } = await supabase
