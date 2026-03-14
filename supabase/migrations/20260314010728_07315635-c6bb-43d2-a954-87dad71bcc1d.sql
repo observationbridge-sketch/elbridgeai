@@ -1,0 +1,1 @@
+ALTER TABLE public.sessions ADD COLUMN theme text DEFAULT NULL;
