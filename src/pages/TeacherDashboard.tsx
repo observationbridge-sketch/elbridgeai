@@ -63,9 +63,8 @@ const TeacherDashboard = () => {
   const [sessions, setSessions] = useState<any[]>([]);
   const [topStudents, setTopStudents] = useState<StudentOverview[]>([]);
   const [gradeBand, setGradeBand] = useState<"K-2" | "3-5">("3-5");
-  const [selectedTheme, setSelectedTheme] = useState<string>("");
+  const [themeOptions, setThemeOptions] = useState<string[]>(["Nature & animals", "Superheroes", "Fantasy & myths"]);
   const [activeGradeBand, setActiveGradeBand] = useState<string | null>(null);
-  const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<"sessions" | "growth">("sessions");
   const [generating, setGenerating] = useState(false);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
