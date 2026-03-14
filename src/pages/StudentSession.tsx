@@ -22,6 +22,7 @@ import { BadgePopup } from "@/components/gamification/BadgePopup";
 import { BadgeCollection } from "@/components/gamification/BadgeCollection";
 import { Leaderboard } from "@/components/gamification/Leaderboard";
 import { POINTS, BADGES } from "@/components/gamification/constants";
+import { ThemeBackground, ConfettiCelebration, MotivationalBanner } from "@/components/session/ThemeBackground";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
@@ -250,6 +251,10 @@ const StudentSession = () => {
   const [part3SpeedAnswers, setPart3SpeedAnswers] = useState<string[]>([]);
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
+
+  // Theme visual state
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showMotivational, setShowMotivational] = useState(false);
 
   const inPart1 = globalStep < 8;
   const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
@@ -615,7 +620,11 @@ const StudentSession = () => {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
     setPart2IsCorrect(correct);
-    if (correct) setPart2Score((s) => s + 1);
+    if (correct) {
+      setPart2Score((s) => s + 1);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 2200);
+    }
 
     let feedback: string;
     if (correct) {
@@ -664,6 +673,7 @@ const StudentSession = () => {
   const nextPart2 = () => {
     killSpeech();
     tts.stop();
+    setShowMotivational(true);
     const nextIdx = part2Index + 1;
     if (nextIdx >= part2Count) {
       setGlobalStep(8 + part2Count);
@@ -746,6 +756,8 @@ const StudentSession = () => {
     if (isCorrect) {
       setPart3SpeedScore((s) => s + 1);
       gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 2200);
     }
     setPart3SpeedAnswers((a) => [...a, selectedOption]);
 
@@ -981,82 +993,91 @@ const StudentSession = () => {
             <Loader2 className="h-10 w-10 text-primary animate-spin" />
             <p className="text-muted-foreground">{loadingMessage}</p>
           </div>
-        ) : inPart1 && anchor ? (
-          <Part1View
-            step={part1Step}
-            anchor={anchor}
-            tts={tts}
-            speech={speech}
-            part1Answer={part1Answer}
-            setPart1Answer={setPart1Answer}
-            part1Submitted={part1Submitted}
-            part1Feedback={part1Feedback}
-            part1ShowSentence={part1ShowSentence}
-            setPart1ShowSentence={setPart1ShowSentence}
-            part1Scores={part1Scores}
-            onStep1Done={handleStep1Done}
-            onStep2Submit={handleStep2Submit}
-            onStep6WriteSubmit={handleStep6WriteSubmit}
-            onStep7RecordSubmit={handleStep7RecordSubmit}
-            onNext={handlePart1Next}
-          />
-        ) : inPart2 && part2Activity ? (
-          <Part2StrategyView
-            activity={part2Activity}
-            index={part2Index}
-            totalActivities={part2Count}
-            answer={part2Answer}
-            setAnswer={setPart2Answer}
-            submitted={part2Submitted}
-            feedback={part2Feedback}
-            isCorrect={part2IsCorrect}
-            speech={speech}
-            tts={tts}
-            onSubmit={() => submitPart2()}
-            onSubmitMC={(option: string) => submitPart2(option)}
-            onNext={nextPart2}
-          />
-        ) : inPart3 ? (
-          part3ShowIntro ? (
-            <Card className="card-shadow border-border text-center">
-              <CardContent className="pt-8 pb-8 space-y-6">
-                <Sparkles className="h-16 w-16 text-warning mx-auto" />
-                <h2 className="text-2xl font-bold text-foreground">🎉 Almost done!</h2>
-                <p className="text-lg text-muted-foreground">Time for your Language Challenge!</p>
-                <p className="text-sm text-muted-foreground">One fun final activity about <span className="font-bold text-primary">{sessionTopic}</span></p>
-                <Button variant="hero" size="lg" className="w-full" onClick={startPart3}>
-                  Let's Go! 🚀
-                </Button>
-              </CardContent>
-            </Card>
-          ) : part3Submitted && part3Feedback ? (
-            <Card className="card-shadow border-border">
-              <CardContent className="pt-8 pb-8 space-y-6">
-                <div className="text-center">
-                  <Trophy className="h-12 w-12 text-warning mx-auto mb-3" />
-                  <h2 className="text-xl font-bold text-foreground">Challenge Complete! 🎉</h2>
-                </div>
-                <FeedbackBanner feedback={part3Feedback} positive={true} />
-                <Button variant="hero" className="w-full" size="lg" onClick={finishSession}>
-                  See My Results <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          ) : part3Challenge ? (
-            <Part3ChallengeView
-              challenge={part3Challenge}
-              answer={part3Answer}
-              setAnswer={setPart3Answer}
-              speech={speech}
-              tts={tts}
-              speedIndex={part3SpeedIndex}
-              onSubmitStory={submitPart3StoryBuilder}
-              onSubmitSpeedAnswer={submitPart3SpeedAnswer}
-              onSubmitTeach={submitPart3TeachItBack}
-            />
-          ) : null
-        ) : null}
+        ) : (
+          <ThemeBackground theme={sessionTheme}>
+            <div className="p-1">
+              {inPart1 && anchor ? (
+                <Part1View
+                  step={part1Step}
+                  anchor={anchor}
+                  tts={tts}
+                  speech={speech}
+                  part1Answer={part1Answer}
+                  setPart1Answer={setPart1Answer}
+                  part1Submitted={part1Submitted}
+                  part1Feedback={part1Feedback}
+                  part1ShowSentence={part1ShowSentence}
+                  setPart1ShowSentence={setPart1ShowSentence}
+                  part1Scores={part1Scores}
+                  onStep1Done={handleStep1Done}
+                  onStep2Submit={handleStep2Submit}
+                  onStep6WriteSubmit={handleStep6WriteSubmit}
+                  onStep7RecordSubmit={handleStep7RecordSubmit}
+                  onNext={handlePart1Next}
+                />
+              ) : inPart2 && part2Activity ? (
+                <Part2StrategyView
+                  activity={part2Activity}
+                  index={part2Index}
+                  totalActivities={part2Count}
+                  answer={part2Answer}
+                  setAnswer={setPart2Answer}
+                  submitted={part2Submitted}
+                  feedback={part2Feedback}
+                  isCorrect={part2IsCorrect}
+                  speech={speech}
+                  tts={tts}
+                  onSubmit={() => submitPart2()}
+                  onSubmitMC={(option: string) => submitPart2(option)}
+                  onNext={nextPart2}
+                />
+              ) : inPart3 ? (
+                part3ShowIntro ? (
+                  <Card className="card-shadow border-border text-center">
+                    <CardContent className="pt-8 pb-8 space-y-6">
+                      <Sparkles className="h-16 w-16 text-warning mx-auto" />
+                      <h2 className="text-2xl font-bold text-foreground">🎉 Almost done!</h2>
+                      <p className="text-lg text-muted-foreground">Time for your Language Challenge!</p>
+                      <p className="text-sm text-muted-foreground">One fun final activity about <span className="font-bold text-primary">{sessionTopic}</span></p>
+                      <Button variant="hero" size="lg" className="w-full" onClick={startPart3}>
+                        Let's Go! 🚀
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : part3Submitted && part3Feedback ? (
+                  <Card className="card-shadow border-border">
+                    <CardContent className="pt-8 pb-8 space-y-6">
+                      <div className="text-center">
+                        <Trophy className="h-12 w-12 text-warning mx-auto mb-3" />
+                        <h2 className="text-xl font-bold text-foreground">Challenge Complete! 🎉</h2>
+                      </div>
+                      <FeedbackBanner feedback={part3Feedback} positive={true} />
+                      <Button variant="hero" className="w-full" size="lg" onClick={finishSession}>
+                        See My Results <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : part3Challenge ? (
+                  <Part3ChallengeView
+                    challenge={part3Challenge}
+                    answer={part3Answer}
+                    setAnswer={setPart3Answer}
+                    speech={speech}
+                    tts={tts}
+                    speedIndex={part3SpeedIndex}
+                    onSubmitStory={submitPart3StoryBuilder}
+                    onSubmitSpeedAnswer={submitPart3SpeedAnswer}
+                    onSubmitTeach={submitPart3TeachItBack}
+                  />
+                ) : null
+              ) : null}
+            </div>
+          </ThemeBackground>
+        )}
       </main>
+
+      <ConfettiCelebration show={showConfetti} theme={sessionTheme} />
+      <MotivationalBanner show={showMotivational} theme={sessionTheme} onDone={() => setShowMotivational(false)} />
 
       <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
       {gamification.evolutionData && (
