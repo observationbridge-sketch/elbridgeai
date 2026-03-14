@@ -117,7 +117,10 @@ export function useSpeechRecognition() {
     shouldListenRef.current = false;
     const recognition = recognitionRef.current;
     recognitionRef.current = null;
-    recognition?.stop();
+    if (recognition) {
+      try { recognition.abort(); } catch {}
+      try { recognition.stop(); } catch {}
+    }
     setIsListening(false);
     // Finalize desktop session finals
     accumulatedRef.current += sessionFinalsRef.current;

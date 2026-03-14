@@ -397,6 +397,13 @@ const StudentSession = () => {
     }
   }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
+  // Global cleanup: stop speech recognition on unmount and activity transitions
+  useEffect(() => {
+    return () => {
+      speech.stopListening();
+    };
+  }, []);
+
   useEffect(() => {
     if (speech.transcript) {
       if (inPart1) setPart1Answer(speech.transcript);
@@ -429,9 +436,17 @@ const StudentSession = () => {
   };
 
   // ─── Part 1 handlers ───
+  // Global cleanup: kill speech recognition on any activity transition
+  const killSpeech = useCallback(() => {
+    if (speech.isListening) {
+      speech.stopListening();
+    }
+    speech.resetTranscript();
+  }, [speech]);
+
   const handlePart1Next = () => {
     tts.stop();
-    speech.resetTranscript();
+    killSpeech();
     setPart1Answer("");
     setPart1Submitted(false);
     setPart1Feedback(null);
@@ -537,7 +552,7 @@ const StudentSession = () => {
     setPart2Submitted(false);
     setPart2Feedback(null);
     setPart2Answer("");
-    speech.resetTranscript();
+    killSpeech();
     tts.stop();
 
     try {
@@ -638,6 +653,7 @@ const StudentSession = () => {
   };
 
   const nextPart2 = () => {
+    killSpeech();
     tts.stop();
     const nextIdx = part2Index + 1;
     if (nextIdx >= part2Count) {
@@ -653,6 +669,7 @@ const StudentSession = () => {
 
   // ─── Part 3 handlers ───
   const fetchPart3Challenge = useCallback(async () => {
+    killSpeech();
     setLoading(true);
     setLoadingMessage("Preparing your Language Challenge! 🎉");
     try {
