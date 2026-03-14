@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getAnimalLevel } from "@/components/gamification/constants";
 import { QRCodeCanvas } from "qrcode.react";
+import { ensureTeacherAccount } from "@/lib/teacher-account";
 
 function generateCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -73,17 +74,67 @@ const TeacherDashboard = () => {
   const [pendingGradeBand, setPendingGradeBand] = useState<"K-2" | "3-5" | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { navigate("/teacher/auth"); return; }
-      setUser(session.user);
-      loadSessions(session.user.id);
-      loadTopStudents(session.user.id);
+    let mounted = true;
+    let retryTimer: number | undefined;
+
+    const applyAuthenticatedUser = (sessionUser: any) => {
+      setUser(sessionUser);
+      void ensureTeacherAccount(sessionUser).catch((error) => {
+        console.error("Failed to ensure teacher account:", error);
+      });
+      loadSessions(sessionUser.id);
+      loadTopStudents(sessionUser.id);
+    };
+
+    const bootstrapAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
+      if (session?.user) {
+        applyAuthenticatedUser(session.user);
+        return;
+      }
+
+      retryTimer = window.setTimeout(() => {
+        void (async () => {
+          const {
+            data: { session: retrySession },
+          } = await supabase.auth.getSession();
+
+          if (!mounted) return;
+          if (!retrySession?.user) {
+            navigate("/teacher/auth", { replace: true });
+            return;
+          }
+
+          applyAuthenticatedUser(retrySession.user);
+        })();
+      }, 300);
+    };
+
+    void bootstrapAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+
+      if (!session?.user) {
+        if (event === "SIGNED_OUT") navigate("/teacher/auth", { replace: true });
+        return;
+      }
+
+      applyAuthenticatedUser(session.user);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) navigate("/teacher/auth");
-      else setUser(session.user);
-    });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      mounted = false;
+      if (retryTimer) window.clearTimeout(retryTimer);
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const loadSessions = async (userId: string) => {

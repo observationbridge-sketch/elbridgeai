@@ -1,9 +1,66 @@
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Users, Brain, Mic, Headphones, PenTool } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ensureTeacherAccount } from "@/lib/teacher-account";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+
+  const redirectAuthenticatedTeacher = useCallback(
+    async (user: User) => {
+      await ensureTeacherAccount(user);
+      navigate("/teacher/dashboard", { replace: true });
+    },
+    [navigate]
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const bootstrap = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
+      if (session?.user) {
+        try {
+          await redirectAuthenticatedTeacher(session.user);
+        } catch {
+          navigate("/teacher/auth", { replace: true });
+        }
+        return;
+      }
+
+      setReady(true);
+    };
+
+    void bootstrap();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted || event !== "SIGNED_IN" || !session?.user) return;
+
+      void redirectAuthenticatedTeacher(session.user).catch(() => {
+        navigate("/teacher/auth", { replace: true });
+      });
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate, redirectAuthenticatedTeacher]);
+
+  if (!ready) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -26,8 +83,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-20 md:py-32 relative">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight">
-              AI-Powered English Language Learning for{" "}
-              <span className="text-gradient">Every Student</span>
+              AI-Powered English Language Learning for <span className="text-gradient">Every Student</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Engage your Grades K–5 students with adaptive activities across Reading, Writing, Speaking, and Listening — aligned to Standard ELD Frameworks. <span className="italic text-sm">Grades 6–8 rolling out soon!</span>
@@ -48,9 +104,7 @@ const Index = () => {
 
       {/* Domains */}
       <section className="container mx-auto px-4 py-20">
-        <h2 className="text-3xl font-bold text-center text-foreground mb-12">
-          Four Domains of Language Acquisition
-        </h2>
+        <h2 className="text-3xl font-bold text-center text-foreground mb-12">Four Domains of Language Acquisition</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { icon: BookOpen, title: "Reading", desc: "Comprehension passages and vocabulary in context", color: "text-primary" },
