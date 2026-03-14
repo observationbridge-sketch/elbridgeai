@@ -357,26 +357,40 @@ const TeacherDashboard = () => {
                         </div>
                       </div>
 
-                      {/* Theme Selector */}
-                      <div>
-                        <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
-                          <Palette className="h-4 w-4 text-accent" /> Session Theme <span className="text-destructive">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {ALL_THEMES.map((theme) => (
-                            <Button
-                              key={theme.label}
-                              variant={selectedTheme === theme.label ? "default" : "outline"}
-                              size="sm"
-                              className={`justify-start gap-2 text-left h-auto py-2.5 px-3 ${selectedTheme === theme.label ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
-                              onClick={() => setSelectedTheme(theme.label)}
-                            >
-                              <span className="text-lg">{theme.emoji}</span>
-                              <span className="text-xs leading-tight">{theme.label}</span>
-                            </Button>
-                          ))}
+                      {/* K-2 Theme Options (checkboxes) */}
+                      {gradeBand === "K-2" && (
+                        <div>
+                          <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
+                            🎨 Theme Options for Students
+                          </label>
+                          <p className="text-xs text-muted-foreground mb-2">K-2 students will pick from these (select up to 3)</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {ALL_THEMES.map((theme) => {
+                              const checked = themeOptions.includes(theme.label);
+                              return (
+                                <label
+                                  key={theme.label}
+                                  className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/30"}`}
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(v) => {
+                                      if (v) {
+                                        if (themeOptions.length < 3) setThemeOptions([...themeOptions, theme.label]);
+                                      } else {
+                                        setThemeOptions(themeOptions.filter(t => t !== theme.label));
+                                      }
+                                    }}
+                                    disabled={!checked && themeOptions.length >= 3}
+                                  />
+                                  <span className="text-base">{theme.emoji}</span>
+                                  <span className="text-xs text-foreground leading-tight">{theme.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Generate button */}
                       <Button
@@ -384,7 +398,7 @@ const TeacherDashboard = () => {
                         className="w-full"
                         size="lg"
                         onClick={createSession}
-                        disabled={!selectedTheme || generating}
+                        disabled={generating}
                       >
                         {generating ? (
                           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating Session…</>
@@ -392,9 +406,6 @@ const TeacherDashboard = () => {
                           <><Play className="h-4 w-4 mr-2" /> Generate Session Code</>
                         )}
                       </Button>
-                      {!selectedTheme && (
-                        <p className="text-xs text-muted-foreground text-center">Select a grade band and theme to continue</p>
-                      )}
                     </div>
                   )}
                 </CardContent>
