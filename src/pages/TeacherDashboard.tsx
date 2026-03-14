@@ -179,9 +179,9 @@ const TeacherDashboard = () => {
     setStudentCount(0);
     setConnectedStudents([]);
     setActiveGradeBand(null);
-    setActiveTheme(null);
     setEndConfirmOpen(false);
     toast.success("Session ended");
+    if (user) loadSessions(user.id);
     if (user) loadSessions(user.id);
   };
 
