@@ -26,6 +26,72 @@ const INPUT_TYPES: Record<Strategy, string[]> = {
   quick_writes: ["typing", "listen_then_type", "typing", "typing", "multiple_choice", "typing"],
 };
 
+// HARD RULE: Activities banned from positions 5 and 6
+const HEAVY_ACTIVITY_PATTERNS = [
+  "sequential story", "4-scene", "multi-scene", "organize sentences",
+  "story writing", "multiple paragraphs", "write a story with",
+  "arrange the scenes", "put the story in order", "write 4",
+  "write three or more sentences", "write 3 or more",
+];
+
+function isHeavyActivity(activity: any): boolean {
+  const text = JSON.stringify(activity).toLowerCase();
+  if (HEAVY_ACTIVITY_PATTERNS.some(p => text.includes(p))) return true;
+  // Check if question asks for 3+ sentences
+  const sentenceMatch = (activity.question || "").match(/write\s+(\d+)\s+sentence/i);
+  if (sentenceMatch && parseInt(sentenceMatch[1]) >= 3) return true;
+  if ((activity.scenes && activity.scenes.length >= 3)) return true;
+  return false;
+}
+
+// Fallback light activities for positions 5 and 6
+function generateFallbackActivity(position: number, theme: string, topic: string, grade: string, strategy: Strategy): any {
+  const isK2 = grade === "K-2";
+  if (position === 5) {
+    // Position 6 (0-indexed 5) — light & fun
+    if (isK2) {
+      return {
+        type: "light_fun",
+        inputType: "recording",
+        question: `Tell your animal companion: "My favorite thing about ${topic} is ___!" Say it out loud! 🎤`,
+        modelAnswer: `My favorite thing about ${topic} is how fun it is!`,
+        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "favorite"],
+        difficulty: 6,
+        theme,
+        strategy,
+        weakestDomain: "speaking",
+        strategyReason: "Light ending activity",
+      };
+    }
+    return {
+      type: "light_fun",
+      inputType: "typing",
+      question: `🎉 Finish this silly sentence about ${topic}: "If I could _____, I would _____ because _____!"`,
+      modelAnswer: `If I could fly to ${topic}, I would explore everything because it would be amazing!`,
+      acceptableKeywords: ["if", "would", "because", topic.split(" ")[0]?.toLowerCase() || "fun"],
+      difficulty: 6,
+      theme,
+      strategy,
+      weakestDomain: "writing",
+      strategyReason: "Light ending activity",
+    };
+  }
+  // Position 5 (0-indexed 4) — medium-easy
+  return {
+    type: "true_false",
+    inputType: isK2 ? "recording" : "multiple_choice",
+    question: `True or False: ${topic} is something you might find in a story about ${theme}. Explain why in one sentence.`,
+    options: isK2 ? undefined : ["True — it fits the theme!", "False — it doesn't fit.", "True — definitely!", "False — not at all."],
+    modelAnswer: `True — ${topic} fits perfectly with ${theme}!`,
+    acceptableKeywords: ["true", "because", topic.split(" ")[0]?.toLowerCase() || "yes"],
+    difficulty: 5,
+    theme,
+    strategy,
+    weakestDomain: "reading",
+    strategyReason: "Wind-down activity",
+  };
+}
+
 function selectStrategy(domainScores: Record<string, number> | null): { strategy: Strategy; weakestDomain: string; reason: string } {
   if (!domainScores || Object.keys(domainScores).length === 0) {
     return {
