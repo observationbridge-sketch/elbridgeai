@@ -36,6 +36,14 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students (
 - Part 3: Fun challenge (Story Builder / Speed Round / Teach It Back)
 - Theme + topic declared at session start, enforced across all parts
 
+## Session Difficulty Curve (HARD RULES)
+- Activity 1: Easy (warm up) → 2: Easy-Medium → 3: Medium-Hard → 4: HARDEST (peak) → 5: Medium-Easy (wind down) → 6: Easy & fun (end on a win)
+- 4-scene sequential story writing is BANNED from positions 5-6 (only allowed at 2-4)
+- Position 6 MUST be light/fun: silly sentence, fill-in-blank, emoji story, favorite word, 1 sentence max
+- Position 5 MUST be medium-easy: True/False, match word, what happened first/next/last
+- K-2 position 5-6: MUST be Speaking (recording), involve animal companion, max 1 sentence
+- Enforced in 3 places: AI prompt, server-side validation (generate-part2), client-side validation (StudentSession.tsx)
+
 ## Content History System
 - student_content_history table tracks: theme, topic, key_vocabulary, vocabulary_results, activity_formats, challenge_type per session
 - History injected into AI prompts to avoid repetition (last 10 sessions)
