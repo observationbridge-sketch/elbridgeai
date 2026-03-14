@@ -429,9 +429,17 @@ const StudentSession = () => {
   };
 
   // ─── Part 1 handlers ───
+  // Global cleanup: kill speech recognition on any activity transition
+  const killSpeech = useCallback(() => {
+    if (speech.isListening) {
+      speech.stopListening();
+    }
+    speech.resetTranscript();
+  }, [speech]);
+
   const handlePart1Next = () => {
     tts.stop();
-    speech.resetTranscript();
+    killSpeech();
     setPart1Answer("");
     setPart1Submitted(false);
     setPart1Feedback(null);
