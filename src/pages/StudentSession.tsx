@@ -397,6 +397,13 @@ const StudentSession = () => {
     }
   }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
+  // Global cleanup: stop speech recognition on unmount and activity transitions
+  useEffect(() => {
+    return () => {
+      speech.stopListening();
+    };
+  }, []);
+
   useEffect(() => {
     if (speech.transcript) {
       if (inPart1) setPart1Answer(speech.transcript);
