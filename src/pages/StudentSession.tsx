@@ -620,7 +620,11 @@ const StudentSession = () => {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
     setPart2IsCorrect(correct);
-    if (correct) setPart2Score((s) => s + 1);
+    if (correct) {
+      setPart2Score((s) => s + 1);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 2200);
+    }
 
     let feedback: string;
     if (correct) {
