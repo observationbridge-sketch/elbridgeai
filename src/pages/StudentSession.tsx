@@ -282,7 +282,7 @@ const StudentSession = () => {
           setStudentName(studentData.student_name);
           const { data: sessionData } = await supabase
             .from("sessions")
-            .select("teacher_id, grade_band")
+            .select("teacher_id, grade_band, theme")
             .eq("id", sessionId)
             .single();
           if (sessionData) {
@@ -290,6 +290,9 @@ const StudentSession = () => {
             const gb = (sessionData as any).grade_band || "3-5";
             setGradeBand(gb as GradeBand);
             setEffectiveGradeBand(gb as GradeBand);
+            if ((sessionData as any).theme) {
+              sessionForcedTheme = (sessionData as any).theme;
+            }
           }
         }
       } catch { /* proceed */ }
