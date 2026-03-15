@@ -332,8 +332,9 @@ If you violate this rule, the activity will be rejected and replaced with a fall
   return constraint;
 }
 
-function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string, contentHistory?: any): string {
+function buildPrompt(strategy: Strategy, theme: string, topic: string, questionIndex: number, grade: string, contentHistory?: any, sentenceFrameTier?: number): string {
   const isK2 = grade === "K-2";
+  const tier = sentenceFrameTier || 1;
   // Override input type for K-2 last activity to recording
   let inputType = INPUT_TYPES[strategy]?.[questionIndex] || "typing";
   if (isK2 && questionIndex === 5) inputType = "recording";
