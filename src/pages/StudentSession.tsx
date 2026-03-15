@@ -1807,10 +1807,10 @@ function Part2StrategyView({
                   <Button
                     key={i}
                     variant="outline"
-                    className="justify-start text-left h-auto py-3 px-4 text-foreground hover:bg-primary/10 hover:border-primary/30"
+                    className={`justify-start text-left h-auto ${isK2 ? "py-5 px-5 text-xl min-h-[64px]" : "py-3 px-4"} text-foreground hover:bg-primary/10 hover:border-primary/30`}
                     onClick={() => onSubmitMC(option)}
                   >
-                    <span className="font-bold text-primary mr-2">{String.fromCharCode(65 + i)}.</span>
+                    <span className={`font-bold text-primary mr-2 ${isK2 ? "text-xl" : ""}`}>{String.fromCharCode(65 + i)}.</span>
                     {option}
                   </Button>
                 ))}
