@@ -1771,14 +1771,15 @@ function Part1View({
   part1Submitted, part1Feedback, onStep1Done, onStep2Submit,
   onStep3Complete, onStep4Complete, onStep5Complete, onNext, onRetryFillBlanks, isK2,
 }: Part1Props) {
-  // Local scaffold state
+  const sounds = useSounds();
   const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
-  const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
-  const [jumbleAnswer, setJumbleAnswer] = useState("");
-  const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
   const [step3Status, setStep3Status] = useState<"loading" | "ready" | "failed">("loading");
   const [step3RetryCount, setStep3RetryCount] = useState(0);
   const [showStep3WaitState, setShowStep3WaitState] = useState(false);
+  const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
+  const [jumbleAnswer, setJumbleAnswer] = useState("");
+  const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
+  const [jumbleTappedWords, setJumbleTappedWords] = useState<string[]>([]);
 
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
     const anchorToUse = sourceAnchor || anchor;
