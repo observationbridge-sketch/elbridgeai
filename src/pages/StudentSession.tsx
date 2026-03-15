@@ -149,6 +149,28 @@ function flexibleGrade(input: string, keywords: string[]): boolean {
   return false;
 }
 
+function sentenceCount(text: string): number {
+  return text
+    .split(/[.!?]+/)
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+}
+
+function wordCount(text: string): number {
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z']/g, ""))
+    .filter(Boolean).length;
+}
+
+function isValidK2AnchorSentence(sentence: string): boolean {
+  if (!sentence?.trim()) return false;
+  if (sentenceCount(sentence) !== 1) return false;
+  if (wordCount(sentence) > 10) return false;
+  return true;
+}
+
 const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
 BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
