@@ -1237,8 +1237,10 @@ const StudentSession = () => {
       });
     }
 
-    gamification.addPoints(POINTS.PART2_ACTIVITY);
-    sounds.playPoints();
+    if (correct) {
+      gamification.addPoints(POINTS.PART2_ACTIVITY);
+      sounds.playPoints();
+    }
 
     const domainMap: Record<string, string> = {
       sentence_frames: "reading",
@@ -2270,6 +2272,21 @@ function Part2StrategyView({
   const StrategyIcon = strategyMeta.icon;
   const inputType = activity.inputType || "typing";
 
+  // K-2 Sentence Frame retry logic
+  const isK2SF = isK2 && activity.strategy === "sentence_frames";
+  const [sfAttempts, setSfAttempts] = useState(0);
+  const [sfWrongMessage, setSfWrongMessage] = useState<string | null>(null);
+  const [sfRevealed, setSfRevealed] = useState(false);
+  const [sfSelectedWord, setSfSelectedWord] = useState<string | null>(null);
+
+  // Reset retry state when activity changes
+  useEffect(() => {
+    setSfAttempts(0);
+    setSfWrongMessage(null);
+    setSfRevealed(false);
+    setSfSelectedWord(null);
+  }, [activity.question]);
+
   // K-2 auto-advance countdown
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -2388,8 +2405,8 @@ function Part2StrategyView({
           <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
         )}
 
-        {/* Sentence frame — hide entirely for K-2 sentence_frames */}
-        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && !(isK2 && activity.strategy === "sentence_frames") && (
+        {/* Sentence frame — hide for K-2 entirely */}
+        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && !isK2 && (
           <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
             <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
             <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
@@ -2406,37 +2423,89 @@ function Part2StrategyView({
 
         {/* Word bank — hide for K-2 recording */}
         {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
-          <div className="bg-muted/50 rounded-lg p-3 border border-border">
-            <p className={`${isK2 && activity.strategy === "sentence_frames" ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
-              {isK2 && activity.strategy === "sentence_frames" ? "" : "📚 Word bank — use these words if you'd like:"}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {activity.wordBank.map((word, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  disabled={submitted}
-                  onClick={() => {
-                    if (isK2 && activity.strategy === "sentence_frames" && !submitted) {
-                      setAnswer(word);
-                      setTimeout(() => onSubmit(), 400);
-                    }
-                  }}
-                  className={`rounded-full font-medium transition-all ${
-                    isK2 && activity.strategy === "sentence_frames"
-                      ? `px-5 py-3 text-lg border-2 cursor-pointer ${
-                          answer === word
-                            ? "bg-primary text-primary-foreground border-primary scale-105"
-                            : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
-                        }`
-                      : "px-3 py-1 bg-primary/10 text-primary text-sm cursor-default"
-                  }`}
-                >
-                  {word}
-                </button>
-              ))}
+          isK2SF ? (
+            /* K-2 Sentence Frame: internal validation with retry */
+            !submitted && !sfRevealed ? (
+              <div className="space-y-3">
+                {sfWrongMessage && (
+                  <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
+                    <p className="text-lg font-medium text-warning">{sfWrongMessage}</p>
+                  </div>
+                )}
+                <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    {activity.wordBank.map((word, i) => {
+                      const isSelected = sfSelectedWord === word;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSfSelectedWord(word);
+                            // Strict match against modelAnswer
+                            const correctAnswer = activity.modelAnswer.toLowerCase().trim();
+                            const isExactCorrect = word.toLowerCase().trim() === correctAnswer;
+                            if (isExactCorrect) {
+                              // Correct! Submit to parent
+                              setAnswer(word);
+                              setSfWrongMessage(null);
+                              setTimeout(() => onSubmit(), 400);
+                            } else {
+                              const newAttempts = sfAttempts + 1;
+                              setSfAttempts(newAttempts);
+                              if (newAttempts >= 2) {
+                                // 2nd wrong: reveal model answer, award 0 points
+                                setSfRevealed(true);
+                                setSfWrongMessage(null);
+                                setAnswer(word);
+                                // Submit as wrong so tier tracking works
+                                setTimeout(() => onSubmit(), 400);
+                              } else {
+                                setSfWrongMessage("Try again! 🌟");
+                                setTimeout(() => setSfSelectedWord(null), 600);
+                              }
+                            }
+                          }}
+                          className={`px-5 py-3 text-lg border-2 rounded-full font-medium cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary scale-105"
+                              : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                          }`}
+                        >
+                          {word}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : sfRevealed && !submitted ? (
+              /* Show model answer in gold after 2 wrong attempts */
+              <div className="space-y-4 animate-fade-in">
+                <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
+                  <p className="text-lg text-muted-foreground mb-1">The answer is:</p>
+                  <p className="text-2xl font-bold text-warning">{activity.modelAnswer}</p>
+                </div>
+              </div>
+            ) : null
+          ) : (
+            /* Non-K2-SF word bank (unchanged) */
+            <div className="bg-muted/50 rounded-lg p-3 border border-border">
+              <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
+              <div className="flex flex-wrap gap-2">
+                {activity.wordBank.map((word, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={submitted}
+                    className="px-3 py-1 bg-primary/10 text-primary text-sm cursor-default rounded-full font-medium transition-all"
+                  >
+                    {word}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )
         )}
 
         {/* Input area based on inputType */}
@@ -2486,17 +2555,19 @@ function Part2StrategyView({
         {/* Feedback */}
         {submitted && isK2 ? (
           <div className="space-y-4">
-            {/* Simplified K-2 feedback — no duplicate text */}
+            {/* Simplified K-2 feedback */}
             <div className={`rounded-xl p-6 text-center ${
-              isCorrect ? "bg-success/15 border-2 border-success/30" : "bg-primary/10 border border-primary/20"
+              isCorrect ? "bg-success/15 border-2 border-success/30" 
+                : sfRevealed ? "bg-warning/15 border-2 border-warning/30"
+                : "bg-primary/10 border border-primary/20"
             }`}>
-              <p className="text-3xl mb-2">{isCorrect ? "🎉" : "💪"}</p>
-              <p className={`font-bold text-xl ${isCorrect ? "text-success" : "text-primary"}`}>
-                {isCorrect ? "Great job!" : "Good try!"}
+              <p className="text-3xl mb-2">{isCorrect ? "🎉" : sfRevealed ? "✨" : "💪"}</p>
+              <p className={`font-bold text-xl ${isCorrect ? "text-success" : sfRevealed ? "text-warning" : "text-primary"}`}>
+                {isCorrect ? "Great job!" : sfRevealed ? "Here's the answer!" : "Good try!"}
               </p>
               {!isCorrect && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span>
+                <p className={`text-lg mt-2 ${sfRevealed ? "font-bold text-warning" : "text-muted-foreground text-sm"}`}>
+                  {sfRevealed ? activity.modelAnswer : <>The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span></>}
                 </p>
               )}
             </div>
