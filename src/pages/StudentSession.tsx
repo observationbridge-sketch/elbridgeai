@@ -1764,6 +1764,7 @@ interface Part1Props {
   onStep6WriteSubmit: () => void;
   onStep7RecordSubmit: () => void;
   onNext: () => void;
+  onRetryFillBlanks: () => Promise<AnchorSentence | null>;
   isK2?: boolean;
 }
 
