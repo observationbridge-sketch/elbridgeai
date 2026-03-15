@@ -2390,8 +2390,8 @@ function Part2StrategyView({
           <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
         )}
 
-        {/* Sentence frame — hide entirely for K-2 sentence_frames */}
-        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && !(isK2 && activity.strategy === "sentence_frames") && (
+        {/* Sentence frame — hide for K-2 entirely */}
+        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && !isK2 && (
           <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
             <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
             <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
