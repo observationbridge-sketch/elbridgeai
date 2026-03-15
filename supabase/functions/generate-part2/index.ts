@@ -355,7 +355,11 @@ K-2 CONTENT RULES (MANDATORY):
 - For listening activities: audio is 1-2 short sentences, then ONE question with emoji/picture choices
 - For speaking activities: maximum 1 sentence, must involve the student's animal companion (Baby Chick)
 - ALL answer options must be very short (1-3 words or emojis)
-- For sentence_frames: Do NOT include a reading passage. Show ONLY the fill-in-the-blank sentence and word bank tiles.` : "";
+- For sentence_frames: Do NOT include a reading passage. Show ONLY the fill-in-the-blank sentence and word bank tiles.
+
+ADAPTIVE DIFFICULTY TIER (current: Tier ${tier}):
+${tier === 1 ? `- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly 2 word choices in wordBank` : ""}${tier === 2 ? `- Tier 2: Maximum 6 words per sentence, exactly 1 blank, exactly 3 word choices in wordBank` : ""}${tier === 3 ? `- Tier 3: Maximum 8 words per sentence, exactly 2 blanks, exactly 4 word choices in wordBank` : ""}
+- You MUST follow the tier constraints exactly. Do not exceed the word/blank/choice limits.` : "";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
   const positionConstraint = getPositionConstraint(questionIndex, grade, theme);
