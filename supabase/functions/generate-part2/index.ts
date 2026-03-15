@@ -407,6 +407,8 @@ STRUCTURE:
 2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
 4. ALWAYS include a "wordBank" array with answer choices as tappable options
+5. CRITICAL: include a fillInBlank object with EXACT schema:
+   { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 
 Return ONLY valid JSON (no markdown):
 {
@@ -416,6 +418,12 @@ Return ONLY valid JSON (no markdown):
   "question": "<instruction + the sentence frame with ___ blanks>",
   "sentenceFrame": "<just the frame itself>",
   "wordBank": ["<${isK2 ? "correct answer words only" : "4-6 words including correct answers and 1-2 distractors"}>"],
+  "fillInBlank": {
+    "sentence": "<sentence with ___ placeholders>",
+    "blanks": ["<blank metadata or indices>"],
+    "answers": ["<correct words in blank order>"],
+    "wordBank": ["<same word choices used above>"]
+  },
   "modelAnswer": "<a fully completed version of the frame>",
   "acceptableKeywords": ["<6-8 words that any reasonable answer might contain>"],
   "difficulty": ${questionIndex + 1},
