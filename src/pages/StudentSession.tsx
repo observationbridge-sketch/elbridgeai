@@ -679,6 +679,7 @@ const StudentSession = () => {
               for (const [domain, data] of Object.entries(scores)) {
                 pctScores[domain] = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
               }
+              computedDomainScores = pctScores;
               setDomainScores(pctScores);
             }
           }
