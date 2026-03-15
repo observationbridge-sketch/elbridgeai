@@ -791,17 +791,16 @@ const StudentSession = () => {
     setPart1Feedback(null);
     setPart1ShowSentence(true);
 
-    if (part1Step < 8) {
+    if (part1Step < 5) {
       setPart1Step((s) => (s + 1) as any);
       setGlobalStep((g) => g + 1);
     } else {
-      // Part 1 complete → bonus points + grade band auto-adjustment
-      gamification.addPoints(POINTS.PART1_COMPLETE);
+      // Part 1 complete → award badge + grade band auto-adjustment
       gamification.awardBadge("first_word");
 
       // Auto-adjust grade band based on Part 1 performance
-      const totalPossible = part1Scores.repeatTotal + part1Scores.writeTotal + part1Scores.recordTotal;
-      const totalEarned = part1Scores.repeat + part1Scores.write + part1Scores.record;
+      const totalPossible = part1Scores.sayItTotal + part1Scores.dragDropTotal + part1Scores.memoryMatchTotal + part1Scores.jumbledTotal;
+      const totalEarned = part1Scores.sayIt + part1Scores.dragDrop + part1Scores.memoryMatch + part1Scores.jumbled;
       const pct = totalPossible > 0 ? (totalEarned / totalPossible) * 100 : 50;
 
       let newBand = effectiveGradeBand;
@@ -817,7 +816,7 @@ const StudentSession = () => {
         console.log("Auto-adjusted student to 3-5 band (Part 1 score:", Math.round(pct), "%)");
       }
 
-      setGlobalStep(8);
+      setGlobalStep(5);
       fetchPart2Activity(0);
     }
   };
@@ -832,62 +831,45 @@ const StudentSession = () => {
   const handleStep2Submit = () => {
     if (!anchor || !part1Answer.trim()) return;
     const { matched, total } = compareWords(part1Answer, anchor.sentence);
-    setPart1Scores((s) => ({ ...s, repeat: matched, repeatTotal: total }));
+    setPart1Scores((s) => ({ ...s, sayIt: matched, sayItTotal: total }));
     const pct = total > 0 ? matched / total : 0;
-    const feedback = pct >= 0.8
-      ? "Great job! You said it really well! 🌟"
-      : pct >= 0.5
-        ? `Nice try! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`
-        : `Good effort! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`;
-    setPart1Feedback(feedback);
+    setPart1Feedback("Great job! 🌟");
     setPart1Submitted(true);
-    if (pct >= 0.8) sounds.playCorrect(); else if (pct >= 0.5) sounds.playPartiallyCorrect(); else sounds.playWrong();
-    gamification.addPoints(POINTS.STEP2_REPEAT);
+    sounds.playCorrect();
+    gamification.addPoints(POINTS.STEP2_SAY_IT);
     sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
       gamification.awardBadge("first_voice");
     }
-    saveResponse("speaking", `Repeat: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
+    saveResponse("speaking", `Say It: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
+    // Auto-advance after 3 seconds
+    setTimeout(() => handlePart1Next(), 3000);
   };
 
-  const handleStep6WriteSubmit = () => {
-    if (!anchor || !part1Answer.trim()) return;
-    const { matched, total } = compareWords(part1Answer, anchor.sentence);
-    setPart1Scores((s) => ({ ...s, write: matched, writeTotal: total }));
-    const pct = total > 0 ? matched / total : 0;
-    setPart1ShowSentence(true);
-    const feedback = pct >= 0.8
-      ? `Excellent writing! You remembered ${matched} out of ${total} words! ✍️🌟`
-      : `Good try! You got ${matched} out of ${total} words. Compare your answer above. ✍️`;
-    setPart1Feedback(feedback);
-    setPart1Submitted(true);
-    if (pct >= 0.8) sounds.playCorrect(); else sounds.playPartiallyCorrect();
-    gamification.addPoints(POINTS.STEP3_WRITE);
+  const handleStep3Complete = (score: { correct: number; total: number }) => {
+    setPart1Scores((s) => ({ ...s, dragDrop: score.correct, dragDropTotal: score.total }));
+    gamification.addPoints(POINTS.STEP3_DRAG_DROP);
+    sounds.playPoints();
+    saveResponse("reading", "Drag & Drop fill-in-the-blank", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
+  };
+
+  const handleStep4Complete = (score: { correct: number; total: number }) => {
+    setPart1Scores((s) => ({ ...s, memoryMatch: score.correct, memoryMatchTotal: score.total }));
+    gamification.addPoints(POINTS.STEP4_MEMORY_MATCH);
+    sounds.playPoints();
+    saveResponse("reading", "Memory Match", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
+  };
+
+  const handleStep5Complete = (correct: boolean) => {
+    setPart1Scores((s) => ({ ...s, jumbled: correct ? 1 : 0, jumbledTotal: 1 }));
+    gamification.addPoints(POINTS.STEP5_JUMBLED);
     sounds.playPoints();
     if (!hasWritten) {
       setHasWritten(true);
       gamification.awardBadge("first_writer");
     }
-    saveResponse("writing", `Write from memory: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
-
-  const handleStep7RecordSubmit = () => {
-    if (!anchor || !part1Answer.trim()) return;
-    const { matched, total } = compareWords(part1Answer, anchor.sentence);
-    setPart1Scores((s) => ({ ...s, record: matched, recordTotal: total }));
-    const pct = total > 0 ? matched / total : 0;
-    const feedback = pct >= 0.9
-      ? `Perfect! You used ${matched} out of ${total} words! 🎤🏆`
-      : pct >= 0.7
-        ? `You used ${matched} out of ${total} words — great effort! 🎤🌟`
-        : `You used ${matched} out of ${total} words — keep practicing! 🎤💪`;
-    setPart1Feedback(feedback);
-    setPart1Submitted(true);
-    if (pct >= 0.9) sounds.playCorrect(); else if (pct >= 0.7) sounds.playPartiallyCorrect(); else sounds.playWrong();
-    gamification.addPoints(POINTS.STEP4_RECORD);
-    sounds.playPoints();
-    saveResponse("speaking", `Record: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
   // ─── Part 2 handlers ───
