@@ -1699,38 +1699,55 @@ function Part2StrategyView({
   const StrategyIcon = strategyMeta.icon;
   const inputType = activity.inputType || "typing";
 
+  // Auto-play audio for K-2 listening activities
+  useEffect(() => {
+    if (isK2 && inputType === "listen_then_type" && activity.audioClip && tts.isSupported && !submitted) {
+      const timer = setTimeout(() => tts.speak(activity.audioClip || ""), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [isK2, inputType, activity.audioClip, submitted]);
+
   return (
     <Card className="card-shadow border-border">
       <div className="px-6 pt-6">
         <div className="flex items-center gap-2 mb-1">
-          <span className={`text-xs font-medium bg-accent/10 px-2 py-0.5 rounded-full flex items-center gap-1 ${strategyMeta.color}`}>
+          <span className={`${isK2 ? "text-sm" : "text-xs"} font-medium bg-accent/10 px-2 py-0.5 rounded-full flex items-center gap-1 ${strategyMeta.color}`}>
             <StrategyIcon className="h-3 w-3" />
             {strategyMeta.label}
           </span>
-          <span className="text-xs text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full">
+          <span className={`${isK2 ? "text-sm" : "text-xs"} text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full`}>
             {index + 1} of {totalActivities}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">Targeting: {strategyMeta.targetDomain}</p>
+        {!isK2 && <p className="text-xs text-muted-foreground mt-1">Targeting: {strategyMeta.targetDomain}</p>}
       </div>
 
-      <CardContent className="pt-4 space-y-6">
+      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
         {/* Passage (if present) */}
         {activity.passage && (
-          <div className="bg-muted/50 rounded-lg p-4 border border-border">
-            <p className="text-xs text-muted-foreground mb-1">📖 Read this passage:</p>
-            <p className="text-foreground leading-relaxed">{activity.passage}</p>
+          <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
+            <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-1`}>📖 Read this:</p>
+            <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>{activity.passage}</p>
           </div>
         )}
 
         {/* Audio clip (for listen_then_type) */}
         {inputType === "listen_then_type" && activity.audioClip && (
-          <div className="bg-warning/5 rounded-lg p-4 border border-warning/20 text-center space-y-3">
-            <Headphones className="h-8 w-8 text-warning mx-auto" />
-            <p className="text-foreground leading-relaxed">{activity.audioClip}</p>
+          <div className={`bg-warning/5 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-warning/20 text-center space-y-3`}>
+            <Headphones className={`${isK2 ? "h-12 w-12" : "h-8 w-8"} text-warning mx-auto`} />
+            {isK2 && (activity as any).emojiHint && (
+              <div className="text-5xl my-2">{(activity as any).emojiHint}</div>
+            )}
+            <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>{activity.audioClip}</p>
             {tts.isSupported && (
-              <Button variant="outline" size="sm" onClick={() => tts.speak(activity.audioClip || "")}>
-                <Volume2 className="h-4 w-4 mr-1" /> Play Audio
+              <Button 
+                variant="outline" 
+                size={isK2 ? "lg" : "sm"} 
+                onClick={() => tts.speak(activity.audioClip || "")}
+                className={isK2 ? "text-lg px-6 py-4 h-auto" : ""}
+              >
+                <Volume2 className={`${isK2 ? "h-5 w-5" : "h-4 w-4"} mr-1`} /> 
+                {isK2 ? "Hear it again! 🔁" : "Play Audio"}
               </Button>
             )}
           </div>
