@@ -562,15 +562,43 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const candidate = data?.choices?.[0];
+    const finishReason = candidate?.finishReason;
+    const content = candidate?.message?.content;
+
+    if (!content || typeof content !== "string") {
+      console.error("Empty AI response content", { finishReason, strategy, questionIndex });
+      throw new Error("Empty AI response content");
+    }
+
+    if (strategy === "sentence_frames") {
+      console.log("[generate-part2] Fill-in raw Gemini response", {
+        questionIndex,
+        finishReason,
+        rawContent: content,
+      });
+    }
 
     let activity;
     try {
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      activity = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse:", content);
+      activity = extractJsonFromAiResponse(content);
+    } catch (parseError) {
+      console.error("Failed to parse/repair AI JSON", { finishReason, parseError, content });
       throw new Error("Invalid AI response format");
+    }
+
+    activity = normalizeSentenceFrameActivity(activity);
+
+    if (strategy === "sentence_frames") {
+      const fillPayload = activity.fillInBlank || activity;
+      if (!isValidFillInBlankSchema(fillPayload)) {
+        console.error("Invalid fill-in schema from Gemini", {
+          finishReason,
+          questionIndex,
+          parsedActivity: activity,
+        });
+        throw new Error("Missing required fill-in fields: sentence, blanks, answers, wordBank");
+      }
     }
 
     activity.strategy = strategy;
