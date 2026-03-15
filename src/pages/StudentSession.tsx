@@ -2208,6 +2208,14 @@ function Part1View({
         {/* Step 5: Jumbled Sentence */}
         {step === 5 && jumble && (
           <>
+            {/* Try again message */}
+            {jumbleTryAgainMsg && !jumbleSubmitted && (
+              <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
+                <p className="text-lg font-medium text-warning">{jumbleTryAgainMsg}</p>
+              </div>
+            )}
+
+            {/* Word chips */}
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
                 {isK2 ? "Tap the words in the right order! 👆" : "Put these words back in the correct order:"}
@@ -2231,33 +2239,60 @@ function Part1View({
                 })}
               </div>
             </div>
-            <Input
-              value={jumbleAnswer}
-              onChange={(e) => !isK2 && setJumbleAnswer(e.target.value)}
-              placeholder={isK2 ? "Tap words above..." : "Type the sentence in correct order..."}
-              className={isK2 ? "h-14 text-lg" : "h-12"}
-              disabled={jumbleSubmitted}
-              readOnly={isK2}
-            />
+
+            {/* K-2: Building area showing tapped words */}
+            {isK2 ? (
+              <div className={`bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px] ${jumbleShake ? "animate-[shake_0.4s_ease-in-out]" : ""}`}>
+                <p className="text-xs text-muted-foreground mb-2">Your sentence:</p>
+                <div className="flex flex-wrap gap-2">
+                  {jumbleTappedWords.length > 0 ? jumbleTappedWords.map((word, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-primary/15 text-primary border border-primary/30 rounded-full text-lg font-medium">
+                      {word}
+                    </span>
+                  )) : (
+                    <p className="text-muted-foreground/50 text-lg">Tap words above...</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <Input
+                value={jumbleAnswer}
+                onChange={(e) => setJumbleAnswer(e.target.value)}
+                placeholder="Type the sentence in correct order..."
+                className="h-12"
+                disabled={jumbleSubmitted}
+              />
+            )}
+
+            {/* K-2 start over button */}
             {isK2 && jumbleTappedWords.length > 0 && !jumbleSubmitted && (
               <Button variant="outline" size="sm" onClick={() => { setJumbleTappedWords([]); setJumbleAnswer(""); }}>Start over 🔄</Button>
             )}
+
             {!jumbleSubmitted ? (
-              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={!jumbleAnswer.trim()}>
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={isK2 ? jumbleTappedWords.length !== jumble.jumbled.length : !jumbleAnswer.trim()}>
                 {isK2 ? "Check! ✅" : "Check My Sentence"}
               </Button>
             ) : (
               <>
                 {(() => {
-                  const { matched, total } = compareWords(jumbleAnswer, jumble.original);
-                  const pct = total > 0 ? matched / total : 0;
+                  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s']/g, "").trim().split(/\s+/).filter(Boolean);
+                  const studentWords = normalize(jumbleAnswer);
+                  const correctWords = normalize(jumble.original);
+                  const isExact = studentWords.length === correctWords.length && studentWords.every((w, i) => w === correctWords[i]);
                   return (
                     <>
-                      <FeedbackBanner feedback={pct >= 0.7 ? "Nice work! 🧩🌟" : "Good try! Here's the correct sentence:"} positive={pct >= 0.7} />
-                      <div className="bg-muted/50 rounded-lg p-3 border border-border">
-                        <p className="text-xs text-muted-foreground mb-1">Correct sentence:</p>
-                        <p className="text-foreground font-medium">{jumble.original}</p>
-                      </div>
+                      {isExact ? (
+                        <FeedbackBanner feedback="Nice work! 🧩🌟" positive={true} />
+                      ) : (
+                        <>
+                          <FeedbackBanner feedback="Good try! Here's the correct sentence:" positive={false} />
+                          <div className="bg-warning/10 rounded-lg p-3 border border-warning/20">
+                            <p className="text-xs text-muted-foreground mb-1">Correct sentence:</p>
+                            <p className="text-lg font-bold text-warning">{jumble.original}</p>
+                          </div>
+                        </>
+                      )}
                     </>
                   );
                 })()}
