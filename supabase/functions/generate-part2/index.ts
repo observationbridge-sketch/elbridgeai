@@ -186,6 +186,79 @@ function buildHistoryContext(contentHistory: any): string {
   return parts.join("\n");
 }
 
+function extractJsonFromAiResponse(rawContent: string): any {
+  const cleaned = rawContent
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  const arrayStart = cleaned.indexOf("[");
+  const objectStart = cleaned.indexOf("{");
+  const startCandidates = [arrayStart, objectStart].filter((v) => v >= 0);
+  const jsonStart = startCandidates.length > 0 ? Math.min(...startCandidates) : -1;
+
+  if (jsonStart === -1) {
+    throw new Error("No JSON payload found in AI response");
+  }
+
+  const startsWithArray = cleaned[jsonStart] === "[";
+  const jsonEnd = startsWithArray ? cleaned.lastIndexOf("]") : cleaned.lastIndexOf("}");
+  if (jsonEnd === -1 || jsonEnd < jsonStart) {
+    throw new Error("JSON payload appears truncated");
+  }
+
+  const candidate = cleaned.slice(jsonStart, jsonEnd + 1);
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    const repaired = candidate
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, "");
+    return JSON.parse(repaired);
+  }
+}
+
+function isValidFillInBlankSchema(value: any): boolean {
+  if (!value || typeof value !== "object") return false;
+  if (typeof value.sentence !== "string" || !value.sentence.trim()) return false;
+  if (!Array.isArray(value.blanks)) return false;
+  if (!Array.isArray(value.answers) || value.answers.length === 0) return false;
+  if (!Array.isArray(value.wordBank) || value.wordBank.length === 0) return false;
+  return true;
+}
+
+function normalizeSentenceFrameActivity(activity: any): any {
+  if (!activity || typeof activity !== "object") return activity;
+
+  const fillInBlank = activity.fillInBlank || (isValidFillInBlankSchema(activity) ? activity : null);
+  if (!fillInBlank || !isValidFillInBlankSchema(fillInBlank)) return activity;
+
+  const sentenceFrame = fillInBlank.sentence.includes("___")
+    ? fillInBlank.sentence
+    : fillInBlank.sentence;
+
+  return {
+    ...activity,
+    type: activity.type || "sentence_frame",
+    question: activity.question || `Fill in the blanks: ${sentenceFrame}`,
+    sentenceFrame: activity.sentenceFrame || sentenceFrame,
+    wordBank: Array.isArray(activity.wordBank) && activity.wordBank.length > 0
+      ? activity.wordBank
+      : fillInBlank.wordBank,
+    modelAnswer: activity.modelAnswer || fillInBlank.answers.join(" "),
+    acceptableKeywords: Array.isArray(activity.acceptableKeywords) && activity.acceptableKeywords.length > 0
+      ? activity.acceptableKeywords
+      : fillInBlank.answers,
+    fillInBlank: {
+      sentence: sentenceFrame,
+      blanks: fillInBlank.blanks,
+      answers: fillInBlank.answers,
+      wordBank: fillInBlank.wordBank,
+    },
+  };
+}
+
 // Position-specific format constraints
 function getPositionConstraint(questionIndex: number, grade: string, theme: string): string {
   const isK2 = grade === "K-2";
@@ -334,6 +407,8 @@ STRUCTURE:
 2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
 4. ALWAYS include a "wordBank" array with answer choices as tappable options
+5. CRITICAL: include a fillInBlank object with EXACT schema:
+   { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 
 Return ONLY valid JSON (no markdown):
 {
@@ -343,6 +418,12 @@ Return ONLY valid JSON (no markdown):
   "question": "<instruction + the sentence frame with ___ blanks>",
   "sentenceFrame": "<just the frame itself>",
   "wordBank": ["<${isK2 ? "correct answer words only" : "4-6 words including correct answers and 1-2 distractors"}>"],
+  "fillInBlank": {
+    "sentence": "<sentence with ___ placeholders>",
+    "blanks": ["<blank metadata or indices>"],
+    "answers": ["<correct words in blank order>"],
+    "wordBank": ["<same word choices used above>"]
+  },
   "modelAnswer": "<a fully completed version of the frame>",
   "acceptableKeywords": ["<6-8 words that any reasonable answer might contain>"],
   "difficulty": ${questionIndex + 1},
@@ -481,15 +562,43 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const candidate = data?.choices?.[0];
+    const finishReason = candidate?.finishReason;
+    const content = candidate?.message?.content;
+
+    if (!content || typeof content !== "string") {
+      console.error("Empty AI response content", { finishReason, strategy, questionIndex });
+      throw new Error("Empty AI response content");
+    }
+
+    if (strategy === "sentence_frames") {
+      console.log("[generate-part2] Fill-in raw Gemini response", {
+        questionIndex,
+        finishReason,
+        rawContent: content,
+      });
+    }
 
     let activity;
     try {
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      activity = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse:", content);
+      activity = extractJsonFromAiResponse(content);
+    } catch (parseError) {
+      console.error("Failed to parse/repair AI JSON", { finishReason, parseError, content });
       throw new Error("Invalid AI response format");
+    }
+
+    activity = normalizeSentenceFrameActivity(activity);
+
+    if (strategy === "sentence_frames") {
+      const fillPayload = activity.fillInBlank || activity;
+      if (!isValidFillInBlankSchema(fillPayload)) {
+        console.error("Invalid fill-in schema from Gemini", {
+          finishReason,
+          questionIndex,
+          parsedActivity: activity,
+        });
+        throw new Error("Missing required fill-in fields: sentence, blanks, answers, wordBank");
+      }
     }
 
     activity.strategy = strategy;

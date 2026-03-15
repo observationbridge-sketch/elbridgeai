@@ -203,19 +203,73 @@ function isValidK2AnchorSentence(sentence: string): boolean {
 const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
 BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
+interface FillInBlankPayload {
+  sentence: string;
+  blanks: Array<number | { index: number }>;
+  answers: string[];
+  wordBank: string[];
+}
+
+function validateFillInBlankPayload(payload: any): payload is FillInBlankPayload {
+  if (!payload || typeof payload !== "object") return false;
+  if (typeof payload.sentence !== "string" || !payload.sentence.trim()) return false;
+  if (!Array.isArray(payload.blanks)) return false;
+  if (!Array.isArray(payload.answers) || payload.answers.length === 0) return false;
+  if (!Array.isArray(payload.wordBank) || payload.wordBank.length === 0) return false;
+  return true;
+}
+
+function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWords: string[]; wordBank: string[] } | null {
+  // Legacy shape already used by WordBankFillBlanks
+  if (
+    payload &&
+    typeof payload.blankedSentence === "string" &&
+    Array.isArray(payload.missingWords) &&
+    Array.isArray(payload.wordBank)
+  ) {
+    if (!payload.blankedSentence.includes("___") || payload.missingWords.length === 0) return null;
+    return {
+      blanked: payload.blankedSentence,
+      missingWords: payload.missingWords,
+      wordBank: payload.wordBank,
+    };
+  }
+
+  // New explicit schema { sentence, blanks, answers, wordBank }
+  if (!validateFillInBlankPayload(payload)) return null;
+  if (!payload.sentence.includes("___") || payload.answers.length === 0) return null;
+
+  return {
+    blanked: payload.sentence,
+    missingWords: payload.answers,
+    wordBank: payload.wordBank,
+  };
+}
+
 function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): { blanked: string; missingWords: string[]; wordBank: string[] } {
   const words = sentence.split(/\s+/);
-  const keyLower = keyWords.map(w => w.toLowerCase());
+  const keyLower = keyWords.map((w) => w.toLowerCase());
   const candidates: number[] = [];
+
   words.forEach((w, i) => {
-    const clean = w.toLowerCase().replace(/[^a-z']/g, '');
+    const clean = w.toLowerCase().replace(/[^a-z']/g, "");
     if (keyLower.includes(clean) && clean.length > 2) candidates.push(i);
   });
-  const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+
+  // Safety fallback when Gemini keyWords are missing/misaligned
+  if (candidates.length === 0) {
+    const fallbackStopWords = new Set(["the", "and", "for", "with", "that", "this", "from", "were", "was"]);
+    words.forEach((w, i) => {
+      const clean = w.toLowerCase().replace(/[^a-z']/g, "");
+      if (clean.length > 3 && !fallbackStopWords.has(clean)) candidates.push(i);
+    });
+  }
+
+  const shuffled = [...new Set(candidates)].sort(() => Math.random() - 0.5);
   const maxBlanks = isK2 ? 2 : 3;
   const count = Math.min(maxBlanks, Math.max(1, shuffled.length));
   const picked = shuffled.slice(0, count).sort((a, b) => a - b);
-  
+
   // Ensure sentence still makes sense: don't blank consecutive words
   const filtered: number[] = [];
   for (const idx of picked) {
@@ -223,29 +277,31 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
       filtered.push(idx);
     }
   }
+
+  // Absolute fallback: guarantee at least one blank
+  if (filtered.length === 0 && words.length > 0) {
+    const fallbackIdx = words.findIndex((w) => w.replace(/[^a-zA-Z']/g, "").length > 2);
+    if (fallbackIdx >= 0) filtered.push(fallbackIdx);
+  }
+
   const finalPicked = filtered.slice(0, maxBlanks);
-  
-  const missingWords = finalPicked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
-  const blanked = words.map((w, i) => finalPicked.includes(i) ? '___' : w).join(' ');
-  
-  // Build word bank: correct words + distractors
+  const missingWords = finalPicked.map((i) => words[i].replace(/[^a-zA-Z']/g, ""));
+  const blanked = words.map((w, i) => (finalPicked.includes(i) ? "___" : w)).join(" ");
+
   const wordBank = [...missingWords];
   if (isK2) {
-    // K-2: 1 distractor (simple, clearly different)
     const distractors = keyWords
-      .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+      .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
       .slice(0, 1);
     wordBank.push(...distractors);
   } else {
-    // 3-5: 2 distractors (can be trickier)
     const distractors = keyWords
-      .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+      .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
       .slice(0, 2);
     wordBank.push(...distractors);
   }
-  // Shuffle the word bank
-  const shuffledBank = [...wordBank].sort(() => Math.random() - 0.5);
-  
+
+  const shuffledBank = [...new Set(wordBank)].sort(() => Math.random() - 0.5);
   return { blanked, missingWords, wordBank: shuffledBank };
 }
 
@@ -341,6 +397,127 @@ const StudentSession = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showMotivational, setShowMotivational] = useState(false);
 
+  // Prefetched activity cache (session-start health check)
+  const prefetchedPart2Ref = useRef<Record<number, Part2Activity>>({});
+  const prefetchedPart3Ref = useRef<Part3Challenge | null>(null);
+
+  const prefetchSessionContent = useCallback(async (params: {
+    grade: GradeBand;
+    theme: string;
+    topic: string;
+    domainScores: Record<string, number> | null;
+    history: any;
+  }) => {
+    const { grade, theme, topic, domainScores, history } = params;
+    const total = grade === "K-2" ? 4 : 6;
+    prefetchedPart2Ref.current = {};
+    prefetchedPart3Ref.current = null;
+
+    const part2Results = await Promise.all(
+      Array.from({ length: total }, async (_, index) => {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const { data, error } = await fetchWithTimeout(
+              supabase.functions.invoke("generate-part2", {
+                body: {
+                  grade,
+                  theme,
+                  topic,
+                  domainScores,
+                  questionIndex: index,
+                  contentHistory: history,
+                },
+              }),
+              8000
+            );
+            if (error) throw error;
+            const activity = data as Part2Activity;
+            console.log("[HealthCheck][Part2] raw activity", { index, attempt: attempt + 1, activity });
+            if (!validatePart2Activity(activity)) {
+              console.error("[HealthCheck][Part2] invalid schema", { index, activity });
+              throw new Error("Invalid Part2 activity schema");
+            }
+            return activity;
+          } catch (error) {
+            console.error(`[HealthCheck][Part2] attempt ${attempt + 1} failed for index ${index}`, error);
+          }
+        }
+        return null;
+      })
+    );
+
+    part2Results.forEach((activity, index) => {
+      if (activity) {
+        prefetchedPart2Ref.current[index] = activity;
+      }
+    });
+
+    const challengeType = grade === "K-2" ? "speed_round" : undefined;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data, error } = await fetchWithTimeout(
+          supabase.functions.invoke("generate-part3-challenge", {
+            body: {
+              grade,
+              theme,
+              topic,
+              forceType: challengeType,
+              contentHistory: history,
+            },
+          }),
+          8000
+        );
+        if (error) throw error;
+        console.log("[HealthCheck][Part3] raw challenge", { attempt: attempt + 1, challenge: data });
+        if (!validatePart3Challenge(data)) {
+          console.error("[HealthCheck][Part3] invalid schema", data);
+          throw new Error("Invalid Part3 challenge schema");
+        }
+        prefetchedPart3Ref.current = data as Part3Challenge;
+        break;
+      } catch (error) {
+        console.error(`[HealthCheck][Part3] attempt ${attempt + 1} failed`, error);
+      }
+    }
+
+    console.log("[HealthCheck] completed", {
+      part2Prefetched: Object.keys(prefetchedPart2Ref.current).length,
+      part2Expected: total,
+      hasPart3: Boolean(prefetchedPart3Ref.current),
+    });
+  }, []);
+
+  const retryStep3FromGemini = useCallback(async (): Promise<AnchorSentence | null> => {
+    try {
+      const { data, error } = await fetchWithTimeout(
+        supabase.functions.invoke("generate-anchor-sentence", {
+          body: {
+            grade: effectiveGradeBand,
+            contentHistory,
+            forcedTheme: sessionTheme || undefined,
+          },
+        }),
+        6000
+      );
+      if (error) throw error;
+
+      console.log("[FillInBlanks] Raw Gemini anchor response", data);
+      const nextAnchor = data as AnchorSentence;
+      if (!nextAnchor?.sentence || !Array.isArray(nextAnchor.keyWords) || nextAnchor.keyWords.length === 0) {
+        throw new Error("Anchor response missing sentence/keyWords");
+      }
+      if (!nextAnchor.topic) nextAnchor.topic = nextAnchor.theme;
+
+      setAnchor(nextAnchor);
+      setSessionTheme(nextAnchor.theme);
+      setSessionTopic(nextAnchor.topic);
+      return nextAnchor;
+    } catch (error) {
+      console.error("[FillInBlanks] Gemini retry failed", error);
+      return null;
+    }
+  }, [effectiveGradeBand, contentHistory, sessionTheme]);
+
   const inPart1 = globalStep < 8;
   const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
   const inPart3 = globalStep >= 8 + part2Count;
@@ -355,6 +532,9 @@ const StudentSession = () => {
       let currentStudentName = "";
       let sessionForcedTheme: string | undefined;
       let sessionGradeBand: GradeBand = "3-5";
+      let resolvedTheme = "";
+      let resolvedTopic = "";
+      let computedDomainScores: Record<string, number> | null = null;
 
       try {
         const { data: studentData } = await supabase
@@ -441,6 +621,8 @@ const StudentSession = () => {
         setAnchor(anchorData);
         setSessionTheme(anchorData.theme);
         setSessionTopic(anchorData.topic);
+        resolvedTheme = anchorData.theme;
+        resolvedTopic = anchorData.topic;
         setTtsPreloaded(true);
       } catch {
         const fallback: AnchorSentence = sessionGradeBand === "K-2"
@@ -461,6 +643,8 @@ const StudentSession = () => {
         setAnchor(fallback);
         setSessionTheme(fallback.theme);
         setSessionTopic(fallback.topic);
+        resolvedTheme = fallback.theme;
+        resolvedTopic = fallback.topic;
         setTtsPreloaded(true);
       }
 
@@ -495,17 +679,33 @@ const StudentSession = () => {
               for (const [domain, data] of Object.entries(scores)) {
                 pctScores[domain] = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
               }
+              computedDomainScores = pctScores;
               setDomainScores(pctScores);
             }
           }
         }
       } catch { /* use default */ }
 
+      try {
+        if (resolvedTheme && resolvedTopic) {
+          setLoadingMessage("Checking activity content...");
+          await prefetchSessionContent({
+            grade: sessionGradeBand,
+            theme: resolvedTheme,
+            topic: resolvedTopic,
+            domainScores: computedDomainScores,
+            history: fetchedHistory,
+          });
+        }
+      } catch (error) {
+        console.error("Session health check failed", error);
+      }
+
       setLoading(false);
     };
 
     init();
-  }, [studentId, sessionId]);
+  }, [studentId, sessionId, prefetchSessionContent]);
 
   useEffect(() => {
     if (studentName && teacherId) {
@@ -711,6 +911,16 @@ const StudentSession = () => {
     killSpeech();
     tts.stop();
 
+    const cachedActivity = prefetchedPart2Ref.current[index];
+    if (cachedActivity && retryAttempt === 0) {
+      setPart2Activity(cachedActivity);
+      setPart2Strategy(cachedActivity.strategy);
+      setPart2StrategyReason(cachedActivity.strategyReason || "Prefetched and validated");
+      setActivityRetryCount(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await fetchWithTimeout(
         supabase.functions.invoke("generate-part2", {
@@ -780,6 +990,7 @@ const StudentSession = () => {
         }
       }
       
+      prefetchedPart2Ref.current[index] = activity;
       setPart2Activity(activity);
       setPart2Strategy(activity.strategy);
       setPart2StrategyReason(activity.strategyReason);
@@ -919,6 +1130,16 @@ const StudentSession = () => {
     setLoading(true);
     setActivityError(false);
     setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
+
+    const cachedChallenge = prefetchedPart3Ref.current;
+    if (cachedChallenge && retryAttempt === 0) {
+      setPart3Challenge(cachedChallenge);
+      setActivityRetryCount(0);
+      setLoading(false);
+      setPart3StartTime(Date.now());
+      return;
+    }
+
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
       const { data, error } = await fetchWithTimeout(
@@ -934,6 +1155,7 @@ const StudentSession = () => {
         throw new Error("Invalid challenge content");
       }
 
+      prefetchedPart3Ref.current = data as Part3Challenge;
       setPart3Challenge(data as Part3Challenge);
       setActivityRetryCount(0);
       setLoading(false);
@@ -1355,6 +1577,7 @@ const StudentSession = () => {
                   onStep6WriteSubmit={handleStep6WriteSubmit}
                   onStep7RecordSubmit={handleStep7RecordSubmit}
                   onNext={handlePart1Next}
+                  onRetryFillBlanks={retryStep3FromGemini}
                   isK2={isK2}
                 />
                ) : inPart2 && part2Activity ? (
@@ -1542,19 +1765,78 @@ interface Part1Props {
   onStep6WriteSubmit: () => void;
   onStep7RecordSubmit: () => void;
   onNext: () => void;
+  onRetryFillBlanks: () => Promise<AnchorSentence | null>;
   isK2?: boolean;
 }
 
 function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
   part1Submitted, part1Feedback, part1ShowSentence, setPart1ShowSentence,
-  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, isK2,
+  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, onRetryFillBlanks, isK2,
 }: Part1Props) {
   // Local scaffold state
   const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
   const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
+  const [step3Status, setStep3Status] = useState<"loading" | "ready" | "failed">("loading");
+  const [step3RetryCount, setStep3RetryCount] = useState(0);
+  const [showStep3WaitState, setShowStep3WaitState] = useState(false);
+
+  const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
+    const anchorToUse = sourceAnchor || anchor;
+    setStep3Status("loading");
+    setShowStep3WaitState(false);
+
+    const waitTimer = setTimeout(() => {
+      setShowStep3WaitState(true);
+    }, 6000);
+
+    try {
+      const generated = generateBlanks(anchorToUse.sentence, anchorToUse.keyWords || [], isK2);
+      const rawFillPayload = {
+        sentence: generated.blanked,
+        blanks: generated.missingWords.map((_, index) => ({ index })),
+        answers: generated.missingWords,
+        wordBank: generated.wordBank,
+      };
+      console.log("[FillInBlanks] raw payload", rawFillPayload);
+
+      const normalized = normalizeFillInBlankPayload(rawFillPayload);
+      if (!normalized) {
+        throw new Error("Invalid fill-in payload schema");
+      }
+
+      setBlanks(normalized);
+      setStep3Status("ready");
+      setStep3RetryCount(0);
+    } catch (error) {
+      console.error("[FillInBlanks] step 3 content generation failed", { attempt: attempt + 1, error });
+      if (attempt < 1) {
+        setStep3RetryCount(attempt + 1);
+        setShowStep3WaitState(true);
+        setTimeout(async () => {
+          const regeneratedAnchor = await onRetryFillBlanks();
+          await prepareStep3Content(attempt + 1, regeneratedAnchor || anchorToUse);
+        }, 3000);
+      } else {
+        setStep3Status("failed");
+      }
+    } finally {
+      clearTimeout(waitTimer);
+    }
+  }, [anchor, isK2, onRetryFillBlanks]);
+
+  useEffect(() => {
+    if (anchor?.sentence) {
+      setJumble(jumbleSentence(anchor.sentence));
+    }
+  }, [anchor]);
+
+  useEffect(() => {
+    if (step !== 3) return;
+    prepareStep3Content(0);
+  }, [step, anchor, prepareStep3Content]);
 
   const handleJumbleSubmit = () => {
     setJumbleSubmitted(true);
@@ -1650,20 +1932,35 @@ function Part1View({
         )}
 
         {/* Step 3: Fill in the Blanks — Drag/Tap Word Bank */}
-        {step === 3 && blanks && (
-          <WordBankFillBlanks
-            blankedSentence={blanks.blanked}
-            missingWords={blanks.missingWords}
-            wordBank={blanks.wordBank}
-            isK2={isK2}
-            onComplete={(score) => {
-              // Points: full for all correct, half for partial, zero for none
-              if (score.correct === score.total) {
-                // full points already handled by gamification elsewhere
-              }
-            }}
-            onNext={onNext}
-          />
+        {step === 3 && (
+          blanks && step3Status === "ready" ? (
+            <WordBankFillBlanks
+              blankedSentence={blanks.blanked}
+              missingWords={blanks.missingWords}
+              wordBank={blanks.wordBank}
+              isK2={isK2}
+              onComplete={(score) => {
+                if (score.correct === score.total) {
+                  // full points handled by gamification flow
+                }
+              }}
+              onNext={onNext}
+            />
+          ) : (
+            <div className="rounded-xl border border-border bg-muted/30 p-6 text-center space-y-4">
+              <div className={`${showStep3WaitState ? "animate-soft-pulse" : ""}`}>
+                <p className="text-6xl">🐣</p>
+                <p className="text-lg font-medium text-foreground">One moment... 🐣</p>
+              </div>
+              {step3Status === "failed" ? (
+                <Button variant="hero" onClick={onNext}>Skip this one ➡️</Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {step3RetryCount > 0 ? "Retrying activity..." : "Loading your activity..."}
+                </p>
+              )}
+            </div>
+          )
         )}
 
         {/* Step 4: Jumbled Sentence */}
