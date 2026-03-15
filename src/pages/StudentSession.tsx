@@ -323,6 +323,107 @@ function jumbleSentence(passage: string): { original: string; jumbled: string[] 
 }
 
 // ═══════════════════════════════════════════════
+// Theme emoji lookup
+// ═══════════════════════════════════════════════
+const THEME_EMOJIS: Record<string, string> = {
+  "Nature & animals": "🌿",
+  "Superheroes": "⚡",
+  "Fantasy & myths": "🧙",
+  "Sports & games": "⚽",
+  "Science": "🔬",
+  "School & classroom life": "📚",
+  "Social studies": "🗺️",
+  "Character development": "💖",
+};
+
+function getThemeEmoji(theme: string): string {
+  if (THEME_EMOJIS[theme]) return THEME_EMOJIS[theme];
+  // Fuzzy match
+  const lower = theme.toLowerCase();
+  for (const [key, emoji] of Object.entries(THEME_EMOJIS)) {
+    if (lower.includes(key.toLowerCase().split(" ")[0])) return emoji;
+  }
+  return "🌟";
+}
+
+// ═══════════════════════════════════════════════
+// Session Loading Screen
+// ═══════════════════════════════════════════════
+const LOADING_PHRASES = [
+  "Getting your adventure ready... 🚀",
+  "Loading your words... 📚",
+  "Almost there... ⭐",
+];
+
+function SessionLoadingScreen({ studentName, theme }: { studentName: string; theme: string }) {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhraseIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, []);
+
+  const emoji = getThemeEmoji(theme);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16 space-y-8 animate-fade-in">
+      {/* Student name */}
+      {studentName && (
+        <p className="text-2xl font-bold text-white/90 tracking-wide">
+          Hi {studentName}! 👋
+        </p>
+      )}
+
+      {/* Big theme emoji with pulse */}
+      <div
+        className="text-[120px] leading-none"
+        style={{
+          animation: "loading-pulse 2s ease-in-out infinite",
+        }}
+      >
+        {emoji}
+      </div>
+
+      {/* Cycling message */}
+      <p
+        key={phraseIndex}
+        className="text-xl font-semibold text-white/80 animate-fade-in text-center"
+      >
+        {LOADING_PHRASES[phraseIndex]}
+      </p>
+
+      {/* Bouncing dots */}
+      <div className="flex items-center gap-2">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="w-3 h-3 rounded-full bg-white/60"
+            style={{
+              animation: "loading-bounce 1.4s ease-in-out infinite",
+              animationDelay: `${i * 0.2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Inline keyframes */}
+      <style>{`
+        @keyframes loading-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15) rotate(5deg); }
+        }
+        @keyframes loading-bounce {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+          40% { transform: translateY(-12px); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════
 const StudentSession = () => {
