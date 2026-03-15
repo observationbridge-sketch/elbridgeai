@@ -27,6 +27,91 @@ const THEMES = [
   "Volcanoes & earthquakes",
 ];
 
+const K2_BANNED_WORDS = new Set([
+  "agility", "focus", "required", "defenders", "weaving", "balance", "features",
+  "unique", "surface", "legendary", "behavior", "appearance",
+]);
+
+const K2_FORBIDDEN_CONNECTORS = new Set(["while", "both", "must", "however", "which"]);
+
+function countSentences(text: string): number {
+  return text
+    .split(/[.!?]+/)
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+}
+
+function countWords(text: string): number {
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z']/g, ""))
+    .filter(Boolean).length;
+}
+
+function countSyllables(rawWord: string): number {
+  const word = rawWord.toLowerCase().replace(/[^a-z]/g, "");
+  if (!word) return 0;
+  if (word.length <= 3) return 1;
+
+  const vowelGroups = word.match(/[aeiouy]+/g);
+  let syllables = vowelGroups ? vowelGroups.length : 1;
+
+  if (word.endsWith("e")) syllables -= 1;
+  if (word.endsWith("le") && word.length > 2) syllables += 1;
+
+  return Math.max(1, syllables);
+}
+
+function validateK2Sentence(sentence: string): { valid: boolean; reason?: string } {
+  if (countSentences(sentence) !== 1) return { valid: false, reason: "Must be exactly one sentence" };
+  if (countWords(sentence) > 10) return { valid: false, reason: "Sentence exceeds 10 words" };
+
+  const words = sentence
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z']/g, ""))
+    .filter(Boolean);
+
+  if (words.some((w) => K2_BANNED_WORDS.has(w))) return { valid: false, reason: "Contains banned vocabulary" };
+  if (words.some((w) => K2_FORBIDDEN_CONNECTORS.has(w))) return { valid: false, reason: "Contains forbidden connector" };
+  if (words.some((w) => countSyllables(w) > 3)) return { valid: false, reason: "Contains word longer than 3 syllables" };
+
+  return { valid: true };
+}
+
+function validateK2Topic(topic: string): { valid: boolean; reason?: string } {
+  if (!topic?.trim()) return { valid: false, reason: "Missing topic" };
+  if (countSentences(topic) > 1) return { valid: false, reason: "Topic must be one sentence/phrase" };
+  if (countWords(topic) > 8) return { valid: false, reason: "Topic is too long" };
+
+  const words = topic
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z']/g, ""))
+    .filter(Boolean);
+
+  if (words.some((w) => K2_BANNED_WORDS.has(w))) return { valid: false, reason: "Topic contains banned vocabulary" };
+  if (words.some((w) => countSyllables(w) > 3)) return { valid: false, reason: "Topic has complex words" };
+
+  return { valid: true };
+}
+
+function validateK2Result(result: any): { valid: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+
+  const sentenceCheck = validateK2Sentence(result?.sentence || "");
+  if (!sentenceCheck.valid && sentenceCheck.reason) reasons.push(sentenceCheck.reason);
+
+  const topicCheck = validateK2Topic(result?.topic || "");
+  if (!topicCheck.valid && topicCheck.reason) reasons.push(topicCheck.reason);
+
+  const keyWords = Array.isArray(result?.keyWords) ? result.keyWords : [];
+  if (keyWords.length > 3) reasons.push("K-2 keyWords must be 3 or fewer");
+
+  return { valid: reasons.length === 0, reasons };
+}
+
 interface ContentHistory {
   themes: string[];
   topics: string[];
