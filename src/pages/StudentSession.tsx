@@ -1487,12 +1487,12 @@ function Part1View({
               <>
                 <FeedbackBanner feedback={part1Feedback} positive={part1Scores.repeatTotal > 0 && part1Scores.repeat / part1Scores.repeatTotal >= 0.5} />
                 <Button
-                  variant={isK2 ? "success" : "hero"}
-                  className={`w-full ${isK2 ? "text-2xl py-8 min-h-[70px] rounded-xl shadow-lg animate-pulse" : ""}`}
+                  variant="success"
+                  className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
                   size="lg"
                   onClick={onNext}
                 >
-                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
+                  {isK2 ? "Keep Going! 🚀" : "Next Step →"}
                 </Button>
               </>
             )}
