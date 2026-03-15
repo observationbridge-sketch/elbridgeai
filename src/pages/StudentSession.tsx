@@ -2216,11 +2216,15 @@ function Part2StrategyView({
       </div>
 
       <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
-        {/* Passage (if present) */}
+        {/* Passage — K-2 sentence_frames: max 1 sentence */}
         {activity.passage && (
           <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
             <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-1`}>📖 Read this:</p>
-            <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>{activity.passage}</p>
+            <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>
+              {isK2 && activity.strategy === "sentence_frames"
+                ? (activity.passage.split(/(?<=[.!?])\s+/)[0] || activity.passage)
+                : activity.passage}
+            </p>
           </div>
         )}
 
