@@ -1836,19 +1836,205 @@ function Part1View({
     prepareStep3Content(0);
   }, [step, anchor, prepareStep3Content]);
 
-  const handleJumbleSubmit = () => {
-    setJumbleSubmitted(true);
+  const handleChipTap = (word: string) => {
+    if (isK2) {
+      const newTapped = [...jumbleTappedWords, word];
+      setJumbleTappedWords(newTapped);
+      setJumbleAnswer(newTapped.join(" "));
+    }
   };
 
+  const handleJumbleSubmit = () => {
+    if (!jumble) return;
+    const { matched, total } = compareWords(jumbleAnswer, jumble.original);
+    const pct = total > 0 ? matched / total : 0;
+    setJumbleSubmitted(true);
+    if (pct >= 0.7) sounds.playCorrect(); else sounds.playWrong();
+    onStep5Complete(pct >= 0.7);
+  };
+
+  const memoryPairs = useMemo(() => generateMemoryPairs(anchor, isK2), [anchor, isK2]);
+
   const stepTitles: Record<number, string> = {
-    1: "Step 1: Listen 🎧",
-    2: "Step 2: Repeat 🗣️",
-    3: "Step 3: Fill in the Blanks 🔤",
-    4: "Step 4: Jumbled Sentence 🧩",
-    5: "Step 5: Listen One More Time 🎧",
-    6: "Step 6: Write from Memory ✍️",
-    7: "Step 7: Record 🎤",
-    8: "Step 8: Your Results 🏆",
+    1: "Step 1: Listen & Look 🎧",
+    2: "Step 2: Say It 🎤",
+    3: "Step 3: Drag & Drop 🧩",
+    4: "Step 4: Memory Match 🃏",
+    5: "Step 5: Jumbled Sentence ✍️",
+  };
+
+  return (
+    <Card className="card-shadow border-border">
+      <div className="px-6 pt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">Literacy Squared</span>
+        </div>
+        <h3 className="text-lg font-bold text-foreground">{stepTitles[step]}</h3>
+      </div>
+      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
+        {/* Step 1: Listen & Look */}
+        {step === 1 && (
+          <>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-8" : "p-6"} border border-border text-center space-y-4`}>
+              <Headphones className={`${isK2 ? "h-14 w-14" : "h-10 w-10"} text-warning mx-auto`} />
+              <div className={`${isK2 ? "text-6xl my-4 animate-bounce-slow" : "text-4xl my-3 animate-bounce-fast"}`}>
+                {anchor.theme?.toLowerCase().includes("space") ? "🔴🪐" :
+                 anchor.theme?.toLowerCase().includes("ocean") ? "🌊🐠" :
+                 anchor.theme?.toLowerCase().includes("nature") ? "🌿🦋" :
+                 anchor.theme?.toLowerCase().includes("superhero") ? "🦸‍♂️💥" :
+                 anchor.theme?.toLowerCase().includes("fantasy") ? "🧙✨" :
+                 anchor.theme?.toLowerCase().includes("egypt") ? "🏛️🐪" :
+                 anchor.theme?.toLowerCase().includes("volcano") ? "🌋🔥" :
+                 anchor.theme?.toLowerCase().includes("rainforest") ? "🌴🦜" :
+                 anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" : "📚🌟"}
+              </div>
+              <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{anchor.sentence}</p>
+              {tts.isSupported && (
+                <Button variant="outline" onClick={() => tts.speak(anchor.sentence)} disabled={tts.isSpeaking} className={`gap-2 ${isK2 ? "text-lg px-6 py-4 h-auto" : ""}`}>
+                  <RefreshCw className={`${isK2 ? "h-5 w-5" : "h-4 w-4"} ${tts.isSpeaking ? "animate-spin" : ""}`} />
+                  {isK2 ? (tts.isSpeaking ? "Playing... 🔊" : "Hear it again! 🔁") : (tts.isSpeaking ? "Playing..." : "Replay")}
+                </Button>
+              )}
+            </div>
+            <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-8 min-h-[72px]" : ""}`} size="lg" onClick={onStep1Done}>
+              {isK2 ? "I heard it! 👂" : "I heard it ✓"} <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </>
+        )}
+
+        {/* Step 2: Say It */}
+        {step === 2 && (
+          <>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border ${isK2 ? "text-center" : ""}`}>
+              <p className={`${isK2 ? "text-2xl" : "text-lg"} text-foreground font-medium leading-relaxed`}>{anchor.sentence}</p>
+            </div>
+            {!part1Submitted ? (
+              <>
+                <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
+                {part1Answer.trim() && (
+                  <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onStep2Submit}>
+                    {isK2 ? "Done! ✅" : "Submit"}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="text-center space-y-4 animate-fade-in">
+                <p className={`font-bold text-success ${isK2 ? "text-2xl" : "text-lg"}`}>Great job! 🌟</p>
+                <p className={`text-muted-foreground ${isK2 ? "text-lg" : "text-sm"}`}>Moving on in a moment...</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Step 3: Drag & Drop */}
+        {step === 3 && (
+          blanks && step3Status === "ready" ? (
+            <WordBankFillBlanks
+              blankedSentence={blanks.blanked}
+              missingWords={blanks.missingWords}
+              wordBank={blanks.wordBank}
+              isK2={isK2}
+              onComplete={onStep3Complete}
+              onNext={onNext}
+            />
+          ) : (
+            <div className="rounded-xl border border-border bg-muted/30 p-6 text-center space-y-4">
+              <div className={showStep3WaitState ? "animate-soft-pulse" : ""}>
+                <p className="text-6xl">🐣</p>
+                <p className="text-lg font-medium text-foreground">One moment... 🐣</p>
+              </div>
+              {step3Status === "failed" ? (
+                <Button variant="hero" onClick={onNext}>Skip this one ➡️</Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">{step3RetryCount > 0 ? "Retrying..." : "Loading..."}</p>
+              )}
+            </div>
+          )
+        )}
+
+        {/* Step 4: Memory Match */}
+        {step === 4 && (
+          <MemoryMatch
+            words={memoryPairs.words}
+            matches={memoryPairs.matches}
+            isK2={isK2}
+            onComplete={onStep4Complete}
+            onNext={onNext}
+          />
+        )}
+
+        {/* Step 5: Jumbled Sentence */}
+        {step === 5 && jumble && (
+          <>
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
+              <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
+                {isK2 ? "Tap the words in the right order! 👆" : "Put these words back in the correct order:"}
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {jumble.jumbled.map((word, i) => {
+                  const isUsed = isK2 && jumbleTappedWords.includes(word);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => !isUsed && !jumbleSubmitted && (isK2 ? handleChipTap(word) : undefined)}
+                      disabled={isUsed || jumbleSubmitted}
+                      className={`px-4 py-2 rounded-full font-medium border-2 transition-all duration-200 select-none
+                        ${isK2 ? "text-lg min-h-[48px]" : "text-sm"}
+                        ${isUsed ? "bg-muted text-muted-foreground/30 border-muted opacity-40" : "bg-primary/10 text-primary border-primary/20 hover:scale-105 active:scale-95 cursor-pointer"}
+                      `}
+                    >
+                      {word}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <Input
+              value={jumbleAnswer}
+              onChange={(e) => !isK2 && setJumbleAnswer(e.target.value)}
+              placeholder={isK2 ? "Tap words above..." : "Type the sentence in correct order..."}
+              className={isK2 ? "h-14 text-lg" : "h-12"}
+              disabled={jumbleSubmitted}
+              readOnly={isK2}
+            />
+            {isK2 && jumbleTappedWords.length > 0 && !jumbleSubmitted && (
+              <Button variant="outline" size="sm" onClick={() => { setJumbleTappedWords([]); setJumbleAnswer(""); }}>Start over 🔄</Button>
+            )}
+            {!jumbleSubmitted ? (
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={!jumbleAnswer.trim()}>
+                {isK2 ? "Check! ✅" : "Check My Sentence"}
+              </Button>
+            ) : (
+              <>
+                {(() => {
+                  const { matched, total } = compareWords(jumbleAnswer, jumble.original);
+                  const pct = total > 0 ? matched / total : 0;
+                  return (
+                    <>
+                      <FeedbackBanner feedback={pct >= 0.7 ? "Nice work! 🧩🌟" : "Good try! Here's the correct sentence:"} positive={pct >= 0.7} />
+                      <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">Correct sentence:</p>
+                        <p className="text-foreground font-medium">{jumble.original}</p>
+                      </div>
+                    </>
+                  );
+                })()}
+                <Button
+                  variant="success"
+                  className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
+                  size="lg"
+                  onClick={onNext}
+                >
+                  {isK2 ? "Keep Going! 🚀" : "Next Step →"}
+                </Button>
+              </>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
   };
 
   return (
