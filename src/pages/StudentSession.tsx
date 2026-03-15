@@ -1730,10 +1730,10 @@ const StudentSession = () => {
 };
 
 // ═══════════════════════════════════════════════
-// Part 1 — Daily Language Builder (8 steps)
+// Part 1 — Literacy Squared (5 steps)
 // ═══════════════════════════════════════════════
 interface Part1Props {
-  step: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  step: 1 | 2 | 3 | 4 | 5;
   anchor: AnchorSentence;
   tts: ReturnType<typeof useTTS>;
   speech: ReturnType<typeof useSpeechRecognition>;
@@ -1741,13 +1741,11 @@ interface Part1Props {
   setPart1Answer: (v: string) => void;
   part1Submitted: boolean;
   part1Feedback: string | null;
-  part1ShowSentence: boolean;
-  setPart1ShowSentence: (v: boolean) => void;
-  part1Scores: Part1Scores;
   onStep1Done: () => void;
   onStep2Submit: () => void;
-  onStep6WriteSubmit: () => void;
-  onStep7RecordSubmit: () => void;
+  onStep3Complete: (score: { correct: number; total: number }) => void;
+  onStep4Complete: (score: { correct: number; total: number }) => void;
+  onStep5Complete: (correct: boolean) => void;
   onNext: () => void;
   onRetryFillBlanks: () => Promise<AnchorSentence | null>;
   isK2?: boolean;
