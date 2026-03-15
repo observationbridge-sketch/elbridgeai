@@ -2272,6 +2272,21 @@ function Part2StrategyView({
   const StrategyIcon = strategyMeta.icon;
   const inputType = activity.inputType || "typing";
 
+  // K-2 Sentence Frame retry logic
+  const isK2SF = isK2 && activity.strategy === "sentence_frames";
+  const [sfAttempts, setSfAttempts] = useState(0);
+  const [sfWrongMessage, setSfWrongMessage] = useState<string | null>(null);
+  const [sfRevealed, setSfRevealed] = useState(false);
+  const [sfSelectedWord, setSfSelectedWord] = useState<string | null>(null);
+
+  // Reset retry state when activity changes
+  useEffect(() => {
+    setSfAttempts(0);
+    setSfWrongMessage(null);
+    setSfRevealed(false);
+    setSfSelectedWord(null);
+  }, [activity.question]);
+
   // K-2 auto-advance countdown
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
