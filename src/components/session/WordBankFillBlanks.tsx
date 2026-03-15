@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSounds } from "@/hooks/use-sounds";
 
 // Tile colors for visual distinction
 const TILE_COLORS = [
@@ -51,6 +52,7 @@ export function WordBankFillBlanks({
   onComplete,
   onNext,
 }: WordBankFillBlanksProps) {
+  const sounds = useSounds();
   const blankCount = missingWords.length;
   const [answers, setAnswers] = useState<string[]>(new Array(blankCount).fill(""));
   const [blankStates, setBlankStates] = useState<BlankState[]>(new Array(blankCount).fill("empty"));
@@ -194,6 +196,7 @@ export function WordBankFillBlanks({
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 2500);
       setPhase("done");
+      sounds.playCorrect();
       onComplete({ correct: blankCount, total: blankCount });
     } else if (currentAttempt >= 2) {
       // 2 attempts exhausted → reveal remaining
@@ -204,9 +207,11 @@ export function WordBankFillBlanks({
       setBlankStates(finalStates);
       setScore({ correct: correctCount, total: blankCount });
       setPhase("done");
+      if (correctCount > 0) sounds.playPartiallyCorrect(); else sounds.playWrong();
       onComplete({ correct: correctCount, total: blankCount });
     } else {
       // Bounce wrong answers back to bank
+      if (correctCount > 0) sounds.playPartiallyCorrect(); else sounds.playWrong();
       setPhase("feedback");
       setTimeout(() => {
         const resetAnswers = [...answers];

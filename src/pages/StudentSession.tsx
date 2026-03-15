@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   Brain, BookOpen, PenTool, Mic, MicOff, Headphones, CheckCircle,
-  ArrowRight, Loader2, Star, Volume2, Trophy, Flame, RefreshCw,
+  ArrowRight, Loader2, Star, Volume2, VolumeX, Trophy, Flame, RefreshCw,
   Eye, EyeOff, Target, Zap, Award, Users, Clock, Sparkles,
 } from "lucide-react";
+import { useSounds } from "@/hooks/use-sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTTS } from "@/hooks/use-tts";
@@ -264,8 +265,9 @@ const StudentSession = () => {
   const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
   const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
 
-  // Gamification
+  // Gamification & Sounds
   const gamification = useGamification(studentName, teacherId);
+  const sounds = useSounds();
   const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
 
   // Part 1 state
@@ -606,7 +608,9 @@ const StudentSession = () => {
         : `Good effort! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    if (pct >= 0.8) sounds.playCorrect(); else if (pct >= 0.5) sounds.playPartiallyCorrect(); else sounds.playWrong();
     gamification.addPoints(POINTS.STEP2_REPEAT);
+    sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
       gamification.awardBadge("first_voice");
@@ -625,7 +629,9 @@ const StudentSession = () => {
       : `Good try! You got ${matched} out of ${total} words. Compare your answer above. ✍️`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    if (pct >= 0.8) sounds.playCorrect(); else sounds.playPartiallyCorrect();
     gamification.addPoints(POINTS.STEP3_WRITE);
+    sounds.playPoints();
     if (!hasWritten) {
       setHasWritten(true);
       gamification.awardBadge("first_writer");
@@ -645,7 +651,9 @@ const StudentSession = () => {
         : `You used ${matched} out of ${total} words — keep practicing! 🎤💪`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    if (pct >= 0.9) sounds.playCorrect(); else if (pct >= 0.7) sounds.playPartiallyCorrect(); else sounds.playWrong();
     gamification.addPoints(POINTS.STEP4_RECORD);
+    sounds.playPoints();
     saveResponse("speaking", `Record: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
@@ -763,6 +771,9 @@ const StudentSession = () => {
       setPart2Score((s) => s + 1);
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2200);
+      sounds.playCorrect();
+    } else {
+      sounds.playWrong();
     }
 
     let feedback: string;
@@ -789,6 +800,7 @@ const StudentSession = () => {
     }
 
     gamification.addPoints(POINTS.PART2_ACTIVITY);
+    sounds.playPoints();
 
     const domainMap: Record<string, string> = {
       sentence_frames: "reading",
@@ -895,8 +907,12 @@ const StudentSession = () => {
     if (isCorrect) {
       setPart3SpeedScore((s) => s + 1);
       gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT);
+      sounds.playCorrect();
+      sounds.playPoints();
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2200);
+    } else {
+      sounds.playWrong();
     }
     setPart3SpeedAnswers((a) => [...a, selectedOption]);
 
@@ -933,6 +949,7 @@ const StudentSession = () => {
   };
 
   const finishSession = async () => {
+    sounds.playSessionComplete();
     gamification.addPoints(POINTS.SESSION_COMPLETE);
     gamification.completeSession();
     if (domainScores) {
@@ -1178,6 +1195,13 @@ const StudentSession = () => {
                 <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={!isK2} />
               </ThemedCompanionGlow>
             )}
+            <button
+              onClick={sounds.toggleMute}
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
+              title={sounds.muted ? "Unmute sounds" : "Mute sounds"}
+            >
+              {sounds.muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </button>
             <div className="hidden sm:flex items-center gap-2">
               <button onClick={() => setShowView("badges")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
                 <Award className="h-3 w-3" /> Badges
