@@ -1155,6 +1155,7 @@ const StudentSession = () => {
         throw new Error("Invalid challenge content");
       }
 
+      prefetchedPart3Ref.current = data as Part3Challenge;
       setPart3Challenge(data as Part3Challenge);
       setActivityRetryCount(0);
       setLoading(false);
