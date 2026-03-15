@@ -9,7 +9,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode, BarChart3,
-  GraduationCap, Loader2, AlertTriangle,
+  GraduationCap, Loader2, AlertTriangle, Lock,
 } from "lucide-react";
 import EmailSettings from "@/components/dashboard/EmailSettings";
 import SessionSummaryPanel from "@/components/dashboard/SessionSummaryPanel";
