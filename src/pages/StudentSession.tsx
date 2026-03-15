@@ -104,6 +104,33 @@ const TOTAL_STEPS_K2 = 13; // 8 + 4 + 1
 
 type GradeBand = "K-2" | "3-5";
 
+// ─── Content validation ───
+function validatePart2Activity(data: any): data is Part2Activity {
+  if (!data) return false;
+  if (!data.question || typeof data.question !== "string") return false;
+  if (!data.modelAnswer || typeof data.modelAnswer !== "string") return false;
+  if (!data.strategy || typeof data.strategy !== "string") return false;
+  if (!Array.isArray(data.acceptableKeywords)) return false;
+  return true;
+}
+
+function validatePart3Challenge(data: any): data is Part3Challenge {
+  if (!data) return false;
+  if (!data.challengeType || typeof data.challengeType !== "string") return false;
+  if (!data.title || typeof data.title !== "string") return false;
+  if (!data.instruction || typeof data.instruction !== "string") return false;
+  if (data.challengeType === "speed_round" && (!Array.isArray(data.questions) || data.questions.length === 0)) return false;
+  return true;
+}
+
+// Fetch with timeout helper
+function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Request timed out")), timeoutMs)),
+  ]);
+}
+
 // ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
   const normalize = (s: string) =>
