@@ -18,13 +18,18 @@ export function getNextLevel(points: number) {
   return idx < ANIMAL_LEVELS.length - 1 ? ANIMAL_LEVELS[idx + 1] : null;
 }
 
-// Points values
+// Points values — Literacy Squared 5-step routine
 export const POINTS = {
-  STEP1_LISTEN: 2,
-  STEP2_REPEAT: 5,
-  STEP3_WRITE: 5,
-  STEP4_RECORD: 5,
-  PART1_COMPLETE: 10,
+  STEP1_LISTEN: 5,
+  STEP2_SAY_IT: 10,
+  STEP3_DRAG_DROP: 10,
+  STEP4_MEMORY_MATCH: 10,
+  STEP5_JUMBLED: 15,
+  // Legacy aliases (keep for backward compat)
+  STEP2_REPEAT: 10,
+  STEP3_WRITE: 10,
+  STEP4_RECORD: 15,
+  PART1_COMPLETE: 0, // points already given per step (total=50)
   PART2_ACTIVITY: 5,
   SESSION_COMPLETE: 15,
   DOMAIN_80_BONUS: 5,
