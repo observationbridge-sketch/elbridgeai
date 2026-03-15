@@ -358,13 +358,14 @@ const StudentSession = () => {
 
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
-  const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(1);
+  const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [part1Feedback, setPart1Feedback] = useState<string | null>(null);
   const [part1ShowSentence, setPart1ShowSentence] = useState(true);
   const [part1Answer, setPart1Answer] = useState("");
   const [part1Submitted, setPart1Submitted] = useState(false);
   const [part1Scores, setPart1Scores] = useState<Part1Scores>({
-    listen: false, repeat: 0, repeatTotal: 0, write: 0, writeTotal: 0, record: 0, recordTotal: 0,
+    listen: false, sayIt: 0, sayItTotal: 0, dragDrop: 0, dragDropTotal: 0,
+    memoryMatch: 0, memoryMatchTotal: 0, jumbled: 0, jumbledTotal: 0,
   });
   const [hasSpoken, setHasSpoken] = useState(false);
   const [hasWritten, setHasWritten] = useState(false);
