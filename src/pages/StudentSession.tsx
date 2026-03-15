@@ -1049,6 +1049,16 @@ const StudentSession = () => {
 
   // ─── Progress label ───
   const getProgressLabel = () => {
+    if (isK2) {
+      // Star-based progress for K-2
+      const filled = globalStep + 1;
+      const stars = Array.from({ length: totalSteps }, (_, i) => i < filled ? "⭐" : "☆");
+      // Show max 8 stars for visual clarity
+      const visibleStars = totalSteps > 8 
+        ? stars.filter((_, i) => i % Math.ceil(totalSteps / 8) === 0 || i === totalSteps - 1).slice(0, 8)
+        : stars;
+      return visibleStars.join("");
+    }
     if (inPart1) return `Part 1 • Step ${part1Step}/8`;
     if (inPart2) return `Part 2 • Activity ${part2Index + 1}/${part2Count}`;
     return "Part 3 • Challenge";
@@ -1056,10 +1066,19 @@ const StudentSession = () => {
 
   const isK2 = effectiveGradeBand === "K-2";
 
+  // ─── K-2 feeling rating state ───
+  const [showFeelingRating, setShowFeelingRating] = useState(false);
+  const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
+
+  const handleFeelingSelect = (feeling: number) => {
+    setFeelingRatings(prev => [...prev, feeling]);
+    setShowFeelingRating(false);
+  };
+
   // ─── Main render ───
   return (
     <ThemePageWrapper theme={sessionTheme}>
-    <div className={`min-h-screen ${isK2 ? "text-xl" : ""}`}>
+    <div className={`min-h-screen ${isK2 ? "text-[22px] leading-relaxed" : ""}`}>
       {/* Top bar */}
       <div className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
@@ -1070,7 +1089,7 @@ const StudentSession = () => {
           <div className="flex items-center gap-3">
             {gamification.loaded && (
               <ThemedCompanionGlow theme={sessionTheme}>
-                <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact />
+                <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={!isK2} />
               </ThemedCompanionGlow>
             )}
             <div className="hidden sm:flex items-center gap-2">
@@ -1085,24 +1104,39 @@ const StudentSession = () => {
         </div>
         {sessionTopic && (
           <div className="px-4 py-1 border-b border-white/5" style={{ background: getThemeStyles(sessionTheme).topicBannerBg }}>
-            <p className="text-xs text-center font-medium" style={{ color: getThemeStyles(sessionTheme).topicBannerText }}>
+            <p className={`text-center font-medium ${isK2 ? "text-base" : "text-xs"}`} style={{ color: getThemeStyles(sessionTheme).topicBannerText }}>
               📚 Today's Topic: <span className="font-bold">{sessionTopic}</span>
             </p>
           </div>
         )}
         <div className="px-4 pb-2 pt-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-white/60 whitespace-nowrap">{getProgressLabel()}</span>
-            <Progress value={((globalStep + 1) / totalSteps) * 100} className="flex-1" />
+            {isK2 ? (
+              <span className="text-sm text-white/80 whitespace-nowrap tracking-wider">{getProgressLabel()}</span>
+            ) : (
+              <>
+                <span className="text-xs text-white/60 whitespace-nowrap">{getProgressLabel()}</span>
+                <Progress value={((globalStep + 1) / totalSteps) * 100} className="flex-1" />
+              </>
+            )}
           </div>
         </div>
       </div>
 
+      {/* K-2 Animal Companion Guide between activities */}
+      {isK2 && !loading && gamification.loaded && (
+        <div className="flex justify-center py-4">
+          <div className="text-center animate-bounce-slow">
+            <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
+          </div>
+        </div>
+      )}
+
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <Loader2 className="h-10 w-10 text-white/70 animate-spin" />
-            <p className="text-white/60">{loadingMessage}</p>
+            <Loader2 className={`${isK2 ? "h-14 w-14" : "h-10 w-10"} text-white/70 animate-spin`} />
+            <p className={`text-white/60 ${isK2 ? "text-xl" : ""}`}>{loadingMessage}</p>
           </div>
         ) : (
           <>
@@ -1125,32 +1159,58 @@ const StudentSession = () => {
                   onStep6WriteSubmit={handleStep6WriteSubmit}
                   onStep7RecordSubmit={handleStep7RecordSubmit}
                   onNext={handlePart1Next}
+                  isK2={isK2}
                 />
               ) : inPart2 && part2Activity ? (
-                <Part2StrategyView
-                  activity={part2Activity}
-                  index={part2Index}
-                  totalActivities={part2Count}
-                  answer={part2Answer}
-                  setAnswer={setPart2Answer}
-                  submitted={part2Submitted}
-                  feedback={part2Feedback}
-                  isCorrect={part2IsCorrect}
-                  speech={speech}
-                  tts={tts}
-                  onSubmit={() => submitPart2()}
-                  onSubmitMC={(option: string) => submitPart2(option)}
-                  onNext={nextPart2}
-                />
+                <>
+                  <Part2StrategyView
+                    activity={part2Activity}
+                    index={part2Index}
+                    totalActivities={part2Count}
+                    answer={part2Answer}
+                    setAnswer={setPart2Answer}
+                    submitted={part2Submitted}
+                    feedback={part2Feedback}
+                    isCorrect={part2IsCorrect}
+                    speech={speech}
+                    tts={tts}
+                    onSubmit={() => submitPart2()}
+                    onSubmitMC={(option: string) => submitPart2(option)}
+                    onNext={nextPart2}
+                    isK2={isK2}
+                  />
+                  {/* K-2 Feeling Rating */}
+                  {isK2 && part2Submitted && !showFeelingRating && (
+                    <div className="mt-6 text-center">
+                      <p className="text-lg font-medium text-white/80 mb-3">How did that feel?</p>
+                      <div className="flex justify-center gap-6">
+                        {[
+                          { emoji: "😕", label: "Hard", value: 1 },
+                          { emoji: "😐", label: "Okay", value: 2 },
+                          { emoji: "😊", label: "Easy!", value: 3 },
+                        ].map(({ emoji, label, value }) => (
+                          <button
+                            key={value}
+                            onClick={() => handleFeelingSelect(value)}
+                            className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
+                          >
+                            <span className="text-5xl">{emoji}</span>
+                            <span className="text-sm text-white/60">{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : inPart3 ? (
                 part3ShowIntro ? (
                   <Card className="card-shadow border-border text-center">
                     <CardContent className="pt-8 pb-8 space-y-6">
-                      <Sparkles className="h-16 w-16 text-warning mx-auto" />
-                      <h2 className="text-2xl font-bold text-foreground">🎉 Almost done!</h2>
-                      <p className="text-lg text-muted-foreground">Time for your Language Challenge!</p>
-                      <p className="text-sm text-muted-foreground">One fun final activity about <span className="font-bold text-primary">{sessionTopic}</span></p>
-                      <Button variant="hero" size="lg" className="w-full" onClick={startPart3}>
+                      <Sparkles className={`${isK2 ? "h-20 w-20" : "h-16 w-16"} text-warning mx-auto`} />
+                      <h2 className={`${isK2 ? "text-3xl" : "text-2xl"} font-bold text-foreground`}>🎉 Almost done!</h2>
+                      <p className={`${isK2 ? "text-xl" : "text-lg"} text-muted-foreground`}>Time for your Language Challenge!</p>
+                      <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground`}>One fun final activity about <span className="font-bold text-primary">{sessionTopic}</span></p>
+                      <Button variant="hero" size="lg" className={`w-full ${isK2 ? "text-xl py-8" : ""}`} onClick={startPart3}>
                         Let's Go! 🚀
                       </Button>
                     </CardContent>
@@ -1159,11 +1219,11 @@ const StudentSession = () => {
                   <Card className="card-shadow border-border">
                     <CardContent className="pt-8 pb-8 space-y-6">
                       <div className="text-center">
-                        <Trophy className="h-12 w-12 text-warning mx-auto mb-3" />
-                        <h2 className="text-xl font-bold text-foreground">Challenge Complete! 🎉</h2>
+                        <Trophy className={`${isK2 ? "h-16 w-16" : "h-12 w-12"} text-warning mx-auto mb-3`} />
+                        <h2 className={`${isK2 ? "text-2xl" : "text-xl"} font-bold text-foreground`}>Challenge Complete! 🎉</h2>
                       </div>
                       <FeedbackBanner feedback={part3Feedback} positive={true} />
-                      <Button variant="hero" className="w-full" size="lg" onClick={finishSession}>
+                      <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-7" : ""}`} size="lg" onClick={finishSession}>
                         See My Results <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </CardContent>
