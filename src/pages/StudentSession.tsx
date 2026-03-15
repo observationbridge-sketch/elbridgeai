@@ -1377,55 +1377,9 @@ function Part1View({
 }: Part1Props) {
   // Local scaffold state
   const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
-  const [blankAnswers, setBlankAnswers] = useState<string[]>([]);
-  const [blankSubmitted, setBlankSubmitted] = useState(false);
-  const [selectedBankWord, setSelectedBankWord] = useState<string | null>(null);
   const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
-
-  // Generate blanks when entering step 3
-  useEffect(() => {
-    if (step === 3 && !blanks) {
-      const b = generateBlanks(anchor.sentence, anchor.keyWords, isK2);
-      setBlanks(b);
-      setBlankAnswers(new Array(b.missingWords.length).fill(""));
-      setBlankSubmitted(false);
-    }
-  }, [step, anchor]);
-
-  // Generate jumble when entering step 4
-  useEffect(() => {
-    if (step === 4 && !jumble) {
-      const j = jumbleSentence(anchor.sentence);
-      setJumble(j);
-      setJumbleAnswer("");
-      setJumbleSubmitted(false);
-    }
-  }, [step, anchor]);
-
-  const [blankScore, setBlankScore] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
-
-  const handleBlankSubmit = () => {
-    if (!blanks) return;
-    let correctCount = 0;
-    blanks.missingWords.forEach((word, i) => {
-      const studentAnswer = (blankAnswers[i] || "").toLowerCase().trim();
-      const correctAnswer = word.toLowerCase().trim();
-      // Accept exact match or close spelling (levenshtein <= 2, but reject single-char answers)
-      const isMatch = studentAnswer.length > 1 && (studentAnswer === correctAnswer || levenshtein(studentAnswer, correctAnswer) <= 2);
-      if (isMatch) correctCount++;
-    });
-    setBlankScore({ correct: correctCount, total: blanks.missingWords.length });
-    setBlankSubmitted(true);
-  };
-
-  const isBlankCorrect = (i: number): boolean => {
-    if (!blanks) return false;
-    const studentAnswer = (blankAnswers[i] || "").toLowerCase().trim();
-    const correctAnswer = blanks.missingWords[i].toLowerCase().trim();
-    return studentAnswer.length > 1 && (studentAnswer === correctAnswer || levenshtein(studentAnswer, correctAnswer) <= 2);
-  };
 
   const handleJumbleSubmit = () => {
     setJumbleSubmitted(true);
