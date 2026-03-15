@@ -1237,8 +1237,10 @@ const StudentSession = () => {
       });
     }
 
-    gamification.addPoints(POINTS.PART2_ACTIVITY);
-    sounds.playPoints();
+    if (correct) {
+      gamification.addPoints(POINTS.PART2_ACTIVITY);
+      sounds.playPoints();
+    }
 
     const domainMap: Record<string, string> = {
       sentence_frames: "reading",
