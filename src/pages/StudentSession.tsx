@@ -1539,7 +1539,7 @@ function Part1View({
                         className={`inline-block min-w-[60px] mx-1 px-3 py-1 rounded-lg border-2 border-dashed transition-all ${
                           blankAnswers[i] 
                             ? blankSubmitted
-                              ? blankAnswers[i].toLowerCase().trim() === blanks.missingWords[i].toLowerCase()
+                              ? isBlankCorrect(i)
                                 ? "border-success bg-success/10 text-success font-bold"
                                 : "border-destructive bg-destructive/10 text-destructive font-bold"
                               : "border-primary bg-primary/10 text-primary font-bold cursor-pointer hover:bg-primary/20"
@@ -1550,7 +1550,7 @@ function Part1View({
                         disabled={blankSubmitted}
                       >
                         {blankAnswers[i] || (isK2 ? "?" : "___")}
-                        {blankSubmitted && blankAnswers[i]?.toLowerCase().trim() === blanks.missingWords[i].toLowerCase() && (
+                        {blankSubmitted && isBlankCorrect(i) && (
                           <CheckCircle className="inline h-4 w-4 ml-1" />
                         )}
                       </button>
