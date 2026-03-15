@@ -990,6 +990,7 @@ const StudentSession = () => {
         }
       }
       
+      prefetchedPart2Ref.current[index] = activity;
       setPart2Activity(activity);
       setPart2Strategy(activity.strategy);
       setPart2StrategyReason(activity.strategyReason);
