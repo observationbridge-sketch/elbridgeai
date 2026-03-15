@@ -1753,6 +1753,35 @@ function Part2StrategyView({
   const StrategyIcon = strategyMeta.icon;
   const inputType = activity.inputType || "typing";
 
+  // K-2 auto-advance countdown
+  const [k2Countdown, setK2Countdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (isK2 && submitted && isCorrect && k2Countdown === null) {
+      setK2Countdown(3);
+    }
+  }, [isK2, submitted, isCorrect]);
+
+  useEffect(() => {
+    if (k2Countdown === null || k2Countdown <= 0) return;
+    countdownRef.current = setTimeout(() => {
+      setK2Countdown(k2Countdown - 1);
+    }, 1000);
+    return () => { if (countdownRef.current) clearTimeout(countdownRef.current); };
+  }, [k2Countdown]);
+
+  useEffect(() => {
+    if (k2Countdown === 0) {
+      onNext();
+    }
+  }, [k2Countdown]);
+
+  const cancelCountdown = () => {
+    setK2Countdown(null);
+    if (countdownRef.current) clearTimeout(countdownRef.current);
+  };
+
   // Auto-play audio for K-2 listening activities
   useEffect(() => {
     if (isK2 && inputType === "listen_then_type" && activity.audioClip && tts.isSupported && !submitted) {
