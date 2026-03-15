@@ -686,11 +686,26 @@ const StudentSession = () => {
         }
       } catch { /* use default */ }
 
+      try {
+        if (resolvedTheme && resolvedTopic) {
+          setLoadingMessage("Checking activity content...");
+          await prefetchSessionContent({
+            grade: sessionGradeBand,
+            theme: resolvedTheme,
+            topic: resolvedTopic,
+            domainScores: computedDomainScores,
+            history: fetchedHistory,
+          });
+        }
+      } catch (error) {
+        console.error("Session health check failed", error);
+      }
+
       setLoading(false);
     };
 
     init();
-  }, [studentId, sessionId]);
+  }, [studentId, sessionId, prefetchSessionContent]);
 
   useEffect(() => {
     if (studentName && teacherId) {
