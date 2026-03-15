@@ -536,6 +536,7 @@ const StudentSession = () => {
                   domainScores,
                   questionIndex: index,
                   contentHistory: history,
+                  sentenceFrameTier: grade === "K-2" ? sentenceFrameTier : undefined,
                 },
               }),
               8000
