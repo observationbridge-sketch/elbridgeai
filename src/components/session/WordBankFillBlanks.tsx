@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSounds } from "@/hooks/use-sounds";
 
 // Tile colors for visual distinction
 const TILE_COLORS = [
