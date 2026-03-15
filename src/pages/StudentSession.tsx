@@ -486,6 +486,11 @@ const StudentSession = () => {
   const [part2StrategyReason, setPart2StrategyReason] = useState("");
   const [domainScores, setDomainScores] = useState<Record<string, number> | null>(null);
 
+  // K-2 Sentence Frame Adaptive Tier
+  const [sentenceFrameTier, setSentenceFrameTier] = useState(1);
+  const [tierConsecutiveCorrect, setTierConsecutiveCorrect] = useState(0);
+  const [tierConsecutiveWrong, setTierConsecutiveWrong] = useState(0);
+
   // Part 3 state
   const [part3Challenge, setPart3Challenge] = useState<Part3Challenge | null>(null);
   const [part3ShowIntro, setPart3ShowIntro] = useState(true);
