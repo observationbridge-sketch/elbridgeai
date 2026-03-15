@@ -397,6 +397,127 @@ const StudentSession = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showMotivational, setShowMotivational] = useState(false);
 
+  // Prefetched activity cache (session-start health check)
+  const prefetchedPart2Ref = useRef<Record<number, Part2Activity>>({});
+  const prefetchedPart3Ref = useRef<Part3Challenge | null>(null);
+
+  const prefetchSessionContent = useCallback(async (params: {
+    grade: GradeBand;
+    theme: string;
+    topic: string;
+    domainScores: Record<string, number> | null;
+    history: any;
+  }) => {
+    const { grade, theme, topic, domainScores, history } = params;
+    const total = grade === "K-2" ? 4 : 6;
+    prefetchedPart2Ref.current = {};
+    prefetchedPart3Ref.current = null;
+
+    const part2Results = await Promise.all(
+      Array.from({ length: total }, async (_, index) => {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const { data, error } = await fetchWithTimeout(
+              supabase.functions.invoke("generate-part2", {
+                body: {
+                  grade,
+                  theme,
+                  topic,
+                  domainScores,
+                  questionIndex: index,
+                  contentHistory: history,
+                },
+              }),
+              8000
+            );
+            if (error) throw error;
+            const activity = data as Part2Activity;
+            console.log("[HealthCheck][Part2] raw activity", { index, attempt: attempt + 1, activity });
+            if (!validatePart2Activity(activity)) {
+              console.error("[HealthCheck][Part2] invalid schema", { index, activity });
+              throw new Error("Invalid Part2 activity schema");
+            }
+            return activity;
+          } catch (error) {
+            console.error(`[HealthCheck][Part2] attempt ${attempt + 1} failed for index ${index}`, error);
+          }
+        }
+        return null;
+      })
+    );
+
+    part2Results.forEach((activity, index) => {
+      if (activity) {
+        prefetchedPart2Ref.current[index] = activity;
+      }
+    });
+
+    const challengeType = grade === "K-2" ? "speed_round" : undefined;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data, error } = await fetchWithTimeout(
+          supabase.functions.invoke("generate-part3-challenge", {
+            body: {
+              grade,
+              theme,
+              topic,
+              forceType: challengeType,
+              contentHistory: history,
+            },
+          }),
+          8000
+        );
+        if (error) throw error;
+        console.log("[HealthCheck][Part3] raw challenge", { attempt: attempt + 1, challenge: data });
+        if (!validatePart3Challenge(data)) {
+          console.error("[HealthCheck][Part3] invalid schema", data);
+          throw new Error("Invalid Part3 challenge schema");
+        }
+        prefetchedPart3Ref.current = data as Part3Challenge;
+        break;
+      } catch (error) {
+        console.error(`[HealthCheck][Part3] attempt ${attempt + 1} failed`, error);
+      }
+    }
+
+    console.log("[HealthCheck] completed", {
+      part2Prefetched: Object.keys(prefetchedPart2Ref.current).length,
+      part2Expected: total,
+      hasPart3: Boolean(prefetchedPart3Ref.current),
+    });
+  }, []);
+
+  const retryStep3FromGemini = useCallback(async (): Promise<AnchorSentence | null> => {
+    try {
+      const { data, error } = await fetchWithTimeout(
+        supabase.functions.invoke("generate-anchor-sentence", {
+          body: {
+            grade: effectiveGradeBand,
+            contentHistory,
+            forcedTheme: sessionTheme || undefined,
+          },
+        }),
+        6000
+      );
+      if (error) throw error;
+
+      console.log("[FillInBlanks] Raw Gemini anchor response", data);
+      const nextAnchor = data as AnchorSentence;
+      if (!nextAnchor?.sentence || !Array.isArray(nextAnchor.keyWords) || nextAnchor.keyWords.length === 0) {
+        throw new Error("Anchor response missing sentence/keyWords");
+      }
+      if (!nextAnchor.topic) nextAnchor.topic = nextAnchor.theme;
+
+      setAnchor(nextAnchor);
+      setSessionTheme(nextAnchor.theme);
+      setSessionTopic(nextAnchor.topic);
+      return nextAnchor;
+    } catch (error) {
+      console.error("[FillInBlanks] Gemini retry failed", error);
+      return null;
+    }
+  }, [effectiveGradeBand, contentHistory, sessionTheme]);
+
   const inPart1 = globalStep < 8;
   const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
   const inPart3 = globalStep >= 8 + part2Count;
