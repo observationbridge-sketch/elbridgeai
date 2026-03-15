@@ -1283,12 +1283,13 @@ interface Part1Props {
   onStep6WriteSubmit: () => void;
   onStep7RecordSubmit: () => void;
   onNext: () => void;
+  isK2?: boolean;
 }
 
 function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
   part1Submitted, part1Feedback, part1ShowSentence, setPart1ShowSentence,
-  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext,
+  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, isK2,
 }: Part1Props) {
   // Local scaffold state
   const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[] } | null>(null);
