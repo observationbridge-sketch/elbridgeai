@@ -1476,140 +1476,21 @@ function Part1View({
           </>
         )}
 
-        {/* Step 3: Fill in the Blanks — Word Bank */}
+        {/* Step 3: Fill in the Blanks — Drag/Tap Word Bank */}
         {step === 3 && blanks && (
-          <>
-            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
-              <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
-                {isK2 ? "Tap a word, then tap the blank! 👆" : "Fill in the missing words using the word bank:"}
-              </p>
-              <p className={`text-foreground font-medium leading-relaxed ${isK2 ? "text-2xl" : "text-lg"}`}>
-                {blanks.blanked.split('___').map((part, i, arr) => (
-                  <span key={i}>
-                    {part}
-                    {i < arr.length - 1 && (
-                      <button
-                        onClick={() => {
-                          if (blankSubmitted || !selectedBankWord) return;
-                          const newAnswers = [...blankAnswers];
-                          newAnswers[i] = selectedBankWord;
-                          setBlankAnswers(newAnswers);
-                          setSelectedBankWord(null);
-                        }}
-                        className={`inline-block min-w-[60px] mx-1 px-3 py-1 rounded-lg border-2 border-dashed transition-all ${
-                          blankAnswers[i] 
-                            ? blankSubmitted
-                              ? isBlankCorrect(i)
-                                ? "border-success bg-success/10 text-success font-bold"
-                                : "border-destructive bg-destructive/10 text-destructive font-bold"
-                              : "border-primary bg-primary/10 text-primary font-bold cursor-pointer hover:bg-primary/20"
-                            : selectedBankWord
-                              ? "border-primary bg-primary/5 animate-pulse cursor-pointer"
-                              : "border-muted-foreground/30 text-muted-foreground"
-                        }`}
-                        disabled={blankSubmitted}
-                      >
-                        {blankAnswers[i] || (isK2 ? "?" : "___")}
-                        {blankSubmitted && isBlankCorrect(i) && (
-                          <CheckCircle className="inline h-4 w-4 ml-1" />
-                        )}
-                      </button>
-                    )}
-                  </span>
-                ))}
-              </p>
-            </div>
-
-            {/* Word Bank Pills */}
-            {!blankSubmitted && (
-              <div className="bg-muted/30 rounded-lg p-4 border border-border">
-                <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-3`}>
-                  {isK2 ? "📚 Pick a word:" : "📚 Word bank — tap a word, then tap a blank:"}
-                </p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {blanks.wordBank.map((word, i) => {
-                    const isUsed = blankAnswers.includes(word);
-                    const isSelected = selectedBankWord === word;
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          if (isUsed) return;
-                          setSelectedBankWord(isSelected ? null : word);
-                        }}
-                        disabled={isUsed}
-                        className={`px-4 py-2 rounded-full font-medium transition-all ${
-                          isK2 ? "text-lg min-h-[48px]" : "text-sm"
-                        } ${
-                          isUsed
-                            ? "bg-muted text-muted-foreground/40 line-through cursor-not-allowed"
-                            : isSelected
-                              ? "bg-primary text-primary-foreground scale-110 shadow-lg ring-2 ring-primary/50"
-                              : "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 hover:scale-105 active:scale-95"
-                        }`}
-                      >
-                        {word}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Show answers after submit */}
-            {blankSubmitted && (
-              <div className="space-y-2">
-                {blanks.missingWords.map((word, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
-                    <span className="text-muted-foreground">Blank {i + 1}:</span>
-                    {isBlankCorrect(i) ? (
-                      <>
-                        <span className="font-bold text-success">{blankAnswers[i]}</span>
-                        <CheckCircle className="h-4 w-4 text-success" />
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-bold text-destructive line-through">{blankAnswers[i] || "—"}</span>
-                        <span className="text-muted-foreground">→</span>
-                        <span className="font-bold text-warning">{word}</span>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!blankSubmitted ? (
-              <Button 
-                variant="hero" 
-                className={`w-full ${isK2 ? "text-xl py-6" : ""}`} 
-                size="lg" 
-                onClick={handleBlankSubmit} 
-                disabled={blankAnswers.some(a => !a.trim())}
-              >
-                {isK2 ? "Check! ✅" : "Check My Answers"}
-              </Button>
-            ) : (
-              <>
-                {blankScore.correct === blankScore.total ? (
-                  <FeedbackBanner feedback="Amazing! You got them all! 🌟" positive={true} />
-                ) : blankScore.correct > 0 ? (
-                  <FeedbackBanner 
-                    feedback={`Good try! You got ${blankScore.correct} out of ${blankScore.total}! Keep going! 💪`} 
-                    positive={false} 
-                  />
-                ) : (
-                  <FeedbackBanner 
-                    feedback="Not quite — here are the answers! Let's keep going! 🤗" 
-                    positive={false} 
-                  />
-                )}
-                <Button variant={isK2 ? "success" : "hero"} className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onNext}>
-                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
-                </Button>
-              </>
-            )}
-          </>
+          <WordBankFillBlanks
+            blankedSentence={blanks.blanked}
+            missingWords={blanks.missingWords}
+            wordBank={blanks.wordBank}
+            isK2={isK2}
+            onComplete={(score) => {
+              // Points: full for all correct, half for partial, zero for none
+              if (score.correct === score.total) {
+                // full points already handled by gamification elsewhere
+              }
+            }}
+            onNext={onNext}
+          />
         )}
 
         {/* Step 4: Jumbled Sentence */}
