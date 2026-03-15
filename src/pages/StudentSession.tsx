@@ -1459,7 +1459,7 @@ const StudentSession = () => {
         : stars;
       return visibleStars.join("");
     }
-    if (inPart1) return `Part 1 • Step ${part1Step}/8`;
+    if (inPart1) return `Part 1 • Step ${part1Step}/5`;
     if (inPart2) return `Part 2 • Activity ${part2Index + 1}/${part2Count}`;
     return "Part 3 • Challenge";
   };
