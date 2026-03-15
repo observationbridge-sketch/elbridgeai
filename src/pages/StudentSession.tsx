@@ -1932,20 +1932,35 @@ function Part1View({
         )}
 
         {/* Step 3: Fill in the Blanks — Drag/Tap Word Bank */}
-        {step === 3 && blanks && (
-          <WordBankFillBlanks
-            blankedSentence={blanks.blanked}
-            missingWords={blanks.missingWords}
-            wordBank={blanks.wordBank}
-            isK2={isK2}
-            onComplete={(score) => {
-              // Points: full for all correct, half for partial, zero for none
-              if (score.correct === score.total) {
-                // full points already handled by gamification elsewhere
-              }
-            }}
-            onNext={onNext}
-          />
+        {step === 3 && (
+          blanks && step3Status === "ready" ? (
+            <WordBankFillBlanks
+              blankedSentence={blanks.blanked}
+              missingWords={blanks.missingWords}
+              wordBank={blanks.wordBank}
+              isK2={isK2}
+              onComplete={(score) => {
+                if (score.correct === score.total) {
+                  // full points handled by gamification flow
+                }
+              }}
+              onNext={onNext}
+            />
+          ) : (
+            <div className="rounded-xl border border-border bg-muted/30 p-6 text-center space-y-4">
+              <div className={`${showStep3WaitState ? "animate-soft-pulse" : ""}`}>
+                <p className="text-6xl">🐣</p>
+                <p className="text-lg font-medium text-foreground">One moment... 🐣</p>
+              </div>
+              {step3Status === "failed" ? (
+                <Button variant="hero" onClick={onNext}>Skip this one ➡️</Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {step3RetryCount > 0 ? "Retrying activity..." : "Loading your activity..."}
+                </p>
+              )}
+            </div>
+          )
         )}
 
         {/* Step 4: Jumbled Sentence */}
