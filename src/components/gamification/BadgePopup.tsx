@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useSounds } from "@/hooks/use-sounds";
 
 interface BadgePopupProps {
   show: boolean;
@@ -10,9 +11,13 @@ interface BadgePopupProps {
 
 export function BadgePopup({ show, badgeIcon, badgeName, onClose }: BadgePopupProps) {
   const [visible, setVisible] = useState(false);
+  const sounds = useSounds();
 
   useEffect(() => {
-    if (show) setVisible(true);
+    if (show) {
+      setVisible(true);
+      sounds.playBadge();
+    }
   }, [show]);
 
   if (!visible) return null;
