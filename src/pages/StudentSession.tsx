@@ -643,6 +643,8 @@ const StudentSession = () => {
         setAnchor(fallback);
         setSessionTheme(fallback.theme);
         setSessionTopic(fallback.topic);
+        resolvedTheme = fallback.theme;
+        resolvedTopic = fallback.topic;
         setTtsPreloaded(true);
       }
 
