@@ -1083,13 +1083,13 @@ const StudentSession = () => {
     setShowMotivational(true);
     const nextIdx = part2Index + 1;
     if (nextIdx >= part2Count) {
-      setGlobalStep(8 + part2Count);
-      setPart3ShowIntro(true);
-      fetchPart3Challenge();
-      return;
-    }
-    setPart2Index(nextIdx);
-    setGlobalStep(8 + nextIdx);
+    setGlobalStep(5 + part2Count);
+    setPart3ShowIntro(true);
+    fetchPart3Challenge();
+    return;
+  }
+  setPart2Index(nextIdx);
+  setGlobalStep(5 + nextIdx);
     fetchPart2Activity(nextIdx);
   };
 
