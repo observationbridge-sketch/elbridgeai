@@ -651,7 +651,9 @@ const StudentSession = () => {
         : `You used ${matched} out of ${total} words — keep practicing! 🎤💪`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    if (pct >= 0.9) sounds.playCorrect(); else if (pct >= 0.7) sounds.playPartiallyCorrect(); else sounds.playWrong();
     gamification.addPoints(POINTS.STEP4_RECORD);
+    sounds.playPoints();
     saveResponse("speaking", `Record: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
