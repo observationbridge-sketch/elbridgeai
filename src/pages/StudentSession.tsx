@@ -2394,12 +2394,16 @@ function Part2StrategyView({
         )}
 
         {/* Question — K-2 sentence_frames: show sentence with blank + tap instruction */}
-        {isK2 && activity.strategy === "sentence_frames" ? (
+        {isK2SF ? (
           <div className="space-y-3">
-            <p className={`text-2xl font-bold text-foreground text-center leading-relaxed`}>
-              {activity.sentenceFrame || activity.question}
-            </p>
-            <p className="text-lg text-muted-foreground text-center">👆 Tap a word to finish the sentence.</p>
+            <div className="bg-muted/50 rounded-xl p-6 border border-border">
+              <p className="text-2xl font-bold text-foreground text-center leading-relaxed">
+                {activity.sentenceFrame || activity.question}
+              </p>
+            </div>
+            {!submitted && !sfRevealed && (
+              <p className="text-lg text-muted-foreground text-center">👆 Tap a word to finish the sentence.</p>
+            )}
           </div>
         ) : (
           <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
@@ -2421,75 +2425,80 @@ function Part2StrategyView({
           </div>
         )}
 
-        {/* Word bank — hide for K-2 recording */}
-        {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
-          isK2SF ? (
-            /* K-2 Sentence Frame: internal validation with retry */
-            !submitted && !sfRevealed ? (
-              <div className="space-y-3">
-                {sfWrongMessage && (
-                  <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
-                    <p className="text-lg font-medium text-warning">{sfWrongMessage}</p>
-                  </div>
-                )}
-                <div className="bg-muted/50 rounded-lg p-3 border border-border">
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    {activity.wordBank.map((word, i) => {
-                      const isSelected = sfSelectedWord === word;
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            setSfSelectedWord(word);
-                            // Strict match against modelAnswer
-                            const correctAnswer = activity.modelAnswer.toLowerCase().trim();
-                            const isExactCorrect = word.toLowerCase().trim() === correctAnswer;
-                            if (isExactCorrect) {
-                              // Correct! Submit to parent
-                              setAnswer(word);
-                              setSfWrongMessage(null);
-                              setTimeout(() => onSubmit(), 400);
-                            } else {
-                              const newAttempts = sfAttempts + 1;
-                              setSfAttempts(newAttempts);
-                              if (newAttempts >= 2) {
-                                // 2nd wrong: reveal model answer, award 0 points
-                                setSfRevealed(true);
-                                setSfWrongMessage(null);
-                                setAnswer(word);
-                                // Submit as wrong so tier tracking works
-                                setTimeout(() => onSubmit(), 400);
-                              } else {
-                                setSfWrongMessage("Try again! 🌟");
-                                setTimeout(() => setSfSelectedWord(null), 600);
-                              }
-                            }
-                          }}
-                          className={`px-5 py-3 text-lg border-2 rounded-full font-medium cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-primary text-primary-foreground border-primary scale-105"
-                              : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
-                          }`}
-                        >
-                          {word}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : sfRevealed && !submitted ? (
-              /* Show model answer in gold after 2 wrong attempts */
+        {/* Word bank / tiles for K-2 Sentence Frames */}
+        {isK2SF ? (() => {
+          // Use wordBank if available, otherwise fall back to MC options
+          const tiles = (activity.wordBank && activity.wordBank.length > 0)
+            ? activity.wordBank
+            : (activity.options && activity.options.length > 0)
+              ? activity.options
+              : [];
+          if (tiles.length === 0) return null;
+          if (submitted || (sfRevealed && submitted)) return null;
+          if (sfRevealed && !submitted) {
+            return (
               <div className="space-y-4 animate-fade-in">
                 <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
                   <p className="text-lg text-muted-foreground mb-1">The answer is:</p>
                   <p className="text-2xl font-bold text-warning">{activity.modelAnswer}</p>
                 </div>
               </div>
-            ) : null
-          ) : (
-            /* Non-K2-SF word bank (unchanged) */
+            );
+          }
+          return (
+            <div className="space-y-3">
+              {sfWrongMessage && (
+                <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
+                  <p className="text-lg font-medium text-warning">{sfWrongMessage}</p>
+                </div>
+              )}
+              <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {tiles.map((word, i) => {
+                    const isSelected = sfSelectedWord === word;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setSfSelectedWord(word);
+                          const correctAnswer = activity.modelAnswer.toLowerCase().trim();
+                          const isExactCorrect = word.toLowerCase().trim() === correctAnswer;
+                          if (isExactCorrect) {
+                            setAnswer(word);
+                            setSfWrongMessage(null);
+                            setTimeout(() => onSubmit(), 400);
+                          } else {
+                            const newAttempts = sfAttempts + 1;
+                            setSfAttempts(newAttempts);
+                            if (newAttempts >= 2) {
+                              setSfRevealed(true);
+                              setSfWrongMessage(null);
+                              setAnswer(word);
+                              setTimeout(() => onSubmit(), 400);
+                            } else {
+                              setSfWrongMessage("Try again! 🌟");
+                              setTimeout(() => setSfSelectedWord(null), 600);
+                            }
+                          }
+                        }}
+                        className={`px-5 py-3 text-lg border-2 rounded-full font-medium cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary scale-105"
+                            : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                        }`}
+                      >
+                        {word}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })() : (
+          /* Non-K2-SF word bank */
+          activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
             <div className="bg-muted/50 rounded-lg p-3 border border-border">
               <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
               <div className="flex flex-wrap gap-2">
@@ -2508,8 +2517,8 @@ function Part2StrategyView({
           )
         )}
 
-        {/* Input area based on inputType */}
-        {!submitted && !(isK2 && activity.strategy === "sentence_frames") && (
+        {/* Input area based on inputType — skip entirely for K-2 sentence_frames */}
+        {!submitted && !isK2SF && (
           <>
             {inputType === "multiple_choice" && activity.options ? (
               <div className="grid grid-cols-1 gap-3">
