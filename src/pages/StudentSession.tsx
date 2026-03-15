@@ -2048,11 +2048,13 @@ function Part1View({
     prepareStep3Content(0);
   }, [step, anchor, prepareStep3Content]);
 
-  const handleChipTap = (word: string) => {
+  const handleChipTap = (word: string, index: number) => {
     if (isK2) {
       const newTapped = [...jumbleTappedWords, word];
       setJumbleTappedWords(newTapped);
       setJumbleAnswer(newTapped.join(" "));
+      // Track used indices via a separate state
+      setUsedJumbleIndices(prev => new Set([...prev, index]));
     }
   };
 
