@@ -344,7 +344,8 @@ K-2 CONTENT RULES (MANDATORY):
 - Maximum 8 words per sentence, simple subject-verb-object structure ONLY
 - NO subordinate clauses, NO "but", "however", "which", "although", "features"
 - Topics must be CONCRETE and VISUAL — things kids can see, touch, or imagine
-- Maximum 3 new vocabulary words per session, single-syllable preferred
+- ALL vocabulary words must have a MAXIMUM of 2 syllables — NO exceptions
+- Maximum 3 new vocabulary words per session
 - Maximum 1 blank per sentence
 - Multiple choice must have only 2-3 options (short, 1-3 words each)
 - Use only Tier 1 (common everyday) vocabulary
@@ -352,7 +353,8 @@ K-2 CONTENT RULES (MANDATORY):
 - Instructions should be very simple — as if talking to a 6-year-old
 - For listening activities: audio is 1-2 short sentences, then ONE question with emoji/picture choices
 - For speaking activities: maximum 1 sentence, must involve the student's animal companion (Baby Chick)
-- ALL answer options must be very short (1-3 words or emojis)` : "";
+- ALL answer options must be very short (1-3 words or emojis)
+- For sentence_frames: Do NOT include a reading passage. Show ONLY the fill-in-the-blank sentence and word bank tiles.` : "";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
   const positionConstraint = getPositionConstraint(questionIndex, grade, theme);
