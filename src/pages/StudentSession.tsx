@@ -1577,6 +1577,7 @@ const StudentSession = () => {
                   onStep6WriteSubmit={handleStep6WriteSubmit}
                   onStep7RecordSubmit={handleStep7RecordSubmit}
                   onNext={handlePart1Next}
+                  onRetryFillBlanks={retryStep3FromGemini}
                   isK2={isK2}
                 />
                ) : inPart2 && part2Activity ? (
