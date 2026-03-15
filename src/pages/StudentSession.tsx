@@ -870,7 +870,8 @@ const StudentSession = () => {
       gamification.awardBadge("first_writer");
     }
   };
-  };
+
+
 
   // ─── Part 2 handlers ───
   const makeFallbackActivity = useCallback((index: number): Part2Activity => ({
