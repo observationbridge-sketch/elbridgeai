@@ -2058,11 +2058,41 @@ function Part1View({
 
   const handleJumbleSubmit = () => {
     if (!jumble) return;
-    const { matched, total } = compareWords(jumbleAnswer, jumble.original);
-    const pct = total > 0 ? matched / total : 0;
+    // Exact word-for-word order comparison
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s']/g, "").trim().split(/\s+/).filter(Boolean);
+    const studentWords = normalize(jumbleAnswer);
+    const correctWords = normalize(jumble.original);
+    const isExactMatch = studentWords.length === correctWords.length && studentWords.every((w, i) => w === correctWords[i]);
+
+    if (isK2 && !isExactMatch) {
+      const newAttempts = jumbleAttempts + 1;
+      setJumbleAttempts(newAttempts);
+      if (newAttempts >= 2) {
+        // 2nd wrong: reveal answer, 0 points
+        setJumbleSubmitted(true);
+        sounds.playWrong();
+        onStep5Complete(false);
+      } else {
+        // 1st wrong: shake + try again
+        setJumbleShake(true);
+        setJumbleTryAgainMsg("Try again! 🌟");
+        sounds.playWrong();
+        setTimeout(() => {
+          setJumbleShake(false);
+          setJumbleTappedWords([]);
+          setJumbleAnswer("");
+        }, 800);
+      }
+      return;
+    }
+
     setJumbleSubmitted(true);
-    if (pct >= 0.7) sounds.playCorrect(); else sounds.playWrong();
-    onStep5Complete(pct >= 0.7);
+    if (isExactMatch) {
+      sounds.playCorrect();
+    } else {
+      sounds.playWrong();
+    }
+    onStep5Complete(isExactMatch);
   };
 
   const memoryPairs = useMemo(() => generateMemoryPairs(anchor, isK2), [anchor, isK2]);
