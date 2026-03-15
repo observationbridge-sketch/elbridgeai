@@ -1236,7 +1236,7 @@ const StudentSession = () => {
       {/* Animal Companion Profile Card — all grade bands */}
       {!loading && gamification.loaded && (
         <div className="flex justify-center py-4">
-          <div className={`text-center ${isK2 ? "animate-bounce-slow" : ""}`}>
+          <div className={`text-center ${isK2 ? "animate-bounce-slow" : "animate-bounce-fast"}`}>
             <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
           </div>
         </div>
@@ -1438,20 +1438,18 @@ function Part1View({
           <>
             <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-8" : "p-6"} border border-border text-center space-y-4`}>
               <Headphones className={`${isK2 ? "h-14 w-14" : "h-10 w-10"} text-warning mx-auto`} />
-              {isK2 && (
-                <div className="text-6xl my-4 animate-bounce-slow">
-                  {anchor.theme?.toLowerCase().includes("space") ? "🔴🪐" :
-                   anchor.theme?.toLowerCase().includes("ocean") ? "🌊🐠" :
-                   anchor.theme?.toLowerCase().includes("nature") ? "🌿🦋" :
-                   anchor.theme?.toLowerCase().includes("superhero") ? "🦸‍♂️💥" :
-                   anchor.theme?.toLowerCase().includes("fantasy") ? "🧙✨" :
-                   anchor.theme?.toLowerCase().includes("egypt") ? "🏛️🐪" :
-                   anchor.theme?.toLowerCase().includes("volcano") ? "🌋🔥" :
-                   anchor.theme?.toLowerCase().includes("rainforest") ? "🌴🦜" :
-                   anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" :
-                   "📚🌟"}
-                </div>
-              )}
+              <div className={`${isK2 ? "text-6xl my-4 animate-bounce-slow" : "text-4xl my-3 animate-bounce-fast"}`}>
+                {anchor.theme?.toLowerCase().includes("space") ? "🔴🪐" :
+                 anchor.theme?.toLowerCase().includes("ocean") ? "🌊🐠" :
+                 anchor.theme?.toLowerCase().includes("nature") ? "🌿🦋" :
+                 anchor.theme?.toLowerCase().includes("superhero") ? "🦸‍♂️💥" :
+                 anchor.theme?.toLowerCase().includes("fantasy") ? "🧙✨" :
+                 anchor.theme?.toLowerCase().includes("egypt") ? "🏛️🐪" :
+                 anchor.theme?.toLowerCase().includes("volcano") ? "🌋🔥" :
+                 anchor.theme?.toLowerCase().includes("rainforest") ? "🌴🦜" :
+                 anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" :
+                 "📚🌟"}
+              </div>
               <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{anchor.sentence}</p>
               {tts.isSupported && (
                 <Button 
@@ -1489,12 +1487,12 @@ function Part1View({
               <>
                 <FeedbackBanner feedback={part1Feedback} positive={part1Scores.repeatTotal > 0 && part1Scores.repeat / part1Scores.repeatTotal >= 0.5} />
                 <Button
-                  variant={isK2 ? "success" : "hero"}
-                  className={`w-full ${isK2 ? "text-2xl py-8 min-h-[70px] rounded-xl shadow-lg animate-pulse" : ""}`}
+                  variant="success"
+                  className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
                   size="lg"
                   onClick={onNext}
                 >
-                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
+                  {isK2 ? "Keep Going! 🚀" : "Next Step →"}
                 </Button>
               </>
             )}
@@ -1651,12 +1649,12 @@ function Part1View({
               <>
                 <FeedbackBanner feedback={part1Feedback} positive={part1Scores.recordTotal > 0 && part1Scores.record / part1Scores.recordTotal >= 0.7} />
                 <Button
-                  variant={isK2 ? "success" : "hero"}
-                  className={`w-full ${isK2 ? "text-2xl py-8 min-h-[70px] rounded-xl shadow-lg animate-pulse" : ""}`}
+                  variant="success"
+                  className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
                   size="lg"
                   onClick={onNext}
                 >
-                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
+                  {isK2 ? "Keep Going! 🚀" : "Next Step →"}
                 </Button>
               </>
             )}
@@ -1955,8 +1953,8 @@ function Part2StrategyView({
             {/* Large K-2 next button with pulse + countdown */}
             <Button
               variant="success"
-              className={`w-full text-2xl py-8 min-h-[70px] rounded-xl shadow-lg ${
-                isCorrect && k2Countdown !== null ? "animate-pulse" : ""
+              className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px]" : "text-lg py-5"} ${
+                isCorrect && k2Countdown !== null ? (isK2 ? "animate-soft-pulse" : "animate-soft-pulse-fast") : ""
               }`}
               onClick={() => {
                 cancelCountdown();
@@ -2303,7 +2301,7 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
 function FeedbackBanner({ feedback, positive }: { feedback: string | null; positive: boolean }) {
   if (!feedback) return null;
   return (
-    <div className={`rounded-lg p-4 flex items-start gap-3 ${
+    <div className={`rounded-lg p-4 flex items-start gap-3 animate-slide-up-banner ${
       positive ? "bg-success/10 border border-success/20" : "bg-primary/10 border border-primary/20"
     }`}>
       <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${positive ? "text-success" : "text-primary"}`} />
