@@ -2286,10 +2286,33 @@ function Part2StrategyView({
         {/* Word bank — hide for K-2 recording */}
         {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
           <div className="bg-muted/50 rounded-lg p-3 border border-border">
-            <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              {isK2 && activity.strategy === "sentence_frames" ? "👆 Tap the right word!" : "📚 Word bank — use these words if you'd like:"}
+            </p>
             <div className="flex flex-wrap gap-2">
               {activity.wordBank.map((word, i) => (
-                <span key={i} className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full font-medium">{word}</span>
+                <button
+                  key={i}
+                  type="button"
+                  disabled={submitted}
+                  onClick={() => {
+                    if (isK2 && activity.strategy === "sentence_frames" && !submitted) {
+                      setAnswer(word);
+                      setTimeout(() => onSubmit(), 400);
+                    }
+                  }}
+                  className={`rounded-full font-medium transition-all ${
+                    isK2 && activity.strategy === "sentence_frames"
+                      ? `px-5 py-3 text-lg border-2 cursor-pointer ${
+                          answer === word
+                            ? "bg-primary text-primary-foreground border-primary scale-105"
+                            : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                        }`
+                      : "px-3 py-1 bg-primary/10 text-primary text-sm cursor-default"
+                  }`}
+                >
+                  {word}
+                </button>
               ))}
             </div>
           </div>
