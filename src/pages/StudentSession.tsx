@@ -265,8 +265,9 @@ const StudentSession = () => {
   const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
   const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
 
-  // Gamification
+  // Gamification & Sounds
   const gamification = useGamification(studentName, teacherId);
+  const sounds = useSounds();
   const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
 
   // Part 1 state
