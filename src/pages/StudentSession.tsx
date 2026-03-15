@@ -104,6 +104,33 @@ const TOTAL_STEPS_K2 = 13; // 8 + 4 + 1
 
 type GradeBand = "K-2" | "3-5";
 
+// ─── Content validation ───
+function validatePart2Activity(data: any): data is Part2Activity {
+  if (!data) return false;
+  if (!data.question || typeof data.question !== "string") return false;
+  if (!data.modelAnswer || typeof data.modelAnswer !== "string") return false;
+  if (!data.strategy || typeof data.strategy !== "string") return false;
+  if (!Array.isArray(data.acceptableKeywords)) return false;
+  return true;
+}
+
+function validatePart3Challenge(data: any): data is Part3Challenge {
+  if (!data) return false;
+  if (!data.challengeType || typeof data.challengeType !== "string") return false;
+  if (!data.title || typeof data.title !== "string") return false;
+  if (!data.instruction || typeof data.instruction !== "string") return false;
+  if (data.challengeType === "speed_round" && (!Array.isArray(data.questions) || data.questions.length === 0)) return false;
+  return true;
+}
+
+// Fetch with timeout helper
+function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Request timed out")), timeoutMs)),
+  ]);
+}
+
 // ─── Helpers ───
 function compareWords(input: string, target: string): { matched: number; total: number } {
   const normalize = (s: string) =>
@@ -291,6 +318,8 @@ const StudentSession = () => {
   const [part2Submitted, setPart2Submitted] = useState(false);
   const [part2Feedback, setPart2Feedback] = useState<string | null>(null);
   const [part2IsCorrect, setPart2IsCorrect] = useState(false);
+  const [activityError, setActivityError] = useState(false);
+  const [activityRetryCount, setActivityRetryCount] = useState(0);
   const [part2Score, setPart2Score] = useState(0);
   const [part2Strategy, setPart2Strategy] = useState<Strategy | null>(null);
   const [part2StrategyReason, setPart2StrategyReason] = useState("");
@@ -658,9 +687,24 @@ const StudentSession = () => {
   };
 
   // ─── Part 2 handlers ───
-  const fetchPart2Activity = useCallback(async (index: number) => {
+  const makeFallbackActivity = useCallback((index: number): Part2Activity => ({
+    type: "sentence_frame",
+    question: `Complete this sentence about ${sessionTopic}: The ___ was ___ because ___.`,
+    sentenceFrame: "The ___ was ___ because ___.",
+    modelAnswer: `The ${sessionTopic} was fascinating because it taught us so much.`,
+    acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic", "because", "was"],
+    difficulty: index + 1,
+    theme: sessionTheme,
+    strategy: "sentence_frames",
+    weakestDomain: "none",
+    strategyReason: "Default strategy",
+    inputType: "typing",
+  }), [sessionTheme, sessionTopic]);
+
+  const fetchPart2Activity = useCallback(async (index: number, retryAttempt = 0) => {
     setLoading(true);
-    setLoadingMessage("Getting your next activity ready...");
+    setActivityError(false);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Getting your next activity ready...");
     setPart2Submitted(false);
     setPart2Feedback(null);
     setPart2Answer("");
@@ -668,18 +712,27 @@ const StudentSession = () => {
     tts.stop();
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-part2", {
-        body: {
-          grade: effectiveGradeBand,
-          theme: sessionTheme,
-          topic: sessionTopic,
-          domainScores,
-          questionIndex: index,
-          contentHistory,
-        },
-      });
+      const { data, error } = await fetchWithTimeout(
+        supabase.functions.invoke("generate-part2", {
+          body: {
+            grade: effectiveGradeBand,
+            theme: sessionTheme,
+            topic: sessionTopic,
+            domainScores,
+            questionIndex: index,
+            contentHistory,
+          },
+        }),
+        8000
+      );
       if (error) throw error;
       let activity = data as Part2Activity;
+
+      // Content validation
+      if (!validatePart2Activity(activity)) {
+        console.error("Part 2 content validation failed. Received:", activity);
+        throw new Error("Invalid activity content");
+      }
       
       // CLIENT-SIDE VALIDATION: Ensure positions 5-6 don't have heavy writing tasks
       if (index >= 4) {
@@ -695,7 +748,6 @@ const StudentSession = () => {
           console.warn(`Position ${index + 1} had heavy activity — using light fallback`);
           const isK2 = effectiveGradeBand === "K-2";
           if (index === 5) {
-            // Position 6 — light & fun
             activity = {
               type: "light_fun",
               inputType: isK2 ? "recording" : "typing",
@@ -711,7 +763,6 @@ const StudentSession = () => {
               strategyReason: "Light ending activity (client fallback)",
             };
           } else {
-            // Position 5 — medium-easy
             activity = {
               type: "true_false",
               inputType: isK2 ? "recording" : "multiple_choice",
@@ -732,25 +783,33 @@ const StudentSession = () => {
       setPart2Activity(activity);
       setPart2Strategy(activity.strategy);
       setPart2StrategyReason(activity.strategyReason);
-    } catch {
-      toast.error("Failed to load activity. Using backup.");
-      setPart2Activity({
-        type: "sentence_frame",
-        question: `Complete this sentence about ${sessionTopic}: The ___ was ___ because ___.`,
-        sentenceFrame: "The ___ was ___ because ___.",
-        modelAnswer: `The ${sessionTopic} was fascinating because it taught us so much.`,
-        acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic", "because", "was"],
-        difficulty: index + 1,
-        theme: sessionTheme,
-        strategy: "sentence_frames",
-        weakestDomain: "none",
-        strategyReason: "Default strategy",
-        inputType: "typing",
-      });
-    } finally {
+      setActivityRetryCount(0);
       setLoading(false);
+    } catch (err) {
+      console.error("fetchPart2Activity failed (attempt", retryAttempt + 1, "):", err);
+      if (retryAttempt < 2) {
+        // Auto-retry silently for validation failures, show error for timeouts on 2nd attempt
+        if (retryAttempt === 0) {
+          // Silent retry
+          fetchPart2Activity(index, retryAttempt + 1);
+          return;
+        } else {
+          // Show error with retry button
+          setActivityError(true);
+          setActivityRetryCount(retryAttempt + 1);
+          setLoading(false);
+        }
+      } else {
+        // 3rd failure — use fallback and move on
+        console.warn("Max retries reached, using fallback activity");
+        setPart2Activity(makeFallbackActivity(index));
+        setPart2Strategy("sentence_frames");
+        setPart2StrategyReason("Fallback after retries");
+        setActivityRetryCount(0);
+        setLoading(false);
+      }
     }
-  }, [sessionTheme, sessionTopic, domainScores]);
+  }, [sessionTheme, sessionTopic, domainScores, effectiveGradeBand, contentHistory, makeFallbackActivity]);
 
   const submitPart2 = (overrideAnswer?: string) => {
     const answerText = overrideAnswer || part2Answer;
@@ -838,40 +897,67 @@ const StudentSession = () => {
   };
 
   // ─── Part 3 handlers ───
-  const fetchPart3Challenge = useCallback(async () => {
+  const makeFallbackChallenge = useCallback((): Part3Challenge => ({
+    challengeType: "story_builder",
+    title: "Story Builder",
+    instruction: `Write a 4-6 sentence mini story about ${sessionTopic}!`,
+    scenes: [
+      `A bright morning in a place connected to ${sessionTopic}.`,
+      `Something surprising happens related to ${sessionTopic}.`,
+      `A character tries to solve a problem about ${sessionTopic}.`,
+      `Everything works out and the character learns something new.`,
+    ],
+    sentenceStarter: "It all began when...",
+    sequenceWords: ["first", "then", "next", "finally"],
+    acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic"],
+    theme: sessionTheme,
+    topic: sessionTopic,
+  }), [sessionTheme, sessionTopic]);
+
+  const fetchPart3Challenge = useCallback(async (retryAttempt = 0) => {
     killSpeech();
     setLoading(true);
-    setLoadingMessage("Preparing your Language Challenge! 🎉");
+    setActivityError(false);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
-      const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
-        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory },
-      });
+      const { data, error } = await fetchWithTimeout(
+        supabase.functions.invoke("generate-part3-challenge", {
+          body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory },
+        }),
+        8000
+      );
       if (error) throw error;
+
+      if (!validatePart3Challenge(data)) {
+        console.error("Part 3 content validation failed. Received:", data);
+        throw new Error("Invalid challenge content");
+      }
+
       setPart3Challenge(data as Part3Challenge);
-    } catch {
-      toast.error("Failed to load challenge. Using backup.");
-      setPart3Challenge({
-        challengeType: "story_builder",
-        title: "Story Builder",
-        instruction: `Write a 4-6 sentence mini story about ${sessionTopic}!`,
-        scenes: [
-          `A bright morning in a place connected to ${sessionTopic}.`,
-          `Something surprising happens related to ${sessionTopic}.`,
-          `A character tries to solve a problem about ${sessionTopic}.`,
-          `Everything works out and the character learns something new.`,
-        ],
-        sentenceStarter: "It all began when...",
-        sequenceWords: ["first", "then", "next", "finally"],
-        acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic"],
-        theme: sessionTheme,
-        topic: sessionTopic,
-      });
-    } finally {
+      setActivityRetryCount(0);
       setLoading(false);
       setPart3StartTime(Date.now());
+    } catch (err) {
+      console.error("fetchPart3Challenge failed (attempt", retryAttempt + 1, "):", err);
+      if (retryAttempt < 2) {
+        if (retryAttempt === 0) {
+          fetchPart3Challenge(retryAttempt + 1);
+          return;
+        } else {
+          setActivityError(true);
+          setActivityRetryCount(retryAttempt + 1);
+          setLoading(false);
+        }
+      } else {
+        console.warn("Max retries for Part 3, using fallback");
+        setPart3Challenge(makeFallbackChallenge());
+        setActivityRetryCount(0);
+        setLoading(false);
+        setPart3StartTime(Date.now());
+      }
     }
-  }, [sessionTheme, sessionTopic]);
+  }, [sessionTheme, sessionTopic, effectiveGradeBand, contentHistory, makeFallbackChallenge]);
 
   const startPart3 = () => {
     setPart3ShowIntro(false);
@@ -1271,7 +1357,7 @@ const StudentSession = () => {
                   onNext={handlePart1Next}
                   isK2={isK2}
                 />
-              ) : inPart2 && part2Activity ? (
+               ) : inPart2 && part2Activity ? (
                 <>
                   <Part2StrategyView
                     activity={part2Activity}
@@ -1312,6 +1398,38 @@ const StudentSession = () => {
                     </div>
                   )}
                 </>
+              ) : inPart2 && !part2Activity ? (
+                <Card className="card-shadow border-border">
+                  <CardContent className="py-12 text-center space-y-4">
+                    {activityError ? (
+                      <>
+                        <p className={`${isK2 ? "text-4xl" : "text-3xl"}`}>😅</p>
+                        <p className={`font-medium ${isK2 ? "text-xl" : "text-lg"} text-foreground`}>
+                          Oops! Something didn't load.
+                        </p>
+                        <Button
+                          variant="hero"
+                          className={isK2 ? "text-lg py-4" : ""}
+                          onClick={() => fetchPart2Activity(part2Index, activityRetryCount)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" /> Try Again 🔄
+                        </Button>
+                      </>
+                    ) : isK2 ? (
+                      <>
+                        <div className="animate-bounce-slow">
+                          <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
+                        </div>
+                        <p className="text-xl text-muted-foreground">Getting ready... 🐣</p>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
+                        <p className="text-muted-foreground">Loading your activity...</p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               ) : inPart3 ? (
                 part3ShowIntro ? (
                   <Card className="card-shadow border-border text-center">
@@ -1350,7 +1468,39 @@ const StudentSession = () => {
                     onSubmitSpeedAnswer={submitPart3SpeedAnswer}
                     onSubmitTeach={submitPart3TeachItBack}
                   />
-                ) : null
+                ) : (
+                  <Card className="card-shadow border-border">
+                    <CardContent className="py-12 text-center space-y-4">
+                      {activityError ? (
+                        <>
+                          <p className={`${isK2 ? "text-4xl" : "text-3xl"}`}>😅</p>
+                          <p className={`font-medium ${isK2 ? "text-xl" : "text-lg"} text-foreground`}>
+                            Oops! Something didn't load.
+                          </p>
+                          <Button
+                            variant="hero"
+                            className={isK2 ? "text-lg py-4" : ""}
+                            onClick={() => fetchPart3Challenge(activityRetryCount)}
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" /> Try Again 🔄
+                          </Button>
+                        </>
+                      ) : isK2 ? (
+                        <>
+                          <div className="animate-bounce-slow">
+                            <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
+                          </div>
+                          <p className="text-xl text-muted-foreground">Getting ready... 🐣</p>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
+                          <p className="text-muted-foreground">Loading your challenge...</p>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
               ) : null}
             </div>
           </>
