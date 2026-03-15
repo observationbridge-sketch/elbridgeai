@@ -911,6 +911,16 @@ const StudentSession = () => {
     killSpeech();
     tts.stop();
 
+    const cachedActivity = prefetchedPart2Ref.current[index];
+    if (cachedActivity && retryAttempt === 0) {
+      setPart2Activity(cachedActivity);
+      setPart2Strategy(cachedActivity.strategy);
+      setPart2StrategyReason(cachedActivity.strategyReason || "Prefetched and validated");
+      setActivityRetryCount(0);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await fetchWithTimeout(
         supabase.functions.invoke("generate-part2", {
