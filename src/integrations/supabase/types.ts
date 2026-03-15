@@ -200,6 +200,7 @@ export type Database = {
       }
       student_points: {
         Row: {
+          consecutive_tier_drops: number
           created_at: string
           current_streak: number
           id: string
@@ -212,6 +213,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          consecutive_tier_drops?: number
           created_at?: string
           current_streak?: number
           id?: string
@@ -224,6 +226,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          consecutive_tier_drops?: number
           created_at?: string
           current_streak?: number
           id?: string
@@ -296,6 +299,41 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "session_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_tier_history: {
+        Row: {
+          id: string
+          recorded_at: string
+          session_id: string | null
+          student_name: string
+          teacher_id: string
+          tier: number
+        }
+        Insert: {
+          id?: string
+          recorded_at?: string
+          session_id?: string | null
+          student_name: string
+          teacher_id: string
+          tier?: number
+        }
+        Update: {
+          id?: string
+          recorded_at?: string
+          session_id?: string | null
+          student_name?: string
+          teacher_id?: string
+          tier?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_tier_history_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
             referencedColumns: ["id"]
           },
         ]
