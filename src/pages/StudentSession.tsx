@@ -1357,7 +1357,7 @@ const StudentSession = () => {
                   onNext={handlePart1Next}
                   isK2={isK2}
                 />
-              ) : inPart2 && part2Activity ? (
+               ) : inPart2 && part2Activity ? (
                 <>
                   <Part2StrategyView
                     activity={part2Activity}
@@ -1398,6 +1398,38 @@ const StudentSession = () => {
                     </div>
                   )}
                 </>
+              ) : inPart2 && !part2Activity ? (
+                <Card className="card-shadow border-border">
+                  <CardContent className="py-12 text-center space-y-4">
+                    {activityError ? (
+                      <>
+                        <p className={`${isK2 ? "text-4xl" : "text-3xl"}`}>😅</p>
+                        <p className={`font-medium ${isK2 ? "text-xl" : "text-lg"} text-foreground`}>
+                          Oops! Something didn't load.
+                        </p>
+                        <Button
+                          variant="hero"
+                          className={isK2 ? "text-lg py-4" : ""}
+                          onClick={() => fetchPart2Activity(part2Index, activityRetryCount)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" /> Try Again 🔄
+                        </Button>
+                      </>
+                    ) : isK2 ? (
+                      <>
+                        <div className="animate-bounce-slow">
+                          <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
+                        </div>
+                        <p className="text-xl text-muted-foreground">Getting ready... 🐣</p>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
+                        <p className="text-muted-foreground">Loading your activity...</p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               ) : inPart3 ? (
                 part3ShowIntro ? (
                   <Card className="card-shadow border-border text-center">
