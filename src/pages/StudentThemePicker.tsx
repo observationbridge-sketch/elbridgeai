@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSounds } from "@/hooks/use-sounds";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,8 @@ const ALL_THEMES = [
 const StudentThemePicker = () => {
   const navigate = useNavigate();
   const { sessionId, studentId } = useParams();
+  const { playWelcome } = useSounds();
+  const welcomePlayedRef = useRef(false);
   const [gradeBand, setGradeBand] = useState<"K-2" | "3-5">("3-5");
   const [themeOptions, setThemeOptions] = useState<string[]>([]);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
@@ -25,6 +28,15 @@ const StudentThemePicker = () => {
   const [saving, setSaving] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [tappedTheme, setTappedTheme] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!welcomePlayedRef.current) {
+      welcomePlayedRef.current = true;
+      // Small delay so AudioContext can initialize after user interaction
+      const t = setTimeout(() => playWelcome(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [playWelcome]);
 
   useEffect(() => {
     const load = async () => {

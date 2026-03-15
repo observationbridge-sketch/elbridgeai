@@ -108,6 +108,17 @@ export function useSounds() {
     });
   }, [muted, getCtx, stopAll, playTone]);
 
+  const playWelcome = useCallback(() => {
+    if (muted) return;
+    stopAll();
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    // Cheerful 3-note ascending chime: E5 → G5 → C6
+    playTone(ctx, 659, now, 0.25, 0.3);
+    playTone(ctx, 784, now + 0.3, 0.25, 0.3);
+    playTone(ctx, 1047, now + 0.6, 0.45, 0.35);
+  }, [muted, getCtx, stopAll, playTone]);
+
   const toggleMute = useCallback(() => setMuted(m => !m), []);
 
   return {
@@ -119,5 +130,6 @@ export function useSounds() {
     playBadge,
     playPoints,
     playSessionComplete,
+    playWelcome,
   };
 }
