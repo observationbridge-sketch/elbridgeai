@@ -163,8 +163,8 @@ function levenshtein(a: string, b: string): number {
 }
 
 function getBadge(scores: Part1Scores): { icon: any; label: string; color: string } {
-  const totalPossible = scores.repeatTotal + scores.writeTotal + scores.recordTotal;
-  const totalEarned = scores.repeat + scores.write + scores.record;
+  const totalPossible = scores.sayItTotal + scores.dragDropTotal + scores.memoryMatchTotal + scores.jumbledTotal;
+  const totalEarned = scores.sayIt + scores.dragDrop + scores.memoryMatch + scores.jumbled;
   const pct = totalPossible > 0 ? totalEarned / totalPossible : 0;
   if (pct >= 0.9) return { icon: Trophy, label: "🏆 Language Champion!", color: "text-warning" };
   if (pct >= 0.7) return { icon: Flame, label: "🔥 Great Effort!", color: "text-accent" };
