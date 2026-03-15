@@ -2394,12 +2394,16 @@ function Part2StrategyView({
         )}
 
         {/* Question — K-2 sentence_frames: show sentence with blank + tap instruction */}
-        {isK2 && activity.strategy === "sentence_frames" ? (
+        {isK2SF ? (
           <div className="space-y-3">
-            <p className={`text-2xl font-bold text-foreground text-center leading-relaxed`}>
-              {activity.sentenceFrame || activity.question}
-            </p>
-            <p className="text-lg text-muted-foreground text-center">👆 Tap a word to finish the sentence.</p>
+            <div className="bg-muted/50 rounded-xl p-6 border border-border">
+              <p className="text-2xl font-bold text-foreground text-center leading-relaxed">
+                {activity.sentenceFrame || activity.question}
+              </p>
+            </div>
+            {!submitted && !sfRevealed && (
+              <p className="text-lg text-muted-foreground text-center">👆 Tap a word to finish the sentence.</p>
+            )}
           </div>
         ) : (
           <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
