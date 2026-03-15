@@ -2301,7 +2301,7 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
 function FeedbackBanner({ feedback, positive }: { feedback: string | null; positive: boolean }) {
   if (!feedback) return null;
   return (
-    <div className={`rounded-lg p-4 flex items-start gap-3 ${
+    <div className={`rounded-lg p-4 flex items-start gap-3 animate-slide-up-banner ${
       positive ? "bg-success/10 border border-success/20" : "bg-primary/10 border border-primary/20"
     }`}>
       <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${positive ? "text-success" : "text-primary"}`} />
