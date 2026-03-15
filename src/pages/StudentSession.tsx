@@ -2354,6 +2354,30 @@ function Part2StrategyView({
   const [sfRevealed, setSfRevealed] = useState(false);
   const [sfSelectedWord, setSfSelectedWord] = useState<string | null>(null);
 
+  const k2BlankSentence = useMemo(() => {
+    if (!isK2SF) return "";
+
+    const normalizeSpaces = (text: string) => text.replace(/\s+/g, " ").trim();
+    const candidates = [activity.sentenceFrame, activity.question]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map(normalizeSpaces);
+
+    const explicitBlank = candidates.find((text) => text.includes("___"));
+    if (explicitBlank) return explicitBlank;
+
+    const baseSentence = candidates[0] ?? "";
+    if (!baseSentence) return "___";
+
+    const modelAnswer = normalizeSpaces(activity.modelAnswer || "");
+    if (modelAnswer) {
+      const escaped = modelAnswer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const replaced = baseSentence.replace(new RegExp(`\\b${escaped}\\b`, "i"), "___");
+      if (replaced !== baseSentence) return replaced;
+    }
+
+    return `${baseSentence.replace(/[.!?]+$/, "")} ___`;
+  }, [isK2SF, activity.sentenceFrame, activity.question, activity.modelAnswer]);
+
   // Reset retry state when activity changes
   useEffect(() => {
     setSfAttempts(0);
