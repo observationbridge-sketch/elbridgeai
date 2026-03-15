@@ -949,6 +949,7 @@ const StudentSession = () => {
   };
 
   const finishSession = async () => {
+    sounds.playSessionComplete();
     gamification.addPoints(POINTS.SESSION_COMPLETE);
     gamification.completeSession();
     if (domainScores) {
