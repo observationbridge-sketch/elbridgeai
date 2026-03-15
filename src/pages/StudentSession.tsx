@@ -26,6 +26,7 @@ import { POINTS, BADGES } from "@/components/gamification/constants";
 import { getAnimalLevel, getNextLevel } from "@/components/gamification/constants";
 import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 import { WordBankFillBlanks } from "@/components/session/WordBankFillBlanks";
+import { MemoryMatch } from "@/components/session/MemoryMatch";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
@@ -41,12 +42,14 @@ interface AnchorSentence {
 
 interface Part1Scores {
   listen: boolean;
-  repeat: number;
-  repeatTotal: number;
-  write: number;
-  writeTotal: number;
-  record: number;
-  recordTotal: number;
+  sayIt: number;
+  sayItTotal: number;
+  dragDrop: number;
+  dragDropTotal: number;
+  memoryMatch: number;
+  memoryMatchTotal: number;
+  jumbled: number;
+  jumbledTotal: number;
 }
 
 interface Part2Activity {
@@ -98,9 +101,9 @@ const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: strin
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-// Part 1 = 8 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
-const TOTAL_STEPS_3_5 = 15;
-const TOTAL_STEPS_K2 = 13; // 8 + 4 + 1
+// Part 1 = 5 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
+const TOTAL_STEPS_3_5 = 12; // 5 + 6 + 1
+const TOTAL_STEPS_K2 = 10;  // 5 + 4 + 1
 
 type GradeBand = "K-2" | "3-5";
 
@@ -160,8 +163,8 @@ function levenshtein(a: string, b: string): number {
 }
 
 function getBadge(scores: Part1Scores): { icon: any; label: string; color: string } {
-  const totalPossible = scores.repeatTotal + scores.writeTotal + scores.recordTotal;
-  const totalEarned = scores.repeat + scores.write + scores.record;
+  const totalPossible = scores.sayItTotal + scores.dragDropTotal + scores.memoryMatchTotal + scores.jumbledTotal;
+  const totalEarned = scores.sayIt + scores.dragDrop + scores.memoryMatch + scores.jumbled;
   const pct = totalPossible > 0 ? totalEarned / totalPossible : 0;
   if (pct >= 0.9) return { icon: Trophy, label: "🏆 Language Champion!", color: "text-warning" };
   if (pct >= 0.7) return { icon: Flame, label: "🔥 Great Effort!", color: "text-accent" };
@@ -355,13 +358,14 @@ const StudentSession = () => {
 
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
-  const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(1);
+  const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [part1Feedback, setPart1Feedback] = useState<string | null>(null);
   const [part1ShowSentence, setPart1ShowSentence] = useState(true);
   const [part1Answer, setPart1Answer] = useState("");
   const [part1Submitted, setPart1Submitted] = useState(false);
   const [part1Scores, setPart1Scores] = useState<Part1Scores>({
-    listen: false, repeat: 0, repeatTotal: 0, write: 0, writeTotal: 0, record: 0, recordTotal: 0,
+    listen: false, sayIt: 0, sayItTotal: 0, dragDrop: 0, dragDropTotal: 0,
+    memoryMatch: 0, memoryMatchTotal: 0, jumbled: 0, jumbledTotal: 0,
   });
   const [hasSpoken, setHasSpoken] = useState(false);
   const [hasWritten, setHasWritten] = useState(false);
@@ -518,9 +522,9 @@ const StudentSession = () => {
     }
   }, [effectiveGradeBand, contentHistory, sessionTheme]);
 
-  const inPart1 = globalStep < 8;
-  const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
-  const inPart3 = globalStep >= 8 + part2Count;
+  const inPart1 = globalStep < 5;
+  const inPart2 = globalStep >= 5 && globalStep < 5 + part2Count;
+  const inPart3 = globalStep >= 5 + part2Count;
 
   // ─── Load student info, anchor sentence, and history on mount ───
   useEffect(() => {
@@ -713,10 +717,10 @@ const StudentSession = () => {
     }
   }, [studentName, teacherId]);
 
-  // Auto-play TTS for Step 1 and Step 5 (Listen Again)
+  // Auto-play TTS for Step 1 (Listen & Look)
   useEffect(() => {
     if (!loading && inPart1 && anchor && tts.isSupported && ttsPreloaded) {
-      if (part1Step === 1 || part1Step === 5) {
+      if (part1Step === 1) {
         const timer = setTimeout(() => tts.speak(anchor.sentence), 300);
         return () => clearTimeout(timer);
       }
@@ -787,17 +791,16 @@ const StudentSession = () => {
     setPart1Feedback(null);
     setPart1ShowSentence(true);
 
-    if (part1Step < 8) {
+    if (part1Step < 5) {
       setPart1Step((s) => (s + 1) as any);
       setGlobalStep((g) => g + 1);
     } else {
-      // Part 1 complete → bonus points + grade band auto-adjustment
-      gamification.addPoints(POINTS.PART1_COMPLETE);
+      // Part 1 complete → award badge + grade band auto-adjustment
       gamification.awardBadge("first_word");
 
       // Auto-adjust grade band based on Part 1 performance
-      const totalPossible = part1Scores.repeatTotal + part1Scores.writeTotal + part1Scores.recordTotal;
-      const totalEarned = part1Scores.repeat + part1Scores.write + part1Scores.record;
+      const totalPossible = part1Scores.sayItTotal + part1Scores.dragDropTotal + part1Scores.memoryMatchTotal + part1Scores.jumbledTotal;
+      const totalEarned = part1Scores.sayIt + part1Scores.dragDrop + part1Scores.memoryMatch + part1Scores.jumbled;
       const pct = totalPossible > 0 ? (totalEarned / totalPossible) * 100 : 50;
 
       let newBand = effectiveGradeBand;
@@ -813,7 +816,7 @@ const StudentSession = () => {
         console.log("Auto-adjusted student to 3-5 band (Part 1 score:", Math.round(pct), "%)");
       }
 
-      setGlobalStep(8);
+      setGlobalStep(5);
       fetchPart2Activity(0);
     }
   };
@@ -828,62 +831,45 @@ const StudentSession = () => {
   const handleStep2Submit = () => {
     if (!anchor || !part1Answer.trim()) return;
     const { matched, total } = compareWords(part1Answer, anchor.sentence);
-    setPart1Scores((s) => ({ ...s, repeat: matched, repeatTotal: total }));
+    setPart1Scores((s) => ({ ...s, sayIt: matched, sayItTotal: total }));
     const pct = total > 0 ? matched / total : 0;
-    const feedback = pct >= 0.8
-      ? "Great job! You said it really well! 🌟"
-      : pct >= 0.5
-        ? `Nice try! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`
-        : `Good effort! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`;
-    setPart1Feedback(feedback);
+    setPart1Feedback("Great job! 🌟");
     setPart1Submitted(true);
-    if (pct >= 0.8) sounds.playCorrect(); else if (pct >= 0.5) sounds.playPartiallyCorrect(); else sounds.playWrong();
-    gamification.addPoints(POINTS.STEP2_REPEAT);
+    sounds.playCorrect();
+    gamification.addPoints(POINTS.STEP2_SAY_IT);
     sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
       gamification.awardBadge("first_voice");
     }
-    saveResponse("speaking", `Repeat: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
+    saveResponse("speaking", `Say It: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
+    // Auto-advance after 3 seconds
+    setTimeout(() => handlePart1Next(), 3000);
   };
 
-  const handleStep6WriteSubmit = () => {
-    if (!anchor || !part1Answer.trim()) return;
-    const { matched, total } = compareWords(part1Answer, anchor.sentence);
-    setPart1Scores((s) => ({ ...s, write: matched, writeTotal: total }));
-    const pct = total > 0 ? matched / total : 0;
-    setPart1ShowSentence(true);
-    const feedback = pct >= 0.8
-      ? `Excellent writing! You remembered ${matched} out of ${total} words! ✍️🌟`
-      : `Good try! You got ${matched} out of ${total} words. Compare your answer above. ✍️`;
-    setPart1Feedback(feedback);
-    setPart1Submitted(true);
-    if (pct >= 0.8) sounds.playCorrect(); else sounds.playPartiallyCorrect();
-    gamification.addPoints(POINTS.STEP3_WRITE);
+  const handleStep3Complete = (score: { correct: number; total: number }) => {
+    setPart1Scores((s) => ({ ...s, dragDrop: score.correct, dragDropTotal: score.total }));
+    gamification.addPoints(POINTS.STEP3_DRAG_DROP);
+    sounds.playPoints();
+    saveResponse("reading", "Drag & Drop fill-in-the-blank", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
+  };
+
+  const handleStep4Complete = (score: { correct: number; total: number }) => {
+    setPart1Scores((s) => ({ ...s, memoryMatch: score.correct, memoryMatchTotal: score.total }));
+    gamification.addPoints(POINTS.STEP4_MEMORY_MATCH);
+    sounds.playPoints();
+    saveResponse("reading", "Memory Match", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
+  };
+
+  const handleStep5Complete = (correct: boolean) => {
+    setPart1Scores((s) => ({ ...s, jumbled: correct ? 1 : 0, jumbledTotal: 1 }));
+    gamification.addPoints(POINTS.STEP5_JUMBLED);
     sounds.playPoints();
     if (!hasWritten) {
       setHasWritten(true);
       gamification.awardBadge("first_writer");
     }
-    saveResponse("writing", `Write from memory: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
-
-  const handleStep7RecordSubmit = () => {
-    if (!anchor || !part1Answer.trim()) return;
-    const { matched, total } = compareWords(part1Answer, anchor.sentence);
-    setPart1Scores((s) => ({ ...s, record: matched, recordTotal: total }));
-    const pct = total > 0 ? matched / total : 0;
-    const feedback = pct >= 0.9
-      ? `Perfect! You used ${matched} out of ${total} words! 🎤🏆`
-      : pct >= 0.7
-        ? `You used ${matched} out of ${total} words — great effort! 🎤🌟`
-        : `You used ${matched} out of ${total} words — keep practicing! 🎤💪`;
-    setPart1Feedback(feedback);
-    setPart1Submitted(true);
-    if (pct >= 0.9) sounds.playCorrect(); else if (pct >= 0.7) sounds.playPartiallyCorrect(); else sounds.playWrong();
-    gamification.addPoints(POINTS.STEP4_RECORD);
-    sounds.playPoints();
-    saveResponse("speaking", `Record: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
   };
 
   // ─── Part 2 handlers ───
@@ -1473,7 +1459,7 @@ const StudentSession = () => {
         : stars;
       return visibleStars.join("");
     }
-    if (inPart1) return `Part 1 • Step ${part1Step}/8`;
+    if (inPart1) return `Part 1 • Step ${part1Step}/5`;
     if (inPart2) return `Part 2 • Activity ${part2Index + 1}/${part2Count}`;
     return "Part 3 • Challenge";
   };
@@ -1569,13 +1555,11 @@ const StudentSession = () => {
                   setPart1Answer={setPart1Answer}
                   part1Submitted={part1Submitted}
                   part1Feedback={part1Feedback}
-                  part1ShowSentence={part1ShowSentence}
-                  setPart1ShowSentence={setPart1ShowSentence}
-                  part1Scores={part1Scores}
                   onStep1Done={handleStep1Done}
                   onStep2Submit={handleStep2Submit}
-                  onStep6WriteSubmit={handleStep6WriteSubmit}
-                  onStep7RecordSubmit={handleStep7RecordSubmit}
+                  onStep3Complete={handleStep3Complete}
+                  onStep4Complete={handleStep4Complete}
+                  onStep5Complete={handleStep5Complete}
                   onNext={handlePart1Next}
                   onRetryFillBlanks={retryStep3FromGemini}
                   isK2={isK2}
@@ -1746,10 +1730,10 @@ const StudentSession = () => {
 };
 
 // ═══════════════════════════════════════════════
-// Part 1 — Daily Language Builder (8 steps)
+// Part 1 — Literacy Squared (5 steps)
 // ═══════════════════════════════════════════════
 interface Part1Props {
-  step: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  step: 1 | 2 | 3 | 4 | 5;
   anchor: AnchorSentence;
   tts: ReturnType<typeof useTTS>;
   speech: ReturnType<typeof useSpeechRecognition>;
@@ -1757,31 +1741,45 @@ interface Part1Props {
   setPart1Answer: (v: string) => void;
   part1Submitted: boolean;
   part1Feedback: string | null;
-  part1ShowSentence: boolean;
-  setPart1ShowSentence: (v: boolean) => void;
-  part1Scores: Part1Scores;
   onStep1Done: () => void;
   onStep2Submit: () => void;
-  onStep6WriteSubmit: () => void;
-  onStep7RecordSubmit: () => void;
+  onStep3Complete: (score: { correct: number; total: number }) => void;
+  onStep4Complete: (score: { correct: number; total: number }) => void;
+  onStep5Complete: (correct: boolean) => void;
   onNext: () => void;
   onRetryFillBlanks: () => Promise<AnchorSentence | null>;
   isK2?: boolean;
 }
 
+function generateMemoryPairs(anchor: AnchorSentence, isK2?: boolean): { words: string[]; matches: string[] } {
+  const keyWords = (anchor.keyWords || []).filter(w => w.length > 2);
+  const pairCount = isK2 ? 3 : 4;
+  const selected = keyWords.slice(0, pairCount);
+  const sentenceWords = anchor.sentence.split(/\s+/).map(w => w.replace(/[^a-zA-Z']/g, "")).filter(w => w.length > 3 && !selected.map(s => s.toLowerCase()).includes(w.toLowerCase()));
+  while (selected.length < pairCount && sentenceWords.length > 0) selected.push(sentenceWords.shift()!);
+  while (selected.length < pairCount) selected.push(selected[selected.length - 1] || "word");
+  if (isK2) {
+    const emojiMap: Record<string, string> = { sun:"☀️",moon:"🌙",star:"⭐",tree:"🌳",flower:"🌸",fish:"🐟",bird:"🐦",cat:"🐱",dog:"🐕",lion:"🦁",bear:"🐻",water:"💧",fire:"🔥",ball:"⚽",book:"📖",house:"🏠",mars:"🔴",planet:"🪐",space:"🚀",red:"🔴",butterfly:"🦋",garden:"🌻",kick:"🦶",play:"🎮",run:"🏃" };
+    const defaults = ["🌟","🎯","💎","🌈","🔮","🎪"];
+    return { words: selected, matches: selected.map((w,i) => emojiMap[w.toLowerCase()] || defaults[i % defaults.length]) };
+  }
+  return { words: selected, matches: selected.map(w => `means "${w}"`) };
+}
+
 function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
-  part1Submitted, part1Feedback, part1ShowSentence, setPart1ShowSentence,
-  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, onRetryFillBlanks, isK2,
+  part1Submitted, part1Feedback, onStep1Done, onStep2Submit,
+  onStep3Complete, onStep4Complete, onStep5Complete, onNext, onRetryFillBlanks, isK2,
 }: Part1Props) {
-  // Local scaffold state
+  const sounds = useSounds();
   const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
-  const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
-  const [jumbleAnswer, setJumbleAnswer] = useState("");
-  const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
   const [step3Status, setStep3Status] = useState<"loading" | "ready" | "failed">("loading");
   const [step3RetryCount, setStep3RetryCount] = useState(0);
   const [showStep3WaitState, setShowStep3WaitState] = useState(false);
+  const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
+  const [jumbleAnswer, setJumbleAnswer] = useState("");
+  const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
+  const [jumbleTappedWords, setJumbleTappedWords] = useState<string[]>([]);
 
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
     const anchorToUse = sourceAnchor || anchor;
@@ -1838,28 +1836,207 @@ function Part1View({
     prepareStep3Content(0);
   }, [step, anchor, prepareStep3Content]);
 
-  const handleJumbleSubmit = () => {
-    setJumbleSubmitted(true);
+  const handleChipTap = (word: string) => {
+    if (isK2) {
+      const newTapped = [...jumbleTappedWords, word];
+      setJumbleTappedWords(newTapped);
+      setJumbleAnswer(newTapped.join(" "));
+    }
   };
 
+  const handleJumbleSubmit = () => {
+    if (!jumble) return;
+    const { matched, total } = compareWords(jumbleAnswer, jumble.original);
+    const pct = total > 0 ? matched / total : 0;
+    setJumbleSubmitted(true);
+    if (pct >= 0.7) sounds.playCorrect(); else sounds.playWrong();
+    onStep5Complete(pct >= 0.7);
+  };
+
+  const memoryPairs = useMemo(() => generateMemoryPairs(anchor, isK2), [anchor, isK2]);
+
   const stepTitles: Record<number, string> = {
-    1: "Step 1: Listen 🎧",
-    2: "Step 2: Repeat 🗣️",
-    3: "Step 3: Fill in the Blanks 🔤",
-    4: "Step 4: Jumbled Sentence 🧩",
-    5: "Step 5: Listen One More Time 🎧",
-    6: "Step 6: Write from Memory ✍️",
-    7: "Step 7: Record 🎤",
-    8: "Step 8: Your Results 🏆",
+    1: "Step 1: Listen & Look 🎧",
+    2: "Step 2: Say It 🎤",
+    3: "Step 3: Drag & Drop 🧩",
+    4: "Step 4: Memory Match 🃏",
+    5: "Step 5: Jumbled Sentence ✍️",
   };
 
   return (
     <Card className="card-shadow border-border">
       <div className="px-6 pt-6">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-            Daily Language Builder
-          </span>
+          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">Literacy Squared</span>
+        </div>
+        <h3 className="text-lg font-bold text-foreground">{stepTitles[step]}</h3>
+      </div>
+      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
+        {/* Step 1: Listen & Look */}
+        {step === 1 && (
+          <>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-8" : "p-6"} border border-border text-center space-y-4`}>
+              <Headphones className={`${isK2 ? "h-14 w-14" : "h-10 w-10"} text-warning mx-auto`} />
+              <div className={`${isK2 ? "text-6xl my-4 animate-bounce-slow" : "text-4xl my-3 animate-bounce-fast"}`}>
+                {anchor.theme?.toLowerCase().includes("space") ? "🔴🪐" :
+                 anchor.theme?.toLowerCase().includes("ocean") ? "🌊🐠" :
+                 anchor.theme?.toLowerCase().includes("nature") ? "🌿🦋" :
+                 anchor.theme?.toLowerCase().includes("superhero") ? "🦸‍♂️💥" :
+                 anchor.theme?.toLowerCase().includes("fantasy") ? "🧙✨" :
+                 anchor.theme?.toLowerCase().includes("egypt") ? "🏛️🐪" :
+                 anchor.theme?.toLowerCase().includes("volcano") ? "🌋🔥" :
+                 anchor.theme?.toLowerCase().includes("rainforest") ? "🌴🦜" :
+                 anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" : "📚🌟"}
+              </div>
+              <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{anchor.sentence}</p>
+              {tts.isSupported && (
+                <Button variant="outline" onClick={() => tts.speak(anchor.sentence)} disabled={tts.isSpeaking} className={`gap-2 ${isK2 ? "text-lg px-6 py-4 h-auto" : ""}`}>
+                  <RefreshCw className={`${isK2 ? "h-5 w-5" : "h-4 w-4"} ${tts.isSpeaking ? "animate-spin" : ""}`} />
+                  {isK2 ? (tts.isSpeaking ? "Playing... 🔊" : "Hear it again! 🔁") : (tts.isSpeaking ? "Playing..." : "Replay")}
+                </Button>
+              )}
+            </div>
+            <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-8 min-h-[72px]" : ""}`} size="lg" onClick={onStep1Done}>
+              {isK2 ? "I heard it! 👂" : "I heard it ✓"} <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </>
+        )}
+
+        {/* Step 2: Say It */}
+        {step === 2 && (
+          <>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border ${isK2 ? "text-center" : ""}`}>
+              <p className={`${isK2 ? "text-2xl" : "text-lg"} text-foreground font-medium leading-relaxed`}>{anchor.sentence}</p>
+            </div>
+            {!part1Submitted ? (
+              <>
+                <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
+                {part1Answer.trim() && (
+                  <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onStep2Submit}>
+                    {isK2 ? "Done! ✅" : "Submit"}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="text-center space-y-4 animate-fade-in">
+                <p className={`font-bold text-success ${isK2 ? "text-2xl" : "text-lg"}`}>Great job! 🌟</p>
+                <p className={`text-muted-foreground ${isK2 ? "text-lg" : "text-sm"}`}>Moving on in a moment...</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Step 3: Drag & Drop */}
+        {step === 3 && (
+          blanks && step3Status === "ready" ? (
+            <WordBankFillBlanks
+              blankedSentence={blanks.blanked}
+              missingWords={blanks.missingWords}
+              wordBank={blanks.wordBank}
+              isK2={isK2}
+              onComplete={onStep3Complete}
+              onNext={onNext}
+            />
+          ) : (
+            <div className="rounded-xl border border-border bg-muted/30 p-6 text-center space-y-4">
+              <div className={showStep3WaitState ? "animate-soft-pulse" : ""}>
+                <p className="text-6xl">🐣</p>
+                <p className="text-lg font-medium text-foreground">One moment... 🐣</p>
+              </div>
+              {step3Status === "failed" ? (
+                <Button variant="hero" onClick={onNext}>Skip this one ➡️</Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">{step3RetryCount > 0 ? "Retrying..." : "Loading..."}</p>
+              )}
+            </div>
+          )
+        )}
+
+        {/* Step 4: Memory Match */}
+        {step === 4 && (
+          <MemoryMatch
+            words={memoryPairs.words}
+            matches={memoryPairs.matches}
+            isK2={isK2}
+            onComplete={onStep4Complete}
+            onNext={onNext}
+          />
+        )}
+
+        {/* Step 5: Jumbled Sentence */}
+        {step === 5 && jumble && (
+          <>
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
+              <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
+                {isK2 ? "Tap the words in the right order! 👆" : "Put these words back in the correct order:"}
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {jumble.jumbled.map((word, i) => {
+                  const isUsed = isK2 && jumbleTappedWords.includes(word);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => !isUsed && !jumbleSubmitted && (isK2 ? handleChipTap(word) : undefined)}
+                      disabled={isUsed || jumbleSubmitted}
+                      className={`px-4 py-2 rounded-full font-medium border-2 transition-all duration-200 select-none
+                        ${isK2 ? "text-lg min-h-[48px]" : "text-sm"}
+                        ${isUsed ? "bg-muted text-muted-foreground/30 border-muted opacity-40" : "bg-primary/10 text-primary border-primary/20 hover:scale-105 active:scale-95 cursor-pointer"}
+                      `}
+                    >
+                      {word}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <Input
+              value={jumbleAnswer}
+              onChange={(e) => !isK2 && setJumbleAnswer(e.target.value)}
+              placeholder={isK2 ? "Tap words above..." : "Type the sentence in correct order..."}
+              className={isK2 ? "h-14 text-lg" : "h-12"}
+              disabled={jumbleSubmitted}
+              readOnly={isK2}
+            />
+            {isK2 && jumbleTappedWords.length > 0 && !jumbleSubmitted && (
+              <Button variant="outline" size="sm" onClick={() => { setJumbleTappedWords([]); setJumbleAnswer(""); }}>Start over 🔄</Button>
+            )}
+            {!jumbleSubmitted ? (
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={!jumbleAnswer.trim()}>
+                {isK2 ? "Check! ✅" : "Check My Sentence"}
+              </Button>
+            ) : (
+              <>
+                {(() => {
+                  const { matched, total } = compareWords(jumbleAnswer, jumble.original);
+                  const pct = total > 0 ? matched / total : 0;
+                  return (
+                    <>
+                      <FeedbackBanner feedback={pct >= 0.7 ? "Nice work! 🧩🌟" : "Good try! Here's the correct sentence:"} positive={pct >= 0.7} />
+                      <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">Correct sentence:</p>
+                        <p className="text-foreground font-medium">{jumble.original}</p>
+                      </div>
+                    </>
+                  );
+                })()}
+                <Button
+                  variant="success"
+                  className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
+                  size="lg"
+                  onClick={onNext}
+                >
+                  {isK2 ? "Keep Going! 🚀" : "Next Step →"}
+                </Button>
+              </>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
         </div>
         <h3 className="text-lg font-bold text-foreground">{stepTitles[step]}</h3>
       </div>
