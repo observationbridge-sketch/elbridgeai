@@ -1669,11 +1669,12 @@ interface Part2Props {
   onSubmit: () => void;
   onSubmitMC: (option: string) => void;
   onNext: () => void;
+  isK2?: boolean;
 }
 
 function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
-  speech, tts, onSubmit, onSubmitMC, onNext,
+  speech, tts, onSubmit, onSubmitMC, onNext, isK2,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
