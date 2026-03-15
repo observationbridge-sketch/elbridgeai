@@ -1600,13 +1600,19 @@ function Part1View({
             {blankSubmitted && (
               <div className="space-y-2">
                 {blanks.missingWords.map((word, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
+                  <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
                     <span className="text-muted-foreground">Blank {i + 1}:</span>
-                    <span className="font-bold text-foreground">{word}</span>
-                    {blankAnswers[i]?.toLowerCase().trim() === word.toLowerCase() ? (
-                      <CheckCircle className="h-4 w-4 text-success" />
+                    {isBlankCorrect(i) ? (
+                      <>
+                        <span className="font-bold text-success">{blankAnswers[i]}</span>
+                        <CheckCircle className="h-4 w-4 text-success" />
+                      </>
                     ) : (
-                      <span className="text-muted-foreground">(you picked: {blankAnswers[i] || "—"})</span>
+                      <>
+                        <span className="font-bold text-destructive line-through">{blankAnswers[i] || "—"}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span className="font-bold text-warning">{word}</span>
+                      </>
                     )}
                   </div>
                 ))}
@@ -1625,7 +1631,19 @@ function Part1View({
               </Button>
             ) : (
               <>
-                <FeedbackBanner feedback="Great — you remember the key words! 🌟" positive={true} />
+                {blankScore.correct === blankScore.total ? (
+                  <FeedbackBanner feedback="Amazing! You got them all! 🌟" positive={true} />
+                ) : blankScore.correct > 0 ? (
+                  <FeedbackBanner 
+                    feedback={`Good try! You got ${blankScore.correct} out of ${blankScore.total}! Keep going! 💪`} 
+                    positive={false} 
+                  />
+                ) : (
+                  <FeedbackBanner 
+                    feedback="Not quite — here are the answers! Let's keep going! 🤗" 
+                    positive={false} 
+                  />
+                )}
                 <Button variant={isK2 ? "success" : "hero"} className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onNext}>
                   {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
                 </Button>
