@@ -1539,10 +1539,7 @@ const StudentSession = () => {
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <Loader2 className={`${isK2 ? "h-14 w-14" : "h-10 w-10"} text-white/70 animate-spin`} />
-            <p className={`text-white/60 ${isK2 ? "text-xl" : ""}`}>{loadingMessage}</p>
-          </div>
+          <SessionLoadingScreen studentName={studentName} theme={sessionTheme} />
         ) : (
           <>
             <div className="p-1">
