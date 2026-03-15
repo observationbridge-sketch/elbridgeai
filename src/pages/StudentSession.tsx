@@ -717,10 +717,10 @@ const StudentSession = () => {
     }
   }, [studentName, teacherId]);
 
-  // Auto-play TTS for Step 1 and Step 5 (Listen Again)
+  // Auto-play TTS for Step 1 (Listen & Look)
   useEffect(() => {
     if (!loading && inPart1 && anchor && tts.isSupported && ttsPreloaded) {
-      if (part1Step === 1 || part1Step === 5) {
+      if (part1Step === 1) {
         const timer = setTimeout(() => tts.speak(anchor.sentence), 300);
         return () => clearTimeout(timer);
       }
