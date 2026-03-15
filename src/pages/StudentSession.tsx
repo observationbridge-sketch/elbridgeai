@@ -2262,8 +2262,17 @@ function Part2StrategyView({
           </div>
         )}
 
-        {/* Question */}
-        <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
+        {/* Question — K-2 sentence_frames: show sentence with blank + tap instruction */}
+        {isK2 && activity.strategy === "sentence_frames" ? (
+          <div className="space-y-3">
+            <p className={`text-2xl font-bold text-foreground text-center leading-relaxed`}>
+              {activity.sentenceFrame || activity.question}
+            </p>
+            <p className="text-lg text-muted-foreground text-center">👆 Tap a word to finish the sentence.</p>
+          </div>
+        ) : (
+          <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
+        )}
 
         {/* Sentence frame — hide entirely for K-2 sentence_frames */}
         {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && !(isK2 && activity.strategy === "sentence_frames") && (
