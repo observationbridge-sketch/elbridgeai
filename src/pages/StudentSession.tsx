@@ -1989,6 +1989,9 @@ function Part1View({
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
   const [jumbleTappedWords, setJumbleTappedWords] = useState<string[]>([]);
+  const [jumbleAttempts, setJumbleAttempts] = useState(0);
+  const [jumbleShake, setJumbleShake] = useState(false);
+  const [jumbleTryAgainMsg, setJumbleTryAgainMsg] = useState<string | null>(null);
 
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
     const anchorToUse = sourceAnchor || anchor;
