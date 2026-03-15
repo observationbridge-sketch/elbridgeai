@@ -532,6 +532,9 @@ const StudentSession = () => {
       let currentStudentName = "";
       let sessionForcedTheme: string | undefined;
       let sessionGradeBand: GradeBand = "3-5";
+      let resolvedTheme = "";
+      let resolvedTopic = "";
+      let computedDomainScores: Record<string, number> | null = null;
 
       try {
         const { data: studentData } = await supabase
