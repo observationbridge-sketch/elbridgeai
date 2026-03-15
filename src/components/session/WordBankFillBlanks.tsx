@@ -207,6 +207,7 @@ export function WordBankFillBlanks({
       setBlankStates(finalStates);
       setScore({ correct: correctCount, total: blankCount });
       setPhase("done");
+      if (correctCount > 0) sounds.playPartiallyCorrect(); else sounds.playWrong();
       onComplete({ correct: correctCount, total: blankCount });
     } else {
       // Bounce wrong answers back to bank
