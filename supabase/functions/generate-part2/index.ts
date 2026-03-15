@@ -293,6 +293,18 @@ ${inputType === "record_then_type" ? "The student will TYPE their answer AND THE
 
   const extraFields = getInputTypeFields(inputType, topic);
 
+  const fillInBlankRules = `
+FILL-IN-THE-BLANK QUALITY RULES (MANDATORY):
+- The sentence MUST make complete grammatical sense when the correct words are inserted
+- The sentence MUST have clear context clues so the student can reasonably guess the answer
+- NEVER remove so many words that the sentence loses all meaning
+- Maximum ${isK2 ? "2" : "3"} blanks per sentence
+- ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer words only (no distractors)" : "4-6 word choices including 1-2 distractor words"}
+- Good example: "The frog ___ on a green leaf in the jungle." (wordBank: ["sits", "runs", "jumped"])
+- Bad example: "A green ___ ___ on a ___" — too many blanks, no context, nonsensical
+- Before outputting, verify: "Does this sentence make sense with blanks? Can a student figure out the answers from context?" If not, rewrite.
+`;
+
   if (strategy === "sentence_frames") {
     const scaffolding = [
       "ONE blank to fill in. Provide a sentence frame with exactly one blank marked as ___.",
@@ -309,6 +321,7 @@ ${inputType === "record_then_type" ? "The student will TYPE their answer AND THE
 
 ${themeDirective}
 ${STRICT_RULES}
+${fillInBlankRules}
 ${inputTypeNote}
 ${histCtx}
 
@@ -320,6 +333,7 @@ STRUCTURE:
 1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
 2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
+4. ALWAYS include a "wordBank" array with answer choices as tappable options
 
 Return ONLY valid JSON (no markdown):
 {
@@ -328,6 +342,7 @@ Return ONLY valid JSON (no markdown):
   "passage": "<3-5 sentence passage about ${topic}>",
   "question": "<instruction + the sentence frame with ___ blanks>",
   "sentenceFrame": "<just the frame itself>",
+  "wordBank": ["<${isK2 ? "correct answer words only" : "4-6 words including correct answers and 1-2 distractors"}>"],
   "modelAnswer": "<a fully completed version of the frame>",
   "acceptableKeywords": ["<6-8 words that any reasonable answer might contain>"],
   "difficulty": ${questionIndex + 1},

@@ -174,7 +174,7 @@ function isValidK2AnchorSentence(sentence: string): boolean {
 const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
 BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
-function generateBlanks(sentence: string, keyWords: string[]): { blanked: string; missingWords: string[] } {
+function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): { blanked: string; missingWords: string[]; wordBank: string[] } {
   const words = sentence.split(/\s+/);
   const keyLower = keyWords.map(w => w.toLowerCase());
   const candidates: number[] = [];
@@ -183,11 +183,35 @@ function generateBlanks(sentence: string, keyWords: string[]): { blanked: string
     if (keyLower.includes(clean) && clean.length > 2) candidates.push(i);
   });
   const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-  const count = Math.min(3, Math.max(2, shuffled.length));
+  const maxBlanks = isK2 ? 2 : 3;
+  const count = Math.min(maxBlanks, Math.max(1, shuffled.length));
   const picked = shuffled.slice(0, count).sort((a, b) => a - b);
-  const missingWords = picked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
-  const blanked = words.map((w, i) => picked.includes(i) ? '___' : w).join(' ');
-  return { blanked, missingWords };
+  
+  // Ensure sentence still makes sense: don't blank consecutive words
+  const filtered: number[] = [];
+  for (const idx of picked) {
+    if (filtered.length === 0 || idx - filtered[filtered.length - 1] > 1) {
+      filtered.push(idx);
+    }
+  }
+  const finalPicked = filtered.slice(0, maxBlanks);
+  
+  const missingWords = finalPicked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
+  const blanked = words.map((w, i) => finalPicked.includes(i) ? '___' : w).join(' ');
+  
+  // Build word bank: correct words + distractors for 3-5
+  const wordBank = [...missingWords];
+  if (!isK2) {
+    // Add 1-2 distractor words from keyWords that aren't already blanked
+    const distractors = keyWords
+      .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+      .slice(0, 2);
+    wordBank.push(...distractors);
+  }
+  // Shuffle the word bank
+  const shuffledBank = [...wordBank].sort(() => Math.random() - 0.5);
+  
+  return { blanked, missingWords, wordBank: shuffledBank };
 }
 
 function jumbleSentence(passage: string): { original: string; jumbled: string[] } {
@@ -1178,10 +1202,10 @@ const StudentSession = () => {
         </div>
       </div>
 
-      {/* K-2 Animal Companion Guide between activities */}
-      {isK2 && !loading && gamification.loaded && (
+      {/* Animal Companion Profile Card — all grade bands */}
+      {!loading && gamification.loaded && (
         <div className="flex justify-center py-4">
-          <div className="text-center animate-bounce-slow">
+          <div className={`text-center ${isK2 ? "animate-bounce-slow" : ""}`}>
             <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
           </div>
         </div>
@@ -1346,9 +1370,10 @@ function Part1View({
   part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, isK2,
 }: Part1Props) {
   // Local scaffold state
-  const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[] } | null>(null);
+  const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
   const [blankAnswers, setBlankAnswers] = useState<string[]>([]);
   const [blankSubmitted, setBlankSubmitted] = useState(false);
+  const [selectedBankWord, setSelectedBankWord] = useState<string | null>(null);
   const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
@@ -1356,7 +1381,7 @@ function Part1View({
   // Generate blanks when entering step 3
   useEffect(() => {
     if (step === 3 && !blanks) {
-      const b = generateBlanks(anchor.sentence, anchor.keyWords);
+      const b = generateBlanks(anchor.sentence, anchor.keyWords, isK2);
       setBlanks(b);
       setBlankAnswers(new Array(b.missingWords.length).fill(""));
       setBlankSubmitted(false);
@@ -1472,50 +1497,118 @@ function Part1View({
           </>
         )}
 
-        {/* Step 3: Fill in the Blanks */}
+        {/* Step 3: Fill in the Blanks — Word Bank */}
         {step === 3 && blanks && (
           <>
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-2">Fill in the missing words:</p>
-              <p className="text-foreground font-medium leading-relaxed text-lg">{blanks.blanked}</p>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
+              <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
+                {isK2 ? "Tap a word, then tap the blank! 👆" : "Fill in the missing words using the word bank:"}
+              </p>
+              <p className={`text-foreground font-medium leading-relaxed ${isK2 ? "text-2xl" : "text-lg"}`}>
+                {blanks.blanked.split('___').map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && (
+                      <button
+                        onClick={() => {
+                          if (blankSubmitted || !selectedBankWord) return;
+                          const newAnswers = [...blankAnswers];
+                          newAnswers[i] = selectedBankWord;
+                          setBlankAnswers(newAnswers);
+                          setSelectedBankWord(null);
+                        }}
+                        className={`inline-block min-w-[60px] mx-1 px-3 py-1 rounded-lg border-2 border-dashed transition-all ${
+                          blankAnswers[i] 
+                            ? blankSubmitted
+                              ? blankAnswers[i].toLowerCase().trim() === blanks.missingWords[i].toLowerCase()
+                                ? "border-success bg-success/10 text-success font-bold"
+                                : "border-destructive bg-destructive/10 text-destructive font-bold"
+                              : "border-primary bg-primary/10 text-primary font-bold cursor-pointer hover:bg-primary/20"
+                            : selectedBankWord
+                              ? "border-primary bg-primary/5 animate-pulse cursor-pointer"
+                              : "border-muted-foreground/30 text-muted-foreground"
+                        }`}
+                        disabled={blankSubmitted}
+                      >
+                        {blankAnswers[i] || (isK2 ? "?" : "___")}
+                        {blankSubmitted && blankAnswers[i]?.toLowerCase().trim() === blanks.missingWords[i].toLowerCase() && (
+                          <CheckCircle className="inline h-4 w-4 ml-1" />
+                        )}
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </p>
             </div>
-            <div className="space-y-3">
-              {blanks.missingWords.map((word, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-muted-foreground w-16">Blank {i + 1}:</span>
-                  {blankSubmitted ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-foreground font-bold">{word}</span>
-                      {blankAnswers[i]?.toLowerCase().trim() === word.toLowerCase() ? (
-                        <CheckCircle className="h-5 w-5 text-success" />
-                      ) : (
-                        <span className="text-sm text-muted-foreground">(you wrote: {blankAnswers[i] || "—"})</span>
-                      )}
-                    </div>
-                  ) : (
-                    <Input
-                      value={blankAnswers[i] || ""}
-                      onChange={(e) => {
-                        const newAnswers = [...blankAnswers];
-                        newAnswers[i] = e.target.value;
-                        setBlankAnswers(newAnswers);
-                      }}
-                      placeholder="Type the missing word..."
-                      className="flex-1 h-10"
-                    />
-                  )}
+
+            {/* Word Bank Pills */}
+            {!blankSubmitted && (
+              <div className="bg-muted/30 rounded-lg p-4 border border-border">
+                <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-3`}>
+                  {isK2 ? "📚 Pick a word:" : "📚 Word bank — tap a word, then tap a blank:"}
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {blanks.wordBank.map((word, i) => {
+                    const isUsed = blankAnswers.includes(word);
+                    const isSelected = selectedBankWord === word;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          if (isUsed) return;
+                          setSelectedBankWord(isSelected ? null : word);
+                        }}
+                        disabled={isUsed}
+                        className={`px-4 py-2 rounded-full font-medium transition-all ${
+                          isK2 ? "text-lg min-h-[48px]" : "text-sm"
+                        } ${
+                          isUsed
+                            ? "bg-muted text-muted-foreground/40 line-through cursor-not-allowed"
+                            : isSelected
+                              ? "bg-primary text-primary-foreground scale-110 shadow-lg ring-2 ring-primary/50"
+                              : "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                        }`}
+                      >
+                        {word}
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* Show answers after submit */}
+            {blankSubmitted && (
+              <div className="space-y-2">
+                {blanks.missingWords.map((word, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Blank {i + 1}:</span>
+                    <span className="font-bold text-foreground">{word}</span>
+                    {blankAnswers[i]?.toLowerCase().trim() === word.toLowerCase() ? (
+                      <CheckCircle className="h-4 w-4 text-success" />
+                    ) : (
+                      <span className="text-muted-foreground">(you picked: {blankAnswers[i] || "—"})</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {!blankSubmitted ? (
-              <Button variant="hero" className="w-full" size="lg" onClick={handleBlankSubmit} disabled={blankAnswers.some(a => !a.trim())}>
-                Check My Answers
+              <Button 
+                variant="hero" 
+                className={`w-full ${isK2 ? "text-xl py-6" : ""}`} 
+                size="lg" 
+                onClick={handleBlankSubmit} 
+                disabled={blankAnswers.some(a => !a.trim())}
+              >
+                {isK2 ? "Check! ✅" : "Check My Answers"}
               </Button>
             ) : (
               <>
                 <FeedbackBanner feedback="Great — you remember the key words! 🌟" positive={true} />
-                <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
-                  Next Step <ArrowRight className="h-4 w-4 ml-2" />
+                <Button variant={isK2 ? "success" : "hero"} className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onNext}>
+                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
                 </Button>
               </>
             )}
