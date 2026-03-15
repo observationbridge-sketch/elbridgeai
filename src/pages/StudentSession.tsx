@@ -1195,6 +1195,13 @@ const StudentSession = () => {
                 <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={!isK2} />
               </ThemedCompanionGlow>
             )}
+            <button
+              onClick={sounds.toggleMute}
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
+              title={sounds.muted ? "Unmute sounds" : "Mute sounds"}
+            >
+              {sounds.muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </button>
             <div className="hidden sm:flex items-center gap-2">
               <button onClick={() => setShowView("badges")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
                 <Award className="h-3 w-3" /> Badges
