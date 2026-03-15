@@ -2084,6 +2084,7 @@ function Part1View({
           setJumbleShake(false);
           setJumbleTappedWords([]);
           setJumbleAnswer("");
+          setUsedJumbleIndices(new Set());
         }, 800);
       }
       return;
