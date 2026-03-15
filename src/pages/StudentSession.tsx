@@ -1637,7 +1637,7 @@ function Part1View({
               <p className="text-sm text-muted-foreground mb-1">Record yourself saying the full passage — your best try!</p>
               <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
             </div>
-            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
+            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
             {!part1Submitted ? (
               <Button variant="hero" className="w-full" size="lg" onClick={onStep7RecordSubmit} disabled={!part1Answer.trim()}>
                 Check My Recording
