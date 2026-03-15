@@ -27,6 +27,91 @@ const THEMES = [
   "Volcanoes & earthquakes",
 ];
 
+const K2_BANNED_WORDS = new Set([
+  "agility", "focus", "required", "defenders", "weaving", "balance", "features",
+  "unique", "surface", "legendary", "behavior", "appearance",
+]);
+
+const K2_FORBIDDEN_CONNECTORS = new Set(["while", "both", "must", "however", "which"]);
+
+function countSentences(text: string): number {
+  return text
+    .split(/[.!?]+/)
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+}
+
+function countWords(text: string): number {
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z']/g, ""))
+    .filter(Boolean).length;
+}
+
+function countSyllables(rawWord: string): number {
+  const word = rawWord.toLowerCase().replace(/[^a-z]/g, "");
+  if (!word) return 0;
+  if (word.length <= 3) return 1;
+
+  const vowelGroups = word.match(/[aeiouy]+/g);
+  let syllables = vowelGroups ? vowelGroups.length : 1;
+
+  if (word.endsWith("e")) syllables -= 1;
+  if (word.endsWith("le") && word.length > 2) syllables += 1;
+
+  return Math.max(1, syllables);
+}
+
+function validateK2Sentence(sentence: string): { valid: boolean; reason?: string } {
+  if (countSentences(sentence) !== 1) return { valid: false, reason: "Must be exactly one sentence" };
+  if (countWords(sentence) > 10) return { valid: false, reason: "Sentence exceeds 10 words" };
+
+  const words = sentence
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z']/g, ""))
+    .filter(Boolean);
+
+  if (words.some((w) => K2_BANNED_WORDS.has(w))) return { valid: false, reason: "Contains banned vocabulary" };
+  if (words.some((w) => K2_FORBIDDEN_CONNECTORS.has(w))) return { valid: false, reason: "Contains forbidden connector" };
+  if (words.some((w) => countSyllables(w) > 3)) return { valid: false, reason: "Contains word longer than 3 syllables" };
+
+  return { valid: true };
+}
+
+function validateK2Topic(topic: string): { valid: boolean; reason?: string } {
+  if (!topic?.trim()) return { valid: false, reason: "Missing topic" };
+  if (countSentences(topic) > 1) return { valid: false, reason: "Topic must be one sentence/phrase" };
+  if (countWords(topic) > 8) return { valid: false, reason: "Topic is too long" };
+
+  const words = topic
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z']/g, ""))
+    .filter(Boolean);
+
+  if (words.some((w) => K2_BANNED_WORDS.has(w))) return { valid: false, reason: "Topic contains banned vocabulary" };
+  if (words.some((w) => countSyllables(w) > 3)) return { valid: false, reason: "Topic has complex words" };
+
+  return { valid: true };
+}
+
+function validateK2Result(result: any): { valid: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+
+  const sentenceCheck = validateK2Sentence(result?.sentence || "");
+  if (!sentenceCheck.valid && sentenceCheck.reason) reasons.push(sentenceCheck.reason);
+
+  const topicCheck = validateK2Topic(result?.topic || "");
+  if (!topicCheck.valid && topicCheck.reason) reasons.push(topicCheck.reason);
+
+  const keyWords = Array.isArray(result?.keyWords) ? result.keyWords : [];
+  if (keyWords.length > 3) reasons.push("K-2 keyWords must be 3 or fewer");
+
+  return { valid: reasons.length === 0, reasons };
+}
+
 interface ContentHistory {
   themes: string[];
   topics: string[];
@@ -99,33 +184,54 @@ serve(async (req) => {
     const isK2 = grade === "K-2";
 
     const systemPrompt = isK2
-      ? `You are an expert English Language Development specialist creating anchor sentences for K-2 ELL students.
+      ? `STRICT K-2 LANGUAGE RULES — YOU MUST FOLLOW THESE EXACTLY:
+
+Maximum 1 sentence for the anchor/listening sentence. Never 2 or 3 sentences.
+Maximum 8 words per sentence.
+Only use words a 5-7 year old native English speaker would know.
+NEVER use: agility, focus, required, defenders, weaving, balance, features, unique, surface, legendary, behavior, appearance, or any word longer than 3 syllables.
+Sentence structure: simple subject + verb + object only. No subordinate clauses, no 'while', no 'both...and', no 'must'.
+Good K-2 example: "Soccer players kick the ball into the net."
+Good K-2 example: "A lion lives in the hot, sunny grass."
+Bad K-2 example: ANYTHING resembling advanced 4th-5th grade text.
+The topic must also be simplified:
+- Bad K-2 topic: "The skills needed to play soccer"
+- Good K-2 topic: "Playing soccer is fun!"
+- Bad K-2 topic: "The unique surface features of Mars"
+- Good K-2 topic: "Mars is a red planet"
+Every single piece of content generated for K-2 must pass this test: Could a 6-year-old who is still learning English understand this? If not, rewrite it.
+
+You are an expert English Language Development specialist creating anchor sentences for K-2 ELL students.
 
 Generate ONE anchor sentence of exactly 1 sentence, maximum 8 words. Use simple subject-verb-object structure.
 Use only Tier 1 (common everyday) vocabulary.
+Use maximum 3 key vocabulary words.
 
 Theme for this session: "${theme}"
 
-Create a specific topic within this theme. For example:
-- Theme "Nature & animals" → topic "A butterfly in the garden"
-- Theme "School & classroom life" → topic "Playing at recess"
+Create a specific topic within this theme using concrete, visual ideas only.
+Examples:
+- Theme "Nature & animals" → topic "A butterfly in a flower garden"
+- Theme "School & classroom life" → topic "Kids play on the school swing"
+- Theme "Space & planets" → topic "Mars is a red planet"
 ${historyContext}
 ${STRICT_RULES}
 
 RULES:
 - Exactly 1 sentence, maximum 8 words
-- Simple subject-verb-object structure
-- Tier 1 vocabulary only (common everyday words)
+- Simple subject-verb-object structure only
+- Tier 1 vocabulary only
+- Concrete and visual topic only
+- Maximum 3 keyWords
 - Grade-appropriate for K-2
-- Vivid, specific, kid-friendly language
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
   "sentence": "<the 1 sentence anchor, max 8 words>",
   "theme": "${theme}",
-  "topic": "<specific topic>",
+  "topic": "<simple concrete topic>",
   "category": "<category>",
-  "keyWords": ["<4-6 important words from the sentence>"]
+  "keyWords": ["<up to 3 important words from the sentence>"]
 }`
       : `You are an expert English Language Development specialist creating anchor passages for grades 3-5 ELL students.
 
@@ -163,49 +269,109 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "keyWords": ["<8-12 important words from the passage for scoring>"]
 }`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate an anchor passage with theme "${theme}" for grades ${grade}. Make it vivid, educational, and 2-3 sentences long.` },
-        ],
-      }),
-    });
+    const maxAttempts = isK2 ? 4 : 1;
+    let result: any = null;
+    let lastK2FailureReasons: string[] = [];
 
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const retryInstruction = isK2 && attempt > 0
+        ? `Previous output failed K-2 checks: ${lastK2FailureReasons.join("; ")}. Regenerate with simpler vocabulary, exactly one short sentence, and a concrete topic.`
+        : "";
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: `${isK2 ? "Generate one simple K-2 anchor sentence" : "Generate an anchor passage"} with theme "${theme}" for grades ${grade}. ${retryInstruction}`,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("AI gateway error:", response.status, t);
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limited" }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "Payment required" }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw new Error("AI gateway error");
       }
-      throw new Error("AI gateway error");
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      let parsed: any;
+      try {
+        const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        parsed = JSON.parse(cleaned);
+      } catch {
+        console.error("Failed to parse AI response:", content);
+        if (!isK2) {
+          result = {
+            sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
+            theme,
+            topic: "The building of the ancient pyramids",
+            category: "Descriptive language models",
+            keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
+          };
+          break;
+        }
+        lastK2FailureReasons = ["Invalid JSON output"];
+        continue;
+      }
+
+      if (!parsed.topic) parsed.topic = parsed.theme;
+
+      if (!isK2) {
+        result = parsed;
+        break;
+      }
+
+      const validation = validateK2Result(parsed);
+      if (validation.valid) {
+        result = parsed;
+        break;
+      }
+
+      lastK2FailureReasons = validation.reasons;
+      console.warn(`K-2 validation failed (attempt ${attempt + 1}/${maxAttempts}):`, validation.reasons);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    let result;
-    try {
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      result = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse AI response:", content);
-      result = {
-        sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
-        theme,
-        topic: "The building of the ancient pyramids",
-        category: "Descriptive language models",
-        keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
-      };
+    if (!result) {
+      if (isK2) {
+        result = {
+          sentence: "Mars is a red planet in space.",
+          theme,
+          topic: "Mars is a red planet",
+          category: "Descriptive language models",
+          keyWords: ["Mars", "red", "planet"],
+        };
+      } else {
+        result = {
+          sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
+          theme,
+          topic: "The building of the ancient pyramids",
+          category: "Descriptive language models",
+          keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
+        };
+      }
     }
 
     if (!result.topic) {
