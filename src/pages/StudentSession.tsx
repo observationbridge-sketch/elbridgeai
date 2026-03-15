@@ -1751,10 +1751,25 @@ interface Part1Props {
   isK2?: boolean;
 }
 
+function generateMemoryPairs(anchor: AnchorSentence, isK2?: boolean): { words: string[]; matches: string[] } {
+  const keyWords = (anchor.keyWords || []).filter(w => w.length > 2);
+  const pairCount = isK2 ? 3 : 4;
+  const selected = keyWords.slice(0, pairCount);
+  const sentenceWords = anchor.sentence.split(/\s+/).map(w => w.replace(/[^a-zA-Z']/g, "")).filter(w => w.length > 3 && !selected.map(s => s.toLowerCase()).includes(w.toLowerCase()));
+  while (selected.length < pairCount && sentenceWords.length > 0) selected.push(sentenceWords.shift()!);
+  while (selected.length < pairCount) selected.push(selected[selected.length - 1] || "word");
+  if (isK2) {
+    const emojiMap: Record<string, string> = { sun:"☀️",moon:"🌙",star:"⭐",tree:"🌳",flower:"🌸",fish:"🐟",bird:"🐦",cat:"🐱",dog:"🐕",lion:"🦁",bear:"🐻",water:"💧",fire:"🔥",ball:"⚽",book:"📖",house:"🏠",mars:"🔴",planet:"🪐",space:"🚀",red:"🔴",butterfly:"🦋",garden:"🌻",kick:"🦶",play:"🎮",run:"🏃" };
+    const defaults = ["🌟","🎯","💎","🌈","🔮","🎪"];
+    return { words: selected, matches: selected.map((w,i) => emojiMap[w.toLowerCase()] || defaults[i % defaults.length]) };
+  }
+  return { words: selected, matches: selected.map(w => `means "${w}"`) };
+}
+
 function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
-  part1Submitted, part1Feedback, part1ShowSentence, setPart1ShowSentence,
-  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, onRetryFillBlanks, isK2,
+  part1Submitted, part1Feedback, onStep1Done, onStep2Submit,
+  onStep3Complete, onStep4Complete, onStep5Complete, onNext, onRetryFillBlanks, isK2,
 }: Part1Props) {
   // Local scaffold state
   const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
