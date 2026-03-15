@@ -2081,12 +2081,98 @@ function Part3ChallengeView({
 // ═══════════════════════════════════════════════
 // Shared Components
 // ═══════════════════════════════════════════════
-function MicrophoneInput({ speech, answer, setAnswer, disabled }: {
+function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
   speech: ReturnType<typeof useSpeechRecognition>;
   answer: string;
   setAnswer: (v: string) => void;
   disabled?: boolean;
+  isK2?: boolean;
 }) {
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTranscriptRef = useRef(answer);
+
+  // K-2 auto-stop after 3s of silence
+  useEffect(() => {
+    if (!isK2 || !speech.isListening) {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      return;
+    }
+    // Reset timer whenever transcript changes
+    if (answer !== lastTranscriptRef.current) {
+      lastTranscriptRef.current = answer;
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        if (speech.isListening) {
+          speech.stopListening();
+        }
+      }, 3000);
+    } else if (!silenceTimerRef.current) {
+      // Start initial silence timer when recording starts
+      silenceTimerRef.current = setTimeout(() => {
+        if (speech.isListening) {
+          speech.stopListening();
+        }
+      }, 5000); // 5s for initial silence (student may need time)
+    }
+    return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
+  }, [isK2, speech.isListening, answer]);
+
+  if (isK2) {
+    return (
+      <div className="flex flex-col items-center gap-4">
+        {speech.isSupported ? (
+          <>
+            {!disabled && !answer && (
+              <p className="text-2xl font-bold text-foreground text-center">
+                Tap 🎤 to talk!
+              </p>
+            )}
+            <button
+              onClick={speech.isListening ? speech.stopListening : speech.startListening}
+              disabled={disabled}
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all shadow-xl ${
+                disabled ? "bg-muted text-muted-foreground"
+                : speech.isListening
+                  ? "bg-destructive text-destructive-foreground animate-pulse scale-110"
+                  : "bg-success text-success-foreground hover:scale-105 active:scale-95"
+              }`}
+            >
+              {speech.isListening ? <MicOff className="h-14 w-14" /> : <Mic className="h-14 w-14" />}
+            </button>
+            {speech.isListening && (
+              <p className="text-lg text-destructive font-medium animate-pulse">
+                🔴 Listening...
+              </p>
+            )}
+            {answer && !speech.isListening && (
+              <div className="w-full bg-muted/50 rounded-lg p-4 border border-border">
+                <p className="text-sm text-muted-foreground mb-1">What I heard:</p>
+                <p className="text-lg text-foreground font-medium">{answer}</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 text-center">
+              <p className="text-lg text-muted-foreground">
+                🎤 Can't use the mic. Type below!
+              </p>
+            </div>
+            <Input
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Type here..."
+              className="h-14 text-lg"
+              disabled={disabled}
+            />
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {speech.isSupported ? (
