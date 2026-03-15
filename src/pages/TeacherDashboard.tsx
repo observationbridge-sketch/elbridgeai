@@ -339,11 +339,46 @@ const TeacherDashboard = () => {
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${sessionStarted ? "bg-success/15 text-success" : "bg-warning/15 text-warning"}`}>
                           {sessionStatus}
                         </span>
-                        {activeGradeBand && (
-                          <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">
-                            {activeGradeBand}
-                          </span>
-                        )}
+                        {/* Grade Band Toggle */}
+                        <div className="relative group">
+                          <div className={`flex rounded-lg border overflow-hidden ${sessionStarted ? "opacity-80" : ""}`}
+                            style={{ borderColor: "hsl(var(--accent))" }}
+                          >
+                            {(["K-2", "3-5"] as const).map((band) => {
+                              const isSelected = activeGradeBand === band;
+                              return (
+                                <button
+                                  key={band}
+                                  disabled={sessionStarted}
+                                  onClick={async () => {
+                                    if (band === activeGradeBand) return;
+                                    setActiveGradeBand(band);
+                                    setGradeBand(band);
+                                    if (sessionCode && user) {
+                                      await supabase.from("sessions").update({ grade_band: band } as any).eq("code", sessionCode).eq("teacher_id", user.id);
+                                    }
+                                    toast.success(`Grade band set to ${band} ✓`);
+                                  }}
+                                  className={`text-xs font-medium px-3 py-1 transition-all flex items-center gap-1 ${
+                                    isSelected
+                                      ? "bg-accent text-accent-foreground"
+                                      : "bg-transparent text-accent hover:bg-accent/10"
+                                  } ${sessionStarted ? "cursor-not-allowed" : "cursor-pointer"}`}
+                                >
+                                  {sessionStarted && isSelected && <Lock className="h-3 w-3" />}
+                                  {band}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {sessionStarted && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50">
+                              <div className="bg-foreground text-background text-[10px] px-2 py-1 rounded whitespace-nowrap shadow-lg">
+                                Grade band cannot be changed once session has started
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Code display */}
