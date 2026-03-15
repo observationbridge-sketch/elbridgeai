@@ -2293,8 +2293,8 @@ function Part2StrategyView({
         {/* Word bank — hide for K-2 recording */}
         {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
           <div className="bg-muted/50 rounded-lg p-3 border border-border">
-            <p className="text-sm text-muted-foreground mb-2">
-              {isK2 && activity.strategy === "sentence_frames" ? "👆 Tap the right word!" : "📚 Word bank — use these words if you'd like:"}
+            <p className={`${isK2 && activity.strategy === "sentence_frames" ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
+              {isK2 && activity.strategy === "sentence_frames" ? "" : "📚 Word bank — use these words if you'd like:"}
             </p>
             <div className="flex flex-wrap gap-2">
               {activity.wordBank.map((word, i) => (
