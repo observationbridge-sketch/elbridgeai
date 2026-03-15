@@ -211,6 +211,7 @@ export function WordBankFillBlanks({
       onComplete({ correct: correctCount, total: blankCount });
     } else {
       // Bounce wrong answers back to bank
+      if (correctCount > 0) sounds.playPartiallyCorrect(); else sounds.playWrong();
       setPhase("feedback");
       setTimeout(() => {
         const resetAnswers = [...answers];
