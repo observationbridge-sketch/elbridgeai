@@ -1370,9 +1370,10 @@ function Part1View({
   part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, isK2,
 }: Part1Props) {
   // Local scaffold state
-  const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[] } | null>(null);
+  const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
   const [blankAnswers, setBlankAnswers] = useState<string[]>([]);
   const [blankSubmitted, setBlankSubmitted] = useState(false);
+  const [selectedBankWord, setSelectedBankWord] = useState<string | null>(null);
   const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
