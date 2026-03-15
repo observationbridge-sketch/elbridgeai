@@ -1398,8 +1398,27 @@ function Part1View({
     }
   }, [step, anchor]);
 
+  const [blankScore, setBlankScore] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
+
   const handleBlankSubmit = () => {
+    if (!blanks) return;
+    let correctCount = 0;
+    blanks.missingWords.forEach((word, i) => {
+      const studentAnswer = (blankAnswers[i] || "").toLowerCase().trim();
+      const correctAnswer = word.toLowerCase().trim();
+      // Accept exact match or close spelling (levenshtein <= 2, but reject single-char answers)
+      const isMatch = studentAnswer.length > 1 && (studentAnswer === correctAnswer || levenshtein(studentAnswer, correctAnswer) <= 2);
+      if (isMatch) correctCount++;
+    });
+    setBlankScore({ correct: correctCount, total: blanks.missingWords.length });
     setBlankSubmitted(true);
+  };
+
+  const isBlankCorrect = (i: number): boolean => {
+    if (!blanks) return false;
+    const studentAnswer = (blankAnswers[i] || "").toLowerCase().trim();
+    const correctAnswer = blanks.missingWords[i].toLowerCase().trim();
+    return studentAnswer.length > 1 && (studentAnswer === correctAnswer || levenshtein(studentAnswer, correctAnswer) <= 2);
   };
 
   const handleJumbleSubmit = () => {
