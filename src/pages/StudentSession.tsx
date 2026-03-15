@@ -2225,11 +2225,11 @@ function Part1View({
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 {jumble.jumbled.map((word, i) => {
-                  const isUsed = isK2 && jumbleTappedWords.includes(word);
+                  const isUsed = isK2 && usedJumbleIndices.has(i);
                   return (
                     <button
                       key={i}
-                      onClick={() => !isUsed && !jumbleSubmitted && (isK2 ? handleChipTap(word) : undefined)}
+                      onClick={() => !isUsed && !jumbleSubmitted && (isK2 ? handleChipTap(word, i) : undefined)}
                       disabled={isUsed || jumbleSubmitted}
                       className={`px-4 py-2 rounded-full font-medium border-2 transition-all duration-200 select-none
                         ${isK2 ? "text-lg min-h-[48px]" : "text-sm"}
