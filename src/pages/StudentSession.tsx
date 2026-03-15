@@ -1953,8 +1953,8 @@ function Part2StrategyView({
             {/* Large K-2 next button with pulse + countdown */}
             <Button
               variant="success"
-              className={`w-full text-2xl py-8 min-h-[70px] rounded-xl shadow-lg ${
-                isCorrect && k2Countdown !== null ? "animate-pulse" : ""
+              className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px]" : "text-lg py-5"} ${
+                isCorrect && k2Countdown !== null ? (isK2 ? "animate-soft-pulse" : "animate-soft-pulse-fast") : ""
               }`}
               onClick={() => {
                 cancelCountdown();
