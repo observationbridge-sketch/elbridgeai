@@ -318,6 +318,8 @@ const StudentSession = () => {
   const [part2Submitted, setPart2Submitted] = useState(false);
   const [part2Feedback, setPart2Feedback] = useState<string | null>(null);
   const [part2IsCorrect, setPart2IsCorrect] = useState(false);
+  const [activityError, setActivityError] = useState(false);
+  const [activityRetryCount, setActivityRetryCount] = useState(0);
   const [part2Score, setPart2Score] = useState(0);
   const [part2Strategy, setPart2Strategy] = useState<Strategy | null>(null);
   const [part2StrategyReason, setPart2StrategyReason] = useState("");
