@@ -608,7 +608,9 @@ const StudentSession = () => {
         : `Good effort! You got ${matched} out of ${total} words. Here's the passage again: "${anchor.sentence}"`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    if (pct >= 0.8) sounds.playCorrect(); else if (pct >= 0.5) sounds.playPartiallyCorrect(); else sounds.playWrong();
     gamification.addPoints(POINTS.STEP2_REPEAT);
+    sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
       gamification.awardBadge("first_voice");
