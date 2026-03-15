@@ -1178,10 +1178,10 @@ const StudentSession = () => {
         </div>
       </div>
 
-      {/* K-2 Animal Companion Guide between activities */}
-      {isK2 && !loading && gamification.loaded && (
+      {/* Animal Companion Profile Card — all grade bands */}
+      {!loading && gamification.loaded && (
         <div className="flex justify-center py-4">
-          <div className="text-center animate-bounce-slow">
+          <div className={`text-center ${isK2 ? "animate-bounce-slow" : ""}`}>
             <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
           </div>
         </div>
