@@ -687,9 +687,24 @@ const StudentSession = () => {
   };
 
   // ─── Part 2 handlers ───
-  const fetchPart2Activity = useCallback(async (index: number) => {
+  const makeFallbackActivity = useCallback((index: number): Part2Activity => ({
+    type: "sentence_frame",
+    question: `Complete this sentence about ${sessionTopic}: The ___ was ___ because ___.`,
+    sentenceFrame: "The ___ was ___ because ___.",
+    modelAnswer: `The ${sessionTopic} was fascinating because it taught us so much.`,
+    acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic", "because", "was"],
+    difficulty: index + 1,
+    theme: sessionTheme,
+    strategy: "sentence_frames",
+    weakestDomain: "none",
+    strategyReason: "Default strategy",
+    inputType: "typing",
+  }), [sessionTheme, sessionTopic]);
+
+  const fetchPart2Activity = useCallback(async (index: number, retryAttempt = 0) => {
     setLoading(true);
-    setLoadingMessage("Getting your next activity ready...");
+    setActivityError(false);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Getting your next activity ready...");
     setPart2Submitted(false);
     setPart2Feedback(null);
     setPart2Answer("");
@@ -697,18 +712,27 @@ const StudentSession = () => {
     tts.stop();
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-part2", {
-        body: {
-          grade: effectiveGradeBand,
-          theme: sessionTheme,
-          topic: sessionTopic,
-          domainScores,
-          questionIndex: index,
-          contentHistory,
-        },
-      });
+      const { data, error } = await fetchWithTimeout(
+        supabase.functions.invoke("generate-part2", {
+          body: {
+            grade: effectiveGradeBand,
+            theme: sessionTheme,
+            topic: sessionTopic,
+            domainScores,
+            questionIndex: index,
+            contentHistory,
+          },
+        }),
+        8000
+      );
       if (error) throw error;
       let activity = data as Part2Activity;
+
+      // Content validation
+      if (!validatePart2Activity(activity)) {
+        console.error("Part 2 content validation failed. Received:", activity);
+        throw new Error("Invalid activity content");
+      }
       
       // CLIENT-SIDE VALIDATION: Ensure positions 5-6 don't have heavy writing tasks
       if (index >= 4) {
@@ -724,7 +748,6 @@ const StudentSession = () => {
           console.warn(`Position ${index + 1} had heavy activity — using light fallback`);
           const isK2 = effectiveGradeBand === "K-2";
           if (index === 5) {
-            // Position 6 — light & fun
             activity = {
               type: "light_fun",
               inputType: isK2 ? "recording" : "typing",
@@ -740,7 +763,6 @@ const StudentSession = () => {
               strategyReason: "Light ending activity (client fallback)",
             };
           } else {
-            // Position 5 — medium-easy
             activity = {
               type: "true_false",
               inputType: isK2 ? "recording" : "multiple_choice",
@@ -761,25 +783,33 @@ const StudentSession = () => {
       setPart2Activity(activity);
       setPart2Strategy(activity.strategy);
       setPart2StrategyReason(activity.strategyReason);
-    } catch {
-      toast.error("Failed to load activity. Using backup.");
-      setPart2Activity({
-        type: "sentence_frame",
-        question: `Complete this sentence about ${sessionTopic}: The ___ was ___ because ___.`,
-        sentenceFrame: "The ___ was ___ because ___.",
-        modelAnswer: `The ${sessionTopic} was fascinating because it taught us so much.`,
-        acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic", "because", "was"],
-        difficulty: index + 1,
-        theme: sessionTheme,
-        strategy: "sentence_frames",
-        weakestDomain: "none",
-        strategyReason: "Default strategy",
-        inputType: "typing",
-      });
-    } finally {
+      setActivityRetryCount(0);
       setLoading(false);
+    } catch (err) {
+      console.error("fetchPart2Activity failed (attempt", retryAttempt + 1, "):", err);
+      if (retryAttempt < 2) {
+        // Auto-retry silently for validation failures, show error for timeouts on 2nd attempt
+        if (retryAttempt === 0) {
+          // Silent retry
+          fetchPart2Activity(index, retryAttempt + 1);
+          return;
+        } else {
+          // Show error with retry button
+          setActivityError(true);
+          setActivityRetryCount(retryAttempt + 1);
+          setLoading(false);
+        }
+      } else {
+        // 3rd failure — use fallback and move on
+        console.warn("Max retries reached, using fallback activity");
+        setPart2Activity(makeFallbackActivity(index));
+        setPart2Strategy("sentence_frames");
+        setPart2StrategyReason("Fallback after retries");
+        setActivityRetryCount(0);
+        setLoading(false);
+      }
     }
-  }, [sessionTheme, sessionTopic, domainScores]);
+  }, [sessionTheme, sessionTopic, domainScores, effectiveGradeBand, contentHistory, makeFallbackActivity]);
 
   const submitPart2 = (overrideAnswer?: string) => {
     const answerText = overrideAnswer || part2Answer;
