@@ -1903,7 +1903,7 @@ function Part2StrategyView({
             ) : inputType === "record_then_type" ? (
               <div className="space-y-4">
                 <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer here..." className="min-h-[100px]" disabled={submitted} />
-                <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} />
+                <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} />
                 <p className="text-xs text-muted-foreground">✍️ Type your answer, then 🎤 record yourself saying it!</p>
               </div>
             ) : inputType === "listen_then_type" ? (
