@@ -882,6 +882,10 @@ const StudentSession = () => {
     setSessionEnded(true);
   };
 
+  // ─── K-2 feeling rating state ───
+  const [showFeelingRating, setShowFeelingRating] = useState(false);
+  const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
+
   // ─── Badge/Leaderboard screens ───
   if (showView === "badges") {
     return <BadgeCollection earnedBadgeIds={gamification.earnedBadgeIds} onBack={() => setShowView("session")} />;
@@ -889,9 +893,6 @@ const StudentSession = () => {
   if (showView === "leaderboard") {
     return <Leaderboard teacherId={teacherId} currentStudentName={studentName} onBack={() => setShowView("session")} />;
   }
-  // ─── K-2 feeling rating state (must be before early returns) ───
-  const [showFeelingRating, setShowFeelingRating] = useState(false);
-  const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
 
   // ─── Session ended — FULL CELEBRATION SCREEN ───
   if (sessionEnded) {
