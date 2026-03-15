@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, Download,
-  ChevronDown, ChevronUp, Users, BarChart3, Calendar,
+  ChevronDown, ChevronUp, Users, BarChart3, Calendar, Star, Flame,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -56,6 +56,13 @@ interface StudentGrowthData {
   strongest: string;
   weakest: string;
   wasAdjusted: boolean;
+  // Tier data
+  sentenceFrameTier: number;
+  consecutiveTierDrops: number;
+  tierHistory: { tier: number; date: string }[];
+  currentStreak: number;
+  lastTopics: string[];
+  domainAccuracy: Record<string, number>;
 }
 
 interface SessionDomainScores {
@@ -100,6 +107,16 @@ const DOMAIN_COLORS: Record<string, string> = {
 
 const DOMAIN_LABELS = ["reading", "writing", "speaking", "listening"];
 
+const TIER_LABELS: Record<number, { label: string; emoji: string }> = {
+  1: { label: "Beginning", emoji: "🌱" },
+  2: { label: "Developing", emoji: "🌿" },
+  3: { label: "Expanding", emoji: "🌳" },
+};
+
+function getTierLabel(tier: number) {
+  return TIER_LABELS[tier] || TIER_LABELS[1];
+}
+
 function getTrendArrow(sessions: SessionDomainScores[]): "up" | "down" | "stable" {
   if (sessions.length < 2) return "stable";
   const recent = sessions.slice(0, 3);
@@ -141,6 +158,18 @@ function exportStudentCSV(student: StudentGrowthData) {
   a.download = `${student.name}-proficiency-progress.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ─── Star Rating Component ───
+function TierStars({ tier, size = "sm" }: { tier: number; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "h-4 w-4" : "h-3 w-3";
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[1, 2, 3].map((i) => (
+        <Star key={i} className={`${cls} ${i <= tier ? "fill-warning text-warning" : "text-muted-foreground/30"}`} />
+      ))}
+    </span>
+  );
 }
 
 // ─── Sparkline Component ───
@@ -201,11 +230,20 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
       const sessionMap = new Map<string, SessionRecord>();
       sessions.forEach((s) => sessionMap.set(s.id, s as SessionRecord));
 
-      // Get all students across all sessions
-      const { data: allStudents } = await supabase
-        .from("session_students")
-        .select("id, student_name, session_id, joined_at")
-        .in("session_id", sessionIds);
+      // Parallel fetches
+      const [studentsRes, responsesRes, pointsRes, tierHistoryRes, contentHistoryRes] = await Promise.all([
+        supabase.from("session_students").select("id, student_name, session_id, joined_at").in("session_id", sessionIds),
+        supabase.from("student_responses").select("id, student_id, session_id, domain, is_correct, grade_band, created_at, session_part").in("session_id", sessionIds),
+        supabase.from("student_points").select("student_name, sentence_frame_tier, consecutive_tier_drops, current_streak").eq("teacher_id", teacherId),
+        supabase.from("student_tier_history" as any).select("student_name, tier, recorded_at").eq("teacher_id", teacherId).order("recorded_at", { ascending: false }).limit(500),
+        supabase.from("student_content_history").select("student_name, topic, session_date").eq("teacher_id", teacherId).order("session_date", { ascending: false }).limit(200),
+      ]);
+
+      const allStudents = studentsRes.data;
+      const responses = responsesRes.data;
+      const pointsData = pointsRes.data || [];
+      const tierHistoryData = (tierHistoryRes.data || []) as any[];
+      const contentHistoryData = contentHistoryRes.data || [];
 
       if (!allStudents || allStudents.length === 0) {
         setStudents([]);
@@ -213,11 +251,23 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
         return;
       }
 
-      // Get all responses
-      const { data: responses } = await supabase
-        .from("student_responses")
-        .select("id, student_id, session_id, domain, is_correct, grade_band, created_at, session_part")
-        .in("session_id", sessionIds);
+      // Build lookup maps
+      const pointsMap = new Map<string, any>();
+      pointsData.forEach((p: any) => pointsMap.set(p.student_name, p));
+
+      const tierHistoryMap = new Map<string, { tier: number; date: string }[]>();
+      tierHistoryData.forEach((t: any) => {
+        const list = tierHistoryMap.get(t.student_name) || [];
+        list.push({ tier: t.tier, date: new Date(t.recorded_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) });
+        tierHistoryMap.set(t.student_name, list);
+      });
+
+      const topicsMap = new Map<string, string[]>();
+      contentHistoryData.forEach((c: any) => {
+        const list = topicsMap.get(c.student_name) || [];
+        if (!list.includes(c.topic)) list.push(c.topic);
+        topicsMap.set(c.student_name, list);
+      });
 
       // Group students by name
       const studentsByName = new Map<string, SessionStudent[]>();
@@ -238,6 +288,20 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
 
         if (studentResponses.length === 0) continue;
 
+        // Domain accuracy across all responses
+        const domainTotals: Record<string, { correct: number; total: number }> = {};
+        studentResponses.forEach((r) => {
+          const d = r.domain.toLowerCase();
+          if (!domainTotals[d]) domainTotals[d] = { correct: 0, total: 0 };
+          domainTotals[d].total++;
+          if (r.is_correct) domainTotals[d].correct++;
+        });
+        const domainAccuracy: Record<string, number> = {};
+        DOMAIN_LABELS.forEach((d) => {
+          const t = domainTotals[d];
+          domainAccuracy[d] = t && t.total > 0 ? Math.round((t.correct / t.total) * 100) : 0;
+        });
+
         // Group responses by session
         const bySession = new Map<string, typeof studentResponses>();
         studentResponses.forEach((r) => {
@@ -251,7 +315,6 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
         let latestGradeBand = "3-5";
         let wasAdjusted = false;
 
-        // Sort sessions by date
         const sortedSessionIds = [...bySession.keys()].sort((a, b) => {
           const sa = sessionMap.get(a);
           const sb = sessionMap.get(b);
@@ -269,16 +332,16 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
           if (prevGradeBand && prevGradeBand !== gb) wasAdjusted = true;
           prevGradeBand = gb;
 
-          const domainTotals: Record<string, { correct: number; total: number }> = {};
+          const sessionDomainTotals: Record<string, { correct: number; total: number }> = {};
           for (const r of resps) {
             const d = r.domain.toLowerCase();
-            if (!domainTotals[d]) domainTotals[d] = { correct: 0, total: 0 };
-            domainTotals[d].total++;
-            if (r.is_correct) domainTotals[d].correct++;
+            if (!sessionDomainTotals[d]) sessionDomainTotals[d] = { correct: 0, total: 0 };
+            sessionDomainTotals[d].total++;
+            if (r.is_correct) sessionDomainTotals[d].correct++;
           }
 
           const pct = (d: string) => {
-            const t = domainTotals[d];
+            const t = sessionDomainTotals[d];
             return t && t.total > 0 ? Math.round((t.correct / t.total) * 100) : 0;
           };
 
@@ -320,10 +383,18 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
         const lastSession = sessionMap.get(sortedSessionIds[0]);
         const lastActive = lastSession ? new Date(lastSession.created_at).toLocaleDateString() : "N/A";
 
+        // Tier data
+        const pts = pointsMap.get(name);
+        const sentenceFrameTier = (pts as any)?.sentence_frame_tier || 1;
+        const consecutiveTierDrops = (pts as any)?.consecutive_tier_drops || 0;
+        const currentStreak = pts?.current_streak || 0;
+        const tierHistory = (tierHistoryMap.get(name) || []).slice(0, 5).reverse();
+        const lastTopics = (topicsMap.get(name) || []).slice(0, 3);
+
         growthData.push({
           name,
           gradeBand: latestGradeBand,
-          sessions: sessionScores.reverse(), // chronological order for charts
+          sessions: sessionScores.reverse(),
           totalSessions,
           thisMonthSessions,
           lastActive,
@@ -331,6 +402,12 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
           strongest,
           weakest,
           wasAdjusted,
+          sentenceFrameTier,
+          consecutiveTierDrops,
+          tierHistory,
+          currentStreak,
+          lastTopics,
+          domainAccuracy,
         });
       }
 
@@ -356,6 +433,12 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
     let thisWeekSessions = 0;
     let lastWeekSessions = 0;
     const inactiveStudents: string[] = [];
+    const flaggedStudents: string[] = [];
+
+    // Tier distribution
+    const tierCounts = { 1: 0, 2: 0, 3: 0 } as Record<number, number>;
+    let tierSum = 0;
+    let tierCount = 0;
 
     students.forEach((s) => {
       DOMAIN_LABELS.forEach((d) => {
@@ -366,7 +449,6 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
       });
 
       s.sessions.forEach((sess) => {
-        // Rough date parsing from formatted string
         const parsed = new Date(sess.date + ", " + now.getFullYear());
         if (!isNaN(parsed.getTime())) {
           if (parsed >= sevenDaysAgo) thisWeekSessions++;
@@ -377,6 +459,16 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
       const lastDate = new Date(s.lastActive);
       if (!isNaN(lastDate.getTime()) && lastDate < sevenDaysAgo) {
         inactiveStudents.push(s.name);
+      }
+
+      // Tier tracking
+      const tier = s.sentenceFrameTier;
+      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+      tierSum += tier;
+      tierCount++;
+
+      if (s.consecutiveTierDrops >= 2) {
+        flaggedStudents.push(s.name);
       }
     });
 
@@ -390,7 +482,9 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
     const downCount = allTrends.filter((t) => t === "down").length;
     const classTrend: "up" | "down" | "stable" = upCount > downCount ? "up" : downCount > upCount ? "down" : "stable";
 
-    return { avgLevels, classTrend, thisWeekSessions, lastWeekSessions, inactiveStudents };
+    const avgTier = tierCount > 0 ? Math.round((tierSum / tierCount) * 10) / 10 : 1;
+
+    return { avgLevels, classTrend, thisWeekSessions, lastWeekSessions, inactiveStudents, tierCounts, avgTier, flaggedStudents };
   }, [students]);
 
   // ─── Filter sessions by date range ───
@@ -463,7 +557,36 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
               </div>
 
               {/* Stats */}
-              <div className="space-y-4">
+              <div className="space-y-3">
+                {/* Tier Distribution */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground mb-2">Sentence Frame Tiers</p>
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="text-sm text-muted-foreground">Avg:</span>
+                    <TierStars tier={Math.round(classOverview.avgTier)} size="md" />
+                    <span className="text-sm font-medium text-foreground ml-1">{classOverview.avgTier}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {([1, 2, 3] as const).map((tier) => {
+                      const info = getTierLabel(tier);
+                      const count = classOverview.tierCounts[tier] || 0;
+                      return (
+                        <div key={tier} className="flex items-center gap-2 text-xs">
+                          <span>{info.emoji}</span>
+                          <span className="text-foreground w-20">{info.label}</span>
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-warning rounded-full transition-all"
+                              style={{ width: `${students.length > 0 ? (count / students.length) * 100 : 0}%` }}
+                            />
+                          </div>
+                          <span className="text-muted-foreground w-6 text-right">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="bg-muted/50 rounded-lg p-4">
                   <p className="text-sm text-muted-foreground">Class Trend</p>
                   <div className="flex items-center gap-2 mt-1">
@@ -479,6 +602,18 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                   <p className="text-2xl font-bold text-foreground">{classOverview.thisWeekSessions}</p>
                   <p className="text-xs text-muted-foreground">vs. {classOverview.lastWeekSessions} last week</p>
                 </div>
+
+                {classOverview.flaggedStudents.length > 0 && (
+                  <div className="bg-warning/10 border border-warning/20 rounded-lg p-3">
+                    <p className="text-xs font-medium text-warning flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Needs Support (2+ tier drops)
+                    </p>
+                    <p className="text-xs text-foreground mt-1">
+                      {classOverview.flaggedStudents.join(", ")}
+                    </p>
+                  </div>
+                )}
 
                 {classOverview.inactiveStudents.length > 0 && (
                   <div className="bg-warning/10 border border-warning/20 rounded-lg p-3">
@@ -503,29 +638,42 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
           const isExpanded = expandedStudent === student.name;
           const trend = getTrendArrow(student.sessions);
           const filteredSessions = getFilteredSessions(student.sessions);
-
-          // Sparkline data: proficiency levels for last 8 sessions
           const sparkData = student.sessions.slice(-8);
+          const tierInfo = getTierLabel(student.sentenceFrameTier);
+          const needsSupport = student.consecutiveTierDrops >= 2;
 
           return (
-            <Card key={student.name} className="card-shadow border-border overflow-hidden">
+            <Card key={student.name} className={`card-shadow border-border overflow-hidden ${needsSupport ? "ring-2 ring-warning/40" : ""}`}>
               {/* Summary Row */}
               <div
                 className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
                 onClick={() => setExpandedStudent(isExpanded ? null : student.name)}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  {/* Name & Grade */}
-                  <div className="flex items-center gap-2 sm:w-40 shrink-0">
+                  {/* Name & Grade & Tier */}
+                  <div className="flex items-center gap-2 sm:w-48 shrink-0">
                     <div>
-                      <p className="font-bold text-foreground">{student.name}</p>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-foreground">{student.name}</p>
+                        {needsSupport && (
+                          <span className="text-xs bg-warning/15 text-warning px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <AlertTriangle className="h-2.5 w-2.5" /> Support
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{student.gradeBand}</span>
                         {student.wasAdjusted && (
                           <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded-full">adjusted</span>
                         )}
                         {trend === "up" && <TrendingUp className="h-3 w-3 text-success" />}
                         {trend === "down" && <TrendingDown className="h-3 w-3 text-destructive" />}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <TierStars tier={student.sentenceFrameTier} />
+                        <span className="text-xs text-muted-foreground">
+                          {tierInfo.emoji} {tierInfo.label}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -572,9 +720,96 @@ const StudentGrowthDashboard = ({ teacherId }: Props) => {
                 </div>
               </div>
 
-              {/* Expanded View */}
+              {/* Expanded Detail Panel */}
               {isExpanded && (
                 <div className="border-t border-border p-4 space-y-4 bg-muted/10">
+                  {/* Top row: Tier info + Domain accuracy + Streak + Topics */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {/* Tier Progression */}
+                    <div className="bg-card rounded-lg border border-border p-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Tier Progression</p>
+                      {student.tierHistory.length > 0 ? (
+                        <div className="flex items-end gap-1 h-12">
+                          {student.tierHistory.map((th, i) => (
+                            <div key={i} className="flex flex-col items-center gap-0.5 flex-1">
+                              <div
+                                className="w-full rounded-t bg-warning/80 transition-all"
+                                style={{ height: `${(th.tier / 3) * 100}%` }}
+                              />
+                              <span className="text-[9px] text-muted-foreground">{th.date}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-12">
+                          <p className="text-xs text-muted-foreground">No tier changes yet</p>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1 mt-2">
+                        <TierStars tier={student.sentenceFrameTier} size="md" />
+                        <span className="text-xs font-medium text-foreground ml-1">
+                          {tierInfo.emoji} {tierInfo.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Domain Accuracy */}
+                    <div className="bg-card rounded-lg border border-border p-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Accuracy by Domain</p>
+                      <div className="space-y-1.5">
+                        {DOMAIN_LABELS.map((d) => (
+                          <div key={d} className="flex items-center gap-2 text-xs">
+                            <span className="w-14 text-muted-foreground capitalize">{d.slice(0, 5)}</span>
+                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${student.domainAccuracy[d]}%`,
+                                  backgroundColor: DOMAIN_COLORS[d],
+                                }}
+                              />
+                            </div>
+                            <span className="text-foreground w-8 text-right font-medium">{student.domainAccuracy[d]}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Streak */}
+                    <div className="bg-card rounded-lg border border-border p-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Current Streak</p>
+                      <div className="flex items-center gap-2">
+                        <Flame className="h-6 w-6 text-warning" />
+                        <span className="text-2xl font-bold text-foreground">{student.currentStreak}</span>
+                        <span className="text-xs text-muted-foreground">correct</span>
+                      </div>
+                      {needsSupport && (
+                        <div className="mt-2 bg-warning/10 border border-warning/20 rounded p-2">
+                          <p className="text-[10px] font-medium text-warning flex items-center gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />
+                            Dropped tiers {student.consecutiveTierDrops}x in a row
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Last Topics */}
+                    <div className="bg-card rounded-lg border border-border p-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Last 3 Topics</p>
+                      {student.lastTopics.length > 0 ? (
+                        <div className="space-y-1">
+                          {student.lastTopics.map((topic, i) => (
+                            <p key={i} className="text-xs text-foreground truncate">
+                              {i + 1}. {topic}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No topics yet</p>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Date filter */}
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex gap-1">

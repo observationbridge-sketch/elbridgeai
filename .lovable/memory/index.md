@@ -25,9 +25,18 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 - K-2 listening: auto-play audio, emoji hint display, "Hear it again! 🔁"
 - K-2 positions 5-6: Speaking only (recording), must involve animal companion
 - Session difficulty curve: Easy→Medium→Hard→PEAK→Wind-down→Fun-finish
+- K-2 sentence_frames: No passage, tap-only word bank, max 2-syllable words
+
+## Adaptive Difficulty (K-2 Sentence Frames)
+- 3 Tiers: T1 (4-word/1blank/2choices), T2 (6-word/1blank/3choices), T3 (8-word/2blanks/4choices)
+- Advance: 3 consecutive correct → tier up. Drop: 2 consecutive wrong → tier down
+- Tier persisted in student_points.sentence_frame_tier
+- Tier history in student_tier_history table
+- consecutive_tier_drops tracked for "Needs Support" flagging (≥2 drops)
+- Labels: Beginning 🌱, Developing 🌿, Expanding 🌳
 
 ## Edge Functions
 - generate-anchor-sentence: AI anchor (verify_jwt=false)
 - generate-activity: Part 1 activities with K-2 content rules
-- generate-part2: Strategy activities with difficulty arc enforcement
+- generate-part2: Strategy activities with difficulty arc + tier param for K-2
 - generate-part3-challenge: Final challenge

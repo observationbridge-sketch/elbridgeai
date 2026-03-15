@@ -1155,9 +1155,13 @@ const StudentSession = () => {
           const newTier = sentenceFrameTier + 1;
           setSentenceFrameTier(newTier);
           setTierConsecutiveCorrect(0);
-          // Persist tier
-          supabase.from("student_points").update({ sentence_frame_tier: newTier } as any)
+          // Persist tier + reset drops on advancement
+          supabase.from("student_points").update({ sentence_frame_tier: newTier, consecutive_tier_drops: 0 } as any)
             .eq("student_name", studentName).eq("teacher_id", teacherId).then(() => {});
+          // Save tier history
+          supabase.from("student_tier_history" as any).insert({
+            student_name: studentName, teacher_id: teacherId, session_id: sessionId, tier: newTier,
+          } as any).then(() => {});
         }
       } else {
         const newWrong = tierConsecutiveWrong + 1;
@@ -1167,8 +1171,16 @@ const StudentSession = () => {
           const newTier = sentenceFrameTier - 1;
           setSentenceFrameTier(newTier);
           setTierConsecutiveWrong(0);
-          supabase.from("student_points").update({ sentence_frame_tier: newTier } as any)
-            .eq("student_name", studentName).eq("teacher_id", teacherId).then(() => {});
+          // Persist tier + increment drops
+          supabase.from("student_points").select("consecutive_tier_drops").eq("student_name", studentName).eq("teacher_id", teacherId).maybeSingle().then(({ data }) => {
+            const drops = ((data as any)?.consecutive_tier_drops || 0) + 1;
+            supabase.from("student_points").update({ sentence_frame_tier: newTier, consecutive_tier_drops: drops } as any)
+              .eq("student_name", studentName).eq("teacher_id", teacherId).then(() => {});
+          });
+          // Save tier history
+          supabase.from("student_tier_history" as any).insert({
+            student_name: studentName, teacher_id: teacherId, session_id: sessionId, tier: newTier,
+          } as any).then(() => {});
         }
       }
     }
