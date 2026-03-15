@@ -2344,14 +2344,39 @@ function Part2StrategyView({
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
-  const inputType = activity.inputType || "typing";
+  const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames";
+  const isK2SF = Boolean(isK2 && isSentenceFramesActivity);
+  const inputType = isK2SF ? "k2_word_tiles" : (activity.inputType || "typing");
 
   // K-2 Sentence Frame retry logic
-  const isK2SF = isK2 && activity.strategy === "sentence_frames";
   const [sfAttempts, setSfAttempts] = useState(0);
   const [sfWrongMessage, setSfWrongMessage] = useState<string | null>(null);
   const [sfRevealed, setSfRevealed] = useState(false);
   const [sfSelectedWord, setSfSelectedWord] = useState<string | null>(null);
+
+  const k2BlankSentence = useMemo(() => {
+    if (!isK2SF) return "";
+
+    const normalizeSpaces = (text: string) => text.replace(/\s+/g, " ").trim();
+    const candidates = [activity.sentenceFrame, activity.question]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map(normalizeSpaces);
+
+    const explicitBlank = candidates.find((text) => text.includes("___"));
+    if (explicitBlank) return explicitBlank;
+
+    const baseSentence = candidates[0] ?? "";
+    if (!baseSentence) return "___";
+
+    const modelAnswer = normalizeSpaces(activity.modelAnswer || "");
+    if (modelAnswer) {
+      const escaped = modelAnswer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const replaced = baseSentence.replace(new RegExp(`\\b${escaped}\\b`, "i"), "___");
+      if (replaced !== baseSentence) return replaced;
+    }
+
+    return `${baseSentence.replace(/[.!?]+$/, "")} ___`;
+  }, [isK2SF, activity.sentenceFrame, activity.question, activity.modelAnswer]);
 
   // Reset retry state when activity changes
   useEffect(() => {
@@ -2406,7 +2431,7 @@ function Part2StrategyView({
             <StrategyIcon className="h-3 w-3" />
             {strategyMeta.label}
           </span>
-          {isK2 && activity.strategy === "sentence_frames" && sentenceFrameTier && (
+          {isK2 && isSentenceFramesActivity && sentenceFrameTier && (
             <span className="text-sm bg-warning/20 text-warning px-2 py-0.5 rounded-full flex items-center gap-0.5">
               {Array.from({ length: 3 }, (_, i) => (
                 <Star key={i} className={`h-3.5 w-3.5 ${i < sentenceFrameTier ? "fill-warning text-warning" : "text-warning/30"}`} />
@@ -2421,8 +2446,8 @@ function Part2StrategyView({
       </div>
 
       <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
-        {/* Passage — hidden entirely for K-2 sentence_frames */}
-        {activity.passage && !(isK2 && activity.strategy === "sentence_frames") && (
+        {/* Passage — hard-disabled for K-2 sentence frames */}
+        {activity.passage && !isK2SF && (
           <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
             <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-1`}>📖 Read this:</p>
             <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>
@@ -2472,7 +2497,7 @@ function Part2StrategyView({
           <div className="space-y-3">
             <div className="bg-muted/50 rounded-xl p-6 border border-border">
               <p className="text-2xl font-bold text-foreground text-center leading-relaxed">
-                {activity.sentenceFrame || activity.question}
+                {k2BlankSentence}
               </p>
             </div>
             {!submitted && !sfRevealed && (
@@ -2501,13 +2526,24 @@ function Part2StrategyView({
 
         {/* Word bank / tiles for K-2 Sentence Frames */}
         {isK2SF ? (() => {
-          // Use wordBank if available, otherwise fall back to MC options
-          const tiles = (activity.wordBank && activity.wordBank.length > 0)
+          const rawTiles = (activity.wordBank && activity.wordBank.length > 0)
             ? activity.wordBank
             : (activity.options && activity.options.length > 0)
               ? activity.options
               : [];
-          if (tiles.length === 0) return null;
+
+          const uniqueTiles = Array.from(
+            new Set(
+              rawTiles
+                .map((tile) => tile.replace(/^[A-D][\).:\-]\s*/i, "").trim())
+                .filter(Boolean)
+            )
+          );
+
+          if (uniqueTiles.length === 0 && activity.modelAnswer?.trim()) {
+            uniqueTiles.push(activity.modelAnswer.trim());
+          }
+
           if (submitted || (sfRevealed && submitted)) return null;
           if (sfRevealed && !submitted) {
             return (
@@ -2528,7 +2564,7 @@ function Part2StrategyView({
               )}
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex flex-wrap gap-3 justify-center">
-                  {tiles.map((word, i) => {
+                  {uniqueTiles.map((word, i) => {
                     const isSelected = sfSelectedWord === word;
                     return (
                       <button
