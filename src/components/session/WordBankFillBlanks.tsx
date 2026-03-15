@@ -52,6 +52,7 @@ export function WordBankFillBlanks({
   onComplete,
   onNext,
 }: WordBankFillBlanksProps) {
+  const sounds = useSounds();
   const blankCount = missingWords.length;
   const [answers, setAnswers] = useState<string[]>(new Array(blankCount).fill(""));
   const [blankStates, setBlankStates] = useState<BlankState[]>(new Array(blankCount).fill("empty"));
