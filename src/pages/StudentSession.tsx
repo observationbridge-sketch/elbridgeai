@@ -771,6 +771,9 @@ const StudentSession = () => {
       setPart2Score((s) => s + 1);
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2200);
+      sounds.playCorrect();
+    } else {
+      sounds.playWrong();
     }
 
     let feedback: string;
