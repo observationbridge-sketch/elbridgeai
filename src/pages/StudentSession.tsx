@@ -629,7 +629,9 @@ const StudentSession = () => {
       : `Good try! You got ${matched} out of ${total} words. Compare your answer above. ✍️`;
     setPart1Feedback(feedback);
     setPart1Submitted(true);
+    if (pct >= 0.8) sounds.playCorrect(); else sounds.playPartiallyCorrect();
     gamification.addPoints(POINTS.STEP3_WRITE);
+    sounds.playPoints();
     if (!hasWritten) {
       setHasWritten(true);
       gamification.awardBadge("first_writer");
