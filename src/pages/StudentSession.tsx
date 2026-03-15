@@ -2344,10 +2344,11 @@ function Part2StrategyView({
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
-  const inputType = activity.inputType || "typing";
+  const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames";
+  const isK2SF = Boolean(isK2 && isSentenceFramesActivity);
+  const inputType = isK2SF ? "k2_word_tiles" : (activity.inputType || "typing");
 
   // K-2 Sentence Frame retry logic
-  const isK2SF = isK2 && activity.strategy === "sentence_frames";
   const [sfAttempts, setSfAttempts] = useState(0);
   const [sfWrongMessage, setSfWrongMessage] = useState<string | null>(null);
   const [sfRevealed, setSfRevealed] = useState(false);
