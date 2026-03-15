@@ -1002,8 +1002,10 @@ const StudentSession = () => {
 
   const handleStep5Complete = (correct: boolean) => {
     setPart1Scores((s) => ({ ...s, jumbled: correct ? 1 : 0, jumbledTotal: 1 }));
-    gamification.addPoints(POINTS.STEP5_JUMBLED);
-    sounds.playPoints();
+    if (correct) {
+      gamification.addPoints(POINTS.STEP5_JUMBLED);
+      sounds.playPoints();
+    }
     if (!hasWritten) {
       setHasWritten(true);
       gamification.awardBadge("first_writer");
