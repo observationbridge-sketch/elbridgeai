@@ -1443,6 +1443,7 @@ const StudentSession = () => {
   // ─── K-2 feeling rating state ───
   const [showFeelingRating, setShowFeelingRating] = useState(false);
   const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
+  const [showResults, setShowResults] = useState(false);
 
   // ─── Badge/Leaderboard screens ───
   if (showView === "badges") {
@@ -1453,7 +1454,6 @@ const StudentSession = () => {
   }
 
   // ─── Session ended — FULL CELEBRATION SCREEN (2 phases) ───
-  const [showResults, setShowResults] = useState(false);
 
   if (sessionEnded) {
     const animalLevel = getAnimalLevel(gamification.totalPoints);
