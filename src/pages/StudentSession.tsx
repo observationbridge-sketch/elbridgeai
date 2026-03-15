@@ -1468,7 +1468,39 @@ const StudentSession = () => {
                     onSubmitSpeedAnswer={submitPart3SpeedAnswer}
                     onSubmitTeach={submitPart3TeachItBack}
                   />
-                ) : null
+                ) : (
+                  <Card className="card-shadow border-border">
+                    <CardContent className="py-12 text-center space-y-4">
+                      {activityError ? (
+                        <>
+                          <p className={`${isK2 ? "text-4xl" : "text-3xl"}`}>😅</p>
+                          <p className={`font-medium ${isK2 ? "text-xl" : "text-lg"} text-foreground`}>
+                            Oops! Something didn't load.
+                          </p>
+                          <Button
+                            variant="hero"
+                            className={isK2 ? "text-lg py-4" : ""}
+                            onClick={() => fetchPart3Challenge(activityRetryCount)}
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" /> Try Again 🔄
+                          </Button>
+                        </>
+                      ) : isK2 ? (
+                        <>
+                          <div className="animate-bounce-slow">
+                            <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
+                          </div>
+                          <p className="text-xl text-muted-foreground">Getting ready... 🐣</p>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
+                          <p className="text-muted-foreground">Loading your challenge...</p>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
               ) : null}
             </div>
           </>
