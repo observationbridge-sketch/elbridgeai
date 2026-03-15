@@ -1445,9 +1445,11 @@ function Part1View({
         {/* Step 2: Repeat */}
         {step === 2 && (
           <>
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Say this passage out loud:</p>
-              <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border ${isK2 ? "text-center" : ""}`}>
+              <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-1`}>
+                {isK2 ? "Say this! 🗣️" : "Say this passage out loud:"}
+              </p>
+              <p className={`text-foreground font-medium leading-relaxed ${isK2 ? "text-2xl" : ""}`}>{anchor.sentence}</p>
             </div>
             <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
             {!part1Submitted ? (
