@@ -199,10 +199,16 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
   const missingWords = finalPicked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
   const blanked = words.map((w, i) => finalPicked.includes(i) ? '___' : w).join(' ');
   
-  // Build word bank: correct words + distractors for 3-5
+  // Build word bank: correct words + distractors
   const wordBank = [...missingWords];
-  if (!isK2) {
-    // Add 1-2 distractor words from keyWords that aren't already blanked
+  if (isK2) {
+    // K-2: 1 distractor (simple, clearly different)
+    const distractors = keyWords
+      .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+      .slice(0, 1);
+    wordBank.push(...distractors);
+  } else {
+    // 3-5: 2 distractors (can be trickier)
     const distractors = keyWords
       .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
       .slice(0, 2);
