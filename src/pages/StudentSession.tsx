@@ -2564,7 +2564,7 @@ function Part2StrategyView({
               )}
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex flex-wrap gap-3 justify-center">
-                  {tiles.map((word, i) => {
+                  {uniqueTiles.map((word, i) => {
                     const isSelected = sfSelectedWord === word;
                     return (
                       <button
