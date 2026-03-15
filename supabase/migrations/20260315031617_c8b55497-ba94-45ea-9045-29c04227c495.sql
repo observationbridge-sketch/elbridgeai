@@ -1,0 +1,1 @@
+ALTER TABLE public.student_points ADD COLUMN IF NOT EXISTS sentence_frame_tier integer NOT NULL DEFAULT 1;

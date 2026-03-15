@@ -486,6 +486,11 @@ const StudentSession = () => {
   const [part2StrategyReason, setPart2StrategyReason] = useState("");
   const [domainScores, setDomainScores] = useState<Record<string, number> | null>(null);
 
+  // K-2 Sentence Frame Adaptive Tier
+  const [sentenceFrameTier, setSentenceFrameTier] = useState(1);
+  const [tierConsecutiveCorrect, setTierConsecutiveCorrect] = useState(0);
+  const [tierConsecutiveWrong, setTierConsecutiveWrong] = useState(0);
+
   // Part 3 state
   const [part3Challenge, setPart3Challenge] = useState<Part3Challenge | null>(null);
   const [part3ShowIntro, setPart3ShowIntro] = useState(true);
@@ -531,6 +536,7 @@ const StudentSession = () => {
                   domainScores,
                   questionIndex: index,
                   contentHistory: history,
+                  sentenceFrameTier: grade === "K-2" ? sentenceFrameTier : undefined,
                 },
               }),
               8000
@@ -815,6 +821,18 @@ const StudentSession = () => {
   useEffect(() => {
     if (studentName && teacherId) {
       gamification.loadData();
+      // Load sentence frame tier from student_points
+      supabase
+        .from("student_points")
+        .select("sentence_frame_tier")
+        .eq("student_name", studentName)
+        .eq("teacher_id", teacherId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data && (data as any).sentence_frame_tier) {
+            setSentenceFrameTier((data as any).sentence_frame_tier);
+          }
+        });
     }
   }, [studentName, teacherId]);
 
@@ -1019,6 +1037,7 @@ const StudentSession = () => {
             domainScores,
             questionIndex: index,
             contentHistory,
+            sentenceFrameTier: effectiveGradeBand === "K-2" ? sentenceFrameTier : undefined,
           },
         }),
         8000
@@ -1125,6 +1144,35 @@ const StudentSession = () => {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
     setPart2IsCorrect(correct);
+
+    // K-2 Sentence Frame tier tracking
+    if (effectiveGradeBand === "K-2" && part2Activity.strategy === "sentence_frames") {
+      if (correct) {
+        const newCorrect = tierConsecutiveCorrect + 1;
+        setTierConsecutiveCorrect(newCorrect);
+        setTierConsecutiveWrong(0);
+        if (newCorrect >= 3 && sentenceFrameTier < 3) {
+          const newTier = sentenceFrameTier + 1;
+          setSentenceFrameTier(newTier);
+          setTierConsecutiveCorrect(0);
+          // Persist tier
+          supabase.from("student_points").update({ sentence_frame_tier: newTier } as any)
+            .eq("student_name", studentName).eq("teacher_id", teacherId).then(() => {});
+        }
+      } else {
+        const newWrong = tierConsecutiveWrong + 1;
+        setTierConsecutiveWrong(newWrong);
+        setTierConsecutiveCorrect(0);
+        if (newWrong >= 2 && sentenceFrameTier > 1) {
+          const newTier = sentenceFrameTier - 1;
+          setSentenceFrameTier(newTier);
+          setTierConsecutiveWrong(0);
+          supabase.from("student_points").update({ sentence_frame_tier: newTier } as any)
+            .eq("student_name", studentName).eq("teacher_id", teacherId).then(() => {});
+        }
+      }
+    }
+
     if (correct) {
       setPart2Score((s) => s + 1);
       setShowConfetti(true);
@@ -1680,6 +1728,7 @@ const StudentSession = () => {
                     onSubmitMC={(option: string) => submitPart2(option)}
                     onNext={nextPart2}
                     isK2={isK2}
+                    sentenceFrameTier={sentenceFrameTier}
                   />
                   {/* K-2 Feeling Rating */}
                   {isK2 && part2Submitted && !showFeelingRating && (
@@ -2153,11 +2202,12 @@ interface Part2Props {
   onSubmitMC: (option: string) => void;
   onNext: () => void;
   isK2?: boolean;
+  sentenceFrameTier?: number;
 }
 
 function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
-  speech, tts, onSubmit, onSubmitMC, onNext, isK2,
+  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
@@ -2208,6 +2258,13 @@ function Part2StrategyView({
             <StrategyIcon className="h-3 w-3" />
             {strategyMeta.label}
           </span>
+          {isK2 && activity.strategy === "sentence_frames" && sentenceFrameTier && (
+            <span className="text-sm bg-warning/20 text-warning px-2 py-0.5 rounded-full flex items-center gap-0.5">
+              {Array.from({ length: 3 }, (_, i) => (
+                <Star key={i} className={`h-3.5 w-3.5 ${i < sentenceFrameTier ? "fill-warning text-warning" : "text-warning/30"}`} />
+              ))}
+            </span>
+          )}
           <span className={`${isK2 ? "text-sm" : "text-xs"} text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full`}>
             {index + 1} of {totalActivities}
           </span>

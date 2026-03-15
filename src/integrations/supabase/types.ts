@@ -204,6 +204,7 @@ export type Database = {
           current_streak: number
           id: string
           last_session_date: string | null
+          sentence_frame_tier: number
           sessions_completed: number
           student_name: string
           teacher_id: string
@@ -215,6 +216,7 @@ export type Database = {
           current_streak?: number
           id?: string
           last_session_date?: string | null
+          sentence_frame_tier?: number
           sessions_completed?: number
           student_name: string
           teacher_id: string
@@ -226,6 +228,7 @@ export type Database = {
           current_streak?: number
           id?: string
           last_session_date?: string | null
+          sentence_frame_tier?: number
           sessions_completed?: number
           student_name?: string
           teacher_id?: string
