@@ -1130,6 +1130,16 @@ const StudentSession = () => {
     setLoading(true);
     setActivityError(false);
     setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
+
+    const cachedChallenge = prefetchedPart3Ref.current;
+    if (cachedChallenge && retryAttempt === 0) {
+      setPart3Challenge(cachedChallenge);
+      setActivityRetryCount(0);
+      setLoading(false);
+      setPart3StartTime(Date.now());
+      return;
+    }
+
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
       const { data, error } = await fetchWithTimeout(
