@@ -897,40 +897,67 @@ const StudentSession = () => {
   };
 
   // ─── Part 3 handlers ───
-  const fetchPart3Challenge = useCallback(async () => {
+  const makeFallbackChallenge = useCallback((): Part3Challenge => ({
+    challengeType: "story_builder",
+    title: "Story Builder",
+    instruction: `Write a 4-6 sentence mini story about ${sessionTopic}!`,
+    scenes: [
+      `A bright morning in a place connected to ${sessionTopic}.`,
+      `Something surprising happens related to ${sessionTopic}.`,
+      `A character tries to solve a problem about ${sessionTopic}.`,
+      `Everything works out and the character learns something new.`,
+    ],
+    sentenceStarter: "It all began when...",
+    sequenceWords: ["first", "then", "next", "finally"],
+    acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic"],
+    theme: sessionTheme,
+    topic: sessionTopic,
+  }), [sessionTheme, sessionTopic]);
+
+  const fetchPart3Challenge = useCallback(async (retryAttempt = 0) => {
     killSpeech();
     setLoading(true);
-    setLoadingMessage("Preparing your Language Challenge! 🎉");
+    setActivityError(false);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
-      const { data, error } = await supabase.functions.invoke("generate-part3-challenge", {
-        body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory },
-      });
+      const { data, error } = await fetchWithTimeout(
+        supabase.functions.invoke("generate-part3-challenge", {
+          body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory },
+        }),
+        8000
+      );
       if (error) throw error;
+
+      if (!validatePart3Challenge(data)) {
+        console.error("Part 3 content validation failed. Received:", data);
+        throw new Error("Invalid challenge content");
+      }
+
       setPart3Challenge(data as Part3Challenge);
-    } catch {
-      toast.error("Failed to load challenge. Using backup.");
-      setPart3Challenge({
-        challengeType: "story_builder",
-        title: "Story Builder",
-        instruction: `Write a 4-6 sentence mini story about ${sessionTopic}!`,
-        scenes: [
-          `A bright morning in a place connected to ${sessionTopic}.`,
-          `Something surprising happens related to ${sessionTopic}.`,
-          `A character tries to solve a problem about ${sessionTopic}.`,
-          `Everything works out and the character learns something new.`,
-        ],
-        sentenceStarter: "It all began when...",
-        sequenceWords: ["first", "then", "next", "finally"],
-        acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "topic"],
-        theme: sessionTheme,
-        topic: sessionTopic,
-      });
-    } finally {
+      setActivityRetryCount(0);
       setLoading(false);
       setPart3StartTime(Date.now());
+    } catch (err) {
+      console.error("fetchPart3Challenge failed (attempt", retryAttempt + 1, "):", err);
+      if (retryAttempt < 2) {
+        if (retryAttempt === 0) {
+          fetchPart3Challenge(retryAttempt + 1);
+          return;
+        } else {
+          setActivityError(true);
+          setActivityRetryCount(retryAttempt + 1);
+          setLoading(false);
+        }
+      } else {
+        console.warn("Max retries for Part 3, using fallback");
+        setPart3Challenge(makeFallbackChallenge());
+        setActivityRetryCount(0);
+        setLoading(false);
+        setPart3StartTime(Date.now());
+      }
     }
-  }, [sessionTheme, sessionTopic]);
+  }, [sessionTheme, sessionTopic, effectiveGradeBand, contentHistory, makeFallbackChallenge]);
 
   const startPart3 = () => {
     setPart3ShowIntro(false);
