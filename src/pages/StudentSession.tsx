@@ -1926,7 +1926,48 @@ function Part2StrategyView({
         )}
 
         {/* Feedback */}
-        {submitted && (
+        {submitted && isK2 ? (
+          <div className="space-y-4">
+            {/* Simplified K-2 feedback — no duplicate text */}
+            <div className={`rounded-xl p-6 text-center ${
+              isCorrect ? "bg-success/15 border-2 border-success/30" : "bg-primary/10 border border-primary/20"
+            }`}>
+              <p className="text-3xl mb-2">{isCorrect ? "🎉" : "💪"}</p>
+              <p className={`font-bold text-xl ${isCorrect ? "text-success" : "text-primary"}`}>
+                {isCorrect ? "Great job!" : "Good try!"}
+              </p>
+              {!isCorrect && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span>
+                </p>
+              )}
+            </div>
+            {/* Large K-2 next button with pulse + countdown */}
+            <Button
+              variant="success"
+              className={`w-full text-2xl py-8 min-h-[70px] rounded-xl shadow-lg ${
+                isCorrect && k2Countdown !== null ? "animate-pulse" : ""
+              }`}
+              onClick={() => {
+                cancelCountdown();
+                onNext();
+              }}
+            >
+              {k2Countdown !== null && k2Countdown > 0
+                ? `Keep Going! 🚀 (${k2Countdown}...)`
+                : index < totalActivities - 1 ? "Keep Going! 🚀" : "Almost done! ⭐"
+              }
+            </Button>
+            {k2Countdown !== null && k2Countdown > 0 && (
+              <button
+                onClick={cancelCountdown}
+                className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                Wait, I want to stay ✋
+              </button>
+            )}
+          </div>
+        ) : submitted && (
           <div className="space-y-4">
             <div className={`rounded-lg p-4 flex items-start gap-3 ${
               isCorrect ? "bg-success/10 border border-success/20" : "bg-primary/10 border border-primary/20"
