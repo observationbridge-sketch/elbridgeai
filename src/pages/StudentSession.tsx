@@ -1349,22 +1349,41 @@ function Part1View({
         <h3 className="text-lg font-bold text-foreground">{stepTitles[step]}</h3>
       </div>
 
-      <CardContent className="pt-4 space-y-6">
+      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
         {/* Step 1: Listen */}
         {step === 1 && (
           <>
-            <div className="bg-muted/50 rounded-lg p-6 border border-border text-center space-y-4">
-              <Headphones className="h-10 w-10 text-warning mx-auto" />
-              <p className="text-lg font-medium text-foreground leading-relaxed">{anchor.sentence}</p>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-8" : "p-6"} border border-border text-center space-y-4`}>
+              <Headphones className={`${isK2 ? "h-14 w-14" : "h-10 w-10"} text-warning mx-auto`} />
+              {isK2 && (
+                <div className="text-6xl my-4 animate-bounce-slow">
+                  {anchor.theme?.toLowerCase().includes("space") ? "🔴🪐" :
+                   anchor.theme?.toLowerCase().includes("ocean") ? "🌊🐠" :
+                   anchor.theme?.toLowerCase().includes("nature") ? "🌿🦋" :
+                   anchor.theme?.toLowerCase().includes("superhero") ? "🦸‍♂️💥" :
+                   anchor.theme?.toLowerCase().includes("fantasy") ? "🧙✨" :
+                   anchor.theme?.toLowerCase().includes("egypt") ? "🏛️🐪" :
+                   anchor.theme?.toLowerCase().includes("volcano") ? "🌋🔥" :
+                   anchor.theme?.toLowerCase().includes("rainforest") ? "🌴🦜" :
+                   anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" :
+                   "📚🌟"}
+                </div>
+              )}
+              <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{anchor.sentence}</p>
               {tts.isSupported && (
-                <Button variant="outline" onClick={() => tts.speak(anchor.sentence)} disabled={tts.isSpeaking} className="gap-2">
-                  <RefreshCw className={`h-4 w-4 ${tts.isSpeaking ? "animate-spin" : ""}`} />
-                  {tts.isSpeaking ? "Playing..." : "Replay"}
+                <Button 
+                  variant="outline" 
+                  onClick={() => tts.speak(anchor.sentence)} 
+                  disabled={tts.isSpeaking} 
+                  className={`gap-2 ${isK2 ? "text-lg px-6 py-4 h-auto" : ""}`}
+                >
+                  <RefreshCw className={`${isK2 ? "h-5 w-5" : "h-4 w-4"} ${tts.isSpeaking ? "animate-spin" : ""}`} />
+                  {isK2 ? (tts.isSpeaking ? "Playing... 🔊" : "Hear it again! 🔁") : (tts.isSpeaking ? "Playing..." : "Replay")}
                 </Button>
               )}
             </div>
-            <Button variant="hero" className="w-full" size="lg" onClick={onStep1Done}>
-              I heard it ✓ <ArrowRight className="h-4 w-4 ml-2" />
+            <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-8 min-h-[72px]" : ""}`} size="lg" onClick={onStep1Done}>
+              {isK2 ? "I heard it! 👂" : "I heard it ✓"} <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </>
         )}
