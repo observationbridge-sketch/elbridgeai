@@ -174,7 +174,7 @@ function isValidK2AnchorSentence(sentence: string): boolean {
 const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
 BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
-function generateBlanks(sentence: string, keyWords: string[]): { blanked: string; missingWords: string[] } {
+function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): { blanked: string; missingWords: string[]; wordBank: string[] } {
   const words = sentence.split(/\s+/);
   const keyLower = keyWords.map(w => w.toLowerCase());
   const candidates: number[] = [];
@@ -183,11 +183,35 @@ function generateBlanks(sentence: string, keyWords: string[]): { blanked: string
     if (keyLower.includes(clean) && clean.length > 2) candidates.push(i);
   });
   const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-  const count = Math.min(3, Math.max(2, shuffled.length));
+  const maxBlanks = isK2 ? 2 : 3;
+  const count = Math.min(maxBlanks, Math.max(1, shuffled.length));
   const picked = shuffled.slice(0, count).sort((a, b) => a - b);
-  const missingWords = picked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
-  const blanked = words.map((w, i) => picked.includes(i) ? '___' : w).join(' ');
-  return { blanked, missingWords };
+  
+  // Ensure sentence still makes sense: don't blank consecutive words
+  const filtered: number[] = [];
+  for (const idx of picked) {
+    if (filtered.length === 0 || idx - filtered[filtered.length - 1] > 1) {
+      filtered.push(idx);
+    }
+  }
+  const finalPicked = filtered.slice(0, maxBlanks);
+  
+  const missingWords = finalPicked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
+  const blanked = words.map((w, i) => finalPicked.includes(i) ? '___' : w).join(' ');
+  
+  // Build word bank: correct words + distractors for 3-5
+  const wordBank = [...missingWords];
+  if (!isK2) {
+    // Add 1-2 distractor words from keyWords that aren't already blanked
+    const distractors = keyWords
+      .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+      .slice(0, 2);
+    wordBank.push(...distractors);
+  }
+  // Shuffle the word bank
+  const shuffledBank = [...wordBank].sort(() => Math.random() - 0.5);
+  
+  return { blanked, missingWords, wordBank: shuffledBank };
 }
 
 function jumbleSentence(passage: string): { original: string; jumbled: string[] } {
