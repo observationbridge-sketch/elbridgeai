@@ -1438,20 +1438,18 @@ function Part1View({
           <>
             <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-8" : "p-6"} border border-border text-center space-y-4`}>
               <Headphones className={`${isK2 ? "h-14 w-14" : "h-10 w-10"} text-warning mx-auto`} />
-              {isK2 && (
-                <div className="text-6xl my-4 animate-bounce-slow">
-                  {anchor.theme?.toLowerCase().includes("space") ? "🔴🪐" :
-                   anchor.theme?.toLowerCase().includes("ocean") ? "🌊🐠" :
-                   anchor.theme?.toLowerCase().includes("nature") ? "🌿🦋" :
-                   anchor.theme?.toLowerCase().includes("superhero") ? "🦸‍♂️💥" :
-                   anchor.theme?.toLowerCase().includes("fantasy") ? "🧙✨" :
-                   anchor.theme?.toLowerCase().includes("egypt") ? "🏛️🐪" :
-                   anchor.theme?.toLowerCase().includes("volcano") ? "🌋🔥" :
-                   anchor.theme?.toLowerCase().includes("rainforest") ? "🌴🦜" :
-                   anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" :
-                   "📚🌟"}
-                </div>
-              )}
+              <div className={`${isK2 ? "text-6xl my-4 animate-bounce-slow" : "text-4xl my-3 animate-bounce-fast"}`}>
+                {anchor.theme?.toLowerCase().includes("space") ? "🔴🪐" :
+                 anchor.theme?.toLowerCase().includes("ocean") ? "🌊🐠" :
+                 anchor.theme?.toLowerCase().includes("nature") ? "🌿🦋" :
+                 anchor.theme?.toLowerCase().includes("superhero") ? "🦸‍♂️💥" :
+                 anchor.theme?.toLowerCase().includes("fantasy") ? "🧙✨" :
+                 anchor.theme?.toLowerCase().includes("egypt") ? "🏛️🐪" :
+                 anchor.theme?.toLowerCase().includes("volcano") ? "🌋🔥" :
+                 anchor.theme?.toLowerCase().includes("rainforest") ? "🌴🦜" :
+                 anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" :
+                 "📚🌟"}
+              </div>
               <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{anchor.sentence}</p>
               {tts.isSupported && (
                 <Button 
