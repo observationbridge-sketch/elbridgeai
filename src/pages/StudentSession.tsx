@@ -42,12 +42,14 @@ interface AnchorSentence {
 
 interface Part1Scores {
   listen: boolean;
-  repeat: number;
-  repeatTotal: number;
-  write: number;
-  writeTotal: number;
-  record: number;
-  recordTotal: number;
+  sayIt: number;
+  sayItTotal: number;
+  dragDrop: number;
+  dragDropTotal: number;
+  memoryMatch: number;
+  memoryMatchTotal: number;
+  jumbled: number;
+  jumbledTotal: number;
 }
 
 interface Part2Activity {
