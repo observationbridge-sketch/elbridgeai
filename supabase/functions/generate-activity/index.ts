@@ -38,42 +38,72 @@ serve(async (req) => {
     const proficiencyLevel = PROFICIENCY_PROGRESSION_8[activityIndex] || "Developing";
     const theme = sessionTheme || "Nature & animals";
 
-    const systemPrompt = `You are an expert English Language Development activity generator for grades 3-5 ELL students.
+    const isK2 = (grade || "3-5") === "K-2";
+
+    const k2ContentRules = isK2 ? `
+K-2 CONTENT RULES (MANDATORY):
+- Maximum 8 words per sentence, simple subject-verb-object structure ONLY
+- NO subordinate clauses, NO "but", "however", "which", "although", "features"
+- Topics must be CONCRETE and VISUAL — things kids can see, touch, or imagine
+  - GOOD: "What does Mars look like?" → red, rocky, no water, two moons
+  - BAD: "unique surface features of Mars" (too abstract)
+- Maximum 3 new vocabulary words per session, single-syllable preferred
+- Use only Tier 1 (common everyday) vocabulary
+- All answer choices must be 1-3 words or emojis, NEVER full sentences
+- LISTENING activities: audio must be 1-2 short sentences max, then ask ONE question with 2-3 emoji/picture answer choices
+- SPEAKING activities: ask for maximum 1 sentence, open-ended, involve the student's animal companion
+- WRITING activities: provide a sentence starter, ask for 1 sentence only
+` : "";
+
+    const systemPrompt = `You are an expert English Language Development activity generator for grades ${isK2 ? "K-2" : "3-5"} ELL students.
 
 Generate ONE activity for the "${actualDomain}" domain at proficiency level "${proficiencyLevel}".
 Theme for this question: "${theme}"
 
 ${STRICT_RULES}
+${k2ContentRules}
 
 CRITICAL RULE: Every question MUST be fully self-contained. The student must have ALL information needed to answer within the question itself. Before outputting, verify: "Does this question contain everything the student needs to answer it?"
 
 DOMAIN-SPECIFIC RULES:
 
 READING (type: multiple_choice):
-- ALWAYS include a short 3-5 sentence passage in the "passage" field
+${isK2 ? `- Include a short 1-2 sentence passage in the "passage" field (max 8 words per sentence)
+- The passage must use simple words a kindergartener knows
+- Ask ONE comprehension question ABOUT that passage
+- Provide 2-3 answer options (short, 1-3 words each)` : `- ALWAYS include a short 3-5 sentence passage in the "passage" field
 - The passage must be vivid, kid-friendly, and connected to the theme
 - Ask a comprehension question ABOUT that specific passage
-- Provide 4 answer options where exactly one is clearly correct based on the passage
+- Provide 4 answer options where exactly one is clearly correct based on the passage`}
 - NEVER ask about content not shown in the passage
 
 LISTENING (type: multiple_choice):
-- The "audioDescription" field must contain a complete 3-5 sentence mini-story or description that will be read aloud via TTS
+${isK2 ? `- The "audioDescription" field must contain 1-2 simple sentences (max 8 words each) that will be read aloud
+- Start audioDescription with "Listen:" followed by the short story
+- Ask ONE simple question about what was heard
+- Provide 2-3 answer options using emojis or very short text (1-2 words)
+- Include an "emojiHint" field with 1-2 large emojis representing the story content` : `- The "audioDescription" field must contain a complete 3-5 sentence mini-story or description that will be read aloud via TTS
 - Start audioDescription with "Listen to this story:" followed by the full story
 - Then ask a comprehension question about what was just heard
-- Provide 4 answer options
+- Provide 4 answer options`}
 
 SPEAKING (type: speaking_prompt):
-- Give the student a clear, vivid scene description or scenario
+${isK2 ? `- Give a simple, fun scenario the student can imagine
+- Ask ONE open-ended question — maximum 1 sentence expected
+- Mention the student's animal companion (Baby Chick) in the prompt
+- The "correctAnswer" should be a SAMPLE 1-sentence answer` : `- Give the student a clear, vivid scene description or scenario
 - Ask an open-ended question where MANY answers are reasonable
-- The "correctAnswer" should be a SAMPLE answer, not the only accepted answer
-- Include "acceptableKeywords" array with 5-8 key words/phrases that any reasonable answer might contain
+- The "correctAnswer" should be a SAMPLE answer, not the only accepted answer`}
+- Include "acceptableKeywords" array with ${isK2 ? "3-5" : "5-8"} key words/phrases that any reasonable answer might contain
 
 WRITING (type: short_answer):
-- Give a specific, vivid scenario connected to the theme
+${isK2 ? `- Give a simple scenario with a clear sentence starter
+- Ask for exactly 1 sentence
+- Use only words a 5-7 year old would know` : `- Give a specific, vivid scenario connected to the theme
 - Provide a clear sentence starter the student can use
-- Ask for 1-3 sentences depending on proficiency level (1 for Entering, 2-3 for higher)
+- Ask for 1-3 sentences depending on proficiency level (1 for Entering, 2-3 for higher)`}
 - The "correctAnswer" should be a SAMPLE answer
-- Include "acceptableKeywords" array with 5-8 key words that a reasonable answer might contain
+- Include "acceptableKeywords" array with ${isK2 ? "3-5" : "5-8"} key words that a reasonable answer might contain
 
 PROFICIENCY LEVEL GUIDELINES:
 - Entering (Level 1): Simple vocabulary, short sentences, basic comprehension
@@ -86,13 +116,14 @@ Return ONLY valid JSON (no markdown, no code blocks) with this structure:
   "domain": "${actualDomain}",
   "type": "<multiple_choice | short_answer | speaking_prompt>",
   "question": "<clear, kid-friendly question>",
-  "passage": "<3-5 sentence passage for READING domain, omit for others>",
-  "options": ["<4 options for multiple_choice only>"],
+  "passage": "<passage for READING domain, omit for others>",
+  "options": ["<${isK2 ? "2-3" : "4"} options for multiple_choice only>"],
   "correctAnswer": "<exact correct answer for MC, sample answer for speaking/writing>",
-  "acceptableKeywords": ["<5-8 keywords for flexible grading on speaking/writing>"],
+  "acceptableKeywords": ["<keywords for flexible grading on speaking/writing>"],
   "proficiencyLevel": "${proficiencyLevel}",
   "theme": "${theme}",
-  "audioDescription": "<complete mini-story for LISTENING domain, omit for others>"
+  "audioDescription": "<mini-story for LISTENING domain, omit for others>"${isK2 ? `,
+  "emojiHint": "<1-2 large emojis for LISTENING domain, omit for others>"` : ""}
 }
 
 Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
