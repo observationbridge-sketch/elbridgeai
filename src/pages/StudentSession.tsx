@@ -1863,24 +1863,24 @@ function Part2StrategyView({
         {/* Question */}
         <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
 
-        {/* Sentence frame */}
-        {activity.sentenceFrame && inputType !== "multiple_choice" && (
+        {/* Sentence frame — hide for K-2 recording */}
+        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && (
           <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
             <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
             <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
           </div>
         )}
 
-        {/* Sentence starter */}
-        {activity.sentenceStarter && (
+        {/* Sentence starter — hide for K-2 recording */}
+        {activity.sentenceStarter && !(isK2 && inputType === "recording") && (
           <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
             <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
             <p className="text-foreground font-medium italic">{activity.sentenceStarter}</p>
           </div>
         )}
 
-        {/* Word bank */}
-        {activity.wordBank && activity.wordBank.length > 0 && (
+        {/* Word bank — hide for K-2 recording */}
+        {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
           <div className="bg-muted/50 rounded-lg p-3 border border-border">
             <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
             <div className="flex flex-wrap gap-2">
