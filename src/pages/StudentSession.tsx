@@ -1398,8 +1398,27 @@ function Part1View({
     }
   }, [step, anchor]);
 
+  const [blankScore, setBlankScore] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
+
   const handleBlankSubmit = () => {
+    if (!blanks) return;
+    let correctCount = 0;
+    blanks.missingWords.forEach((word, i) => {
+      const studentAnswer = (blankAnswers[i] || "").toLowerCase().trim();
+      const correctAnswer = word.toLowerCase().trim();
+      // Accept exact match or close spelling (levenshtein <= 2, but reject single-char answers)
+      const isMatch = studentAnswer.length > 1 && (studentAnswer === correctAnswer || levenshtein(studentAnswer, correctAnswer) <= 2);
+      if (isMatch) correctCount++;
+    });
+    setBlankScore({ correct: correctCount, total: blanks.missingWords.length });
     setBlankSubmitted(true);
+  };
+
+  const isBlankCorrect = (i: number): boolean => {
+    if (!blanks) return false;
+    const studentAnswer = (blankAnswers[i] || "").toLowerCase().trim();
+    const correctAnswer = blanks.missingWords[i].toLowerCase().trim();
+    return studentAnswer.length > 1 && (studentAnswer === correctAnswer || levenshtein(studentAnswer, correctAnswer) <= 2);
   };
 
   const handleJumbleSubmit = () => {
@@ -1520,7 +1539,7 @@ function Part1View({
                         className={`inline-block min-w-[60px] mx-1 px-3 py-1 rounded-lg border-2 border-dashed transition-all ${
                           blankAnswers[i] 
                             ? blankSubmitted
-                              ? blankAnswers[i].toLowerCase().trim() === blanks.missingWords[i].toLowerCase()
+                              ? isBlankCorrect(i)
                                 ? "border-success bg-success/10 text-success font-bold"
                                 : "border-destructive bg-destructive/10 text-destructive font-bold"
                               : "border-primary bg-primary/10 text-primary font-bold cursor-pointer hover:bg-primary/20"
@@ -1531,7 +1550,7 @@ function Part1View({
                         disabled={blankSubmitted}
                       >
                         {blankAnswers[i] || (isK2 ? "?" : "___")}
-                        {blankSubmitted && blankAnswers[i]?.toLowerCase().trim() === blanks.missingWords[i].toLowerCase() && (
+                        {blankSubmitted && isBlankCorrect(i) && (
                           <CheckCircle className="inline h-4 w-4 ml-1" />
                         )}
                       </button>
@@ -1581,13 +1600,19 @@ function Part1View({
             {blankSubmitted && (
               <div className="space-y-2">
                 {blanks.missingWords.map((word, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
+                  <div key={i} className="flex items-center gap-2 text-sm flex-wrap">
                     <span className="text-muted-foreground">Blank {i + 1}:</span>
-                    <span className="font-bold text-foreground">{word}</span>
-                    {blankAnswers[i]?.toLowerCase().trim() === word.toLowerCase() ? (
-                      <CheckCircle className="h-4 w-4 text-success" />
+                    {isBlankCorrect(i) ? (
+                      <>
+                        <span className="font-bold text-success">{blankAnswers[i]}</span>
+                        <CheckCircle className="h-4 w-4 text-success" />
+                      </>
                     ) : (
-                      <span className="text-muted-foreground">(you picked: {blankAnswers[i] || "—"})</span>
+                      <>
+                        <span className="font-bold text-destructive line-through">{blankAnswers[i] || "—"}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span className="font-bold text-warning">{word}</span>
+                      </>
                     )}
                   </div>
                 ))}
@@ -1606,7 +1631,19 @@ function Part1View({
               </Button>
             ) : (
               <>
-                <FeedbackBanner feedback="Great — you remember the key words! 🌟" positive={true} />
+                {blankScore.correct === blankScore.total ? (
+                  <FeedbackBanner feedback="Amazing! You got them all! 🌟" positive={true} />
+                ) : blankScore.correct > 0 ? (
+                  <FeedbackBanner 
+                    feedback={`Good try! You got ${blankScore.correct} out of ${blankScore.total}! Keep going! 💪`} 
+                    positive={false} 
+                  />
+                ) : (
+                  <FeedbackBanner 
+                    feedback="Not quite — here are the answers! Let's keep going! 🤗" 
+                    positive={false} 
+                  />
+                )}
                 <Button variant={isK2 ? "success" : "hero"} className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onNext}>
                   {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
                 </Button>
