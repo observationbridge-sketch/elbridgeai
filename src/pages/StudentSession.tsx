@@ -2555,17 +2555,19 @@ function Part2StrategyView({
         {/* Feedback */}
         {submitted && isK2 ? (
           <div className="space-y-4">
-            {/* Simplified K-2 feedback — no duplicate text */}
+            {/* Simplified K-2 feedback */}
             <div className={`rounded-xl p-6 text-center ${
-              isCorrect ? "bg-success/15 border-2 border-success/30" : "bg-primary/10 border border-primary/20"
+              isCorrect ? "bg-success/15 border-2 border-success/30" 
+                : sfRevealed ? "bg-warning/15 border-2 border-warning/30"
+                : "bg-primary/10 border border-primary/20"
             }`}>
-              <p className="text-3xl mb-2">{isCorrect ? "🎉" : "💪"}</p>
-              <p className={`font-bold text-xl ${isCorrect ? "text-success" : "text-primary"}`}>
-                {isCorrect ? "Great job!" : "Good try!"}
+              <p className="text-3xl mb-2">{isCorrect ? "🎉" : sfRevealed ? "✨" : "💪"}</p>
+              <p className={`font-bold text-xl ${isCorrect ? "text-success" : sfRevealed ? "text-warning" : "text-primary"}`}>
+                {isCorrect ? "Great job!" : sfRevealed ? "Here's the answer!" : "Good try!"}
               </p>
               {!isCorrect && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span>
+                <p className={`text-lg mt-2 ${sfRevealed ? "font-bold text-warning" : "text-muted-foreground text-sm"}`}>
+                  {sfRevealed ? activity.modelAnswer : <>The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span></>}
                 </p>
               )}
             </div>
