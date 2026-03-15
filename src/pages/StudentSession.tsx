@@ -26,6 +26,7 @@ import { POINTS, BADGES } from "@/components/gamification/constants";
 import { getAnimalLevel, getNextLevel } from "@/components/gamification/constants";
 import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 import { WordBankFillBlanks } from "@/components/session/WordBankFillBlanks";
+import { MemoryMatch } from "@/components/session/MemoryMatch";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
