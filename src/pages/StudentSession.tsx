@@ -1236,7 +1236,7 @@ const StudentSession = () => {
       {/* Animal Companion Profile Card — all grade bands */}
       {!loading && gamification.loaded && (
         <div className="flex justify-center py-4">
-          <div className={`text-center ${isK2 ? "animate-bounce-slow" : ""}`}>
+          <div className={`text-center ${isK2 ? "animate-bounce-slow" : "animate-bounce-fast"}`}>
             <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
           </div>
         </div>
