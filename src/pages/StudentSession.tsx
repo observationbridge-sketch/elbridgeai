@@ -1142,6 +1142,35 @@ const StudentSession = () => {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
     setPart2IsCorrect(correct);
+
+    // K-2 Sentence Frame tier tracking
+    if (effectiveGradeBand === "K-2" && part2Activity.strategy === "sentence_frames") {
+      if (correct) {
+        const newCorrect = tierConsecutiveCorrect + 1;
+        setTierConsecutiveCorrect(newCorrect);
+        setTierConsecutiveWrong(0);
+        if (newCorrect >= 3 && sentenceFrameTier < 3) {
+          const newTier = sentenceFrameTier + 1;
+          setSentenceFrameTier(newTier);
+          setTierConsecutiveCorrect(0);
+          // Persist tier
+          supabase.from("student_points").update({ sentence_frame_tier: newTier } as any)
+            .eq("student_name", studentName).eq("teacher_id", teacherId).then(() => {});
+        }
+      } else {
+        const newWrong = tierConsecutiveWrong + 1;
+        setTierConsecutiveWrong(newWrong);
+        setTierConsecutiveCorrect(0);
+        if (newWrong >= 2 && sentenceFrameTier > 1) {
+          const newTier = sentenceFrameTier - 1;
+          setSentenceFrameTier(newTier);
+          setTierConsecutiveWrong(0);
+          supabase.from("student_points").update({ sentence_frame_tier: newTier } as any)
+            .eq("student_name", studentName).eq("teacher_id", teacherId).then(() => {});
+        }
+      }
+    }
+
     if (correct) {
       setPart2Score((s) => s + 1);
       setShowConfetti(true);
