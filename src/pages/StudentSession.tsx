@@ -1445,20 +1445,27 @@ function Part1View({
         {/* Step 2: Repeat */}
         {step === 2 && (
           <>
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Say this passage out loud:</p>
-              <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border ${isK2 ? "text-center" : ""}`}>
+              <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-1`}>
+                {isK2 ? "Say this! 🗣️" : "Say this passage out loud:"}
+              </p>
+              <p className={`text-foreground font-medium leading-relaxed ${isK2 ? "text-2xl" : ""}`}>{anchor.sentence}</p>
             </div>
-            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
+            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
             {!part1Submitted ? (
-              <Button variant="hero" className="w-full" size="lg" onClick={onStep2Submit} disabled={!part1Answer.trim()}>
-                Check My Speaking
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onStep2Submit} disabled={!part1Answer.trim()}>
+                {isK2 ? "Check! ✅" : "Check My Speaking"}
               </Button>
             ) : (
               <>
                 <FeedbackBanner feedback={part1Feedback} positive={part1Scores.repeatTotal > 0 && part1Scores.repeat / part1Scores.repeatTotal >= 0.5} />
-                <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
-                  Next Step <ArrowRight className="h-4 w-4 ml-2" />
+                <Button
+                  variant={isK2 ? "success" : "hero"}
+                  className={`w-full ${isK2 ? "text-2xl py-8 min-h-[70px] rounded-xl shadow-lg animate-pulse" : ""}`}
+                  size="lg"
+                  onClick={onNext}
+                >
+                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
                 </Button>
               </>
             )}
@@ -1633,20 +1640,27 @@ function Part1View({
         {/* Step 7: Record */}
         {step === 7 && (
           <>
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <p className="text-sm text-muted-foreground mb-1">Record yourself saying the full passage — your best try!</p>
-              <p className="text-foreground font-medium leading-relaxed">{anchor.sentence}</p>
+            <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border ${isK2 ? "text-center" : ""}`}>
+              <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-1`}>
+                {isK2 ? "Say it one more time! 🎤🌟" : "Record yourself saying the full passage — your best try!"}
+              </p>
+              <p className={`text-foreground font-medium leading-relaxed ${isK2 ? "text-2xl" : ""}`}>{anchor.sentence}</p>
             </div>
-            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} />
+            <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
             {!part1Submitted ? (
-              <Button variant="hero" className="w-full" size="lg" onClick={onStep7RecordSubmit} disabled={!part1Answer.trim()}>
-                Check My Recording
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onStep7RecordSubmit} disabled={!part1Answer.trim()}>
+                {isK2 ? "Check! ✅" : "Check My Recording"}
               </Button>
             ) : (
               <>
                 <FeedbackBanner feedback={part1Feedback} positive={part1Scores.recordTotal > 0 && part1Scores.record / part1Scores.recordTotal >= 0.7} />
-                <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
-                  Next Step <ArrowRight className="h-4 w-4 ml-2" />
+                <Button
+                  variant={isK2 ? "success" : "hero"}
+                  className={`w-full ${isK2 ? "text-2xl py-8 min-h-[70px] rounded-xl shadow-lg animate-pulse" : ""}`}
+                  size="lg"
+                  onClick={onNext}
+                >
+                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
                 </Button>
               </>
             )}
@@ -1753,6 +1767,35 @@ function Part2StrategyView({
   const StrategyIcon = strategyMeta.icon;
   const inputType = activity.inputType || "typing";
 
+  // K-2 auto-advance countdown
+  const [k2Countdown, setK2Countdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (isK2 && submitted && isCorrect && k2Countdown === null) {
+      setK2Countdown(3);
+    }
+  }, [isK2, submitted, isCorrect]);
+
+  useEffect(() => {
+    if (k2Countdown === null || k2Countdown <= 0) return;
+    countdownRef.current = setTimeout(() => {
+      setK2Countdown(k2Countdown - 1);
+    }, 1000);
+    return () => { if (countdownRef.current) clearTimeout(countdownRef.current); };
+  }, [k2Countdown]);
+
+  useEffect(() => {
+    if (k2Countdown === 0) {
+      onNext();
+    }
+  }, [k2Countdown]);
+
+  const cancelCountdown = () => {
+    setK2Countdown(null);
+    if (countdownRef.current) clearTimeout(countdownRef.current);
+  };
+
   // Auto-play audio for K-2 listening activities
   useEffect(() => {
     if (isK2 && inputType === "listen_then_type" && activity.audioClip && tts.isSupported && !submitted) {
@@ -1824,24 +1867,24 @@ function Part2StrategyView({
         {/* Question */}
         <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
 
-        {/* Sentence frame */}
-        {activity.sentenceFrame && inputType !== "multiple_choice" && (
+        {/* Sentence frame — hide for K-2 recording */}
+        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && (
           <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
             <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
             <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
           </div>
         )}
 
-        {/* Sentence starter */}
-        {activity.sentenceStarter && (
+        {/* Sentence starter — hide for K-2 recording */}
+        {activity.sentenceStarter && !(isK2 && inputType === "recording") && (
           <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
             <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
             <p className="text-foreground font-medium italic">{activity.sentenceStarter}</p>
           </div>
         )}
 
-        {/* Word bank */}
-        {activity.wordBank && activity.wordBank.length > 0 && (
+        {/* Word bank — hide for K-2 recording */}
+        {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
           <div className="bg-muted/50 rounded-lg p-3 border border-border">
             <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
             <div className="flex flex-wrap gap-2">
@@ -1870,11 +1913,11 @@ function Part2StrategyView({
                 ))}
               </div>
             ) : inputType === "recording" ? (
-              <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} />
+              <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} />
             ) : inputType === "record_then_type" ? (
               <div className="space-y-4">
                 <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer here..." className="min-h-[100px]" disabled={submitted} />
-                <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} />
+                <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} />
                 <p className="text-xs text-muted-foreground">✍️ Type your answer, then 🎤 record yourself saying it!</p>
               </div>
             ) : inputType === "listen_then_type" ? (
@@ -1897,7 +1940,48 @@ function Part2StrategyView({
         )}
 
         {/* Feedback */}
-        {submitted && (
+        {submitted && isK2 ? (
+          <div className="space-y-4">
+            {/* Simplified K-2 feedback — no duplicate text */}
+            <div className={`rounded-xl p-6 text-center ${
+              isCorrect ? "bg-success/15 border-2 border-success/30" : "bg-primary/10 border border-primary/20"
+            }`}>
+              <p className="text-3xl mb-2">{isCorrect ? "🎉" : "💪"}</p>
+              <p className={`font-bold text-xl ${isCorrect ? "text-success" : "text-primary"}`}>
+                {isCorrect ? "Great job!" : "Good try!"}
+              </p>
+              {!isCorrect && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span>
+                </p>
+              )}
+            </div>
+            {/* Large K-2 next button with pulse + countdown */}
+            <Button
+              variant="success"
+              className={`w-full text-2xl py-8 min-h-[70px] rounded-xl shadow-lg ${
+                isCorrect && k2Countdown !== null ? "animate-pulse" : ""
+              }`}
+              onClick={() => {
+                cancelCountdown();
+                onNext();
+              }}
+            >
+              {k2Countdown !== null && k2Countdown > 0
+                ? `Keep Going! 🚀 (${k2Countdown}...)`
+                : index < totalActivities - 1 ? "Keep Going! 🚀" : "Almost done! ⭐"
+              }
+            </Button>
+            {k2Countdown !== null && k2Countdown > 0 && (
+              <button
+                onClick={cancelCountdown}
+                className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                Wait, I want to stay ✋
+              </button>
+            )}
+          </div>
+        ) : submitted && (
           <div className="space-y-4">
             <div className={`rounded-lg p-4 flex items-start gap-3 ${
               isCorrect ? "bg-success/10 border border-success/20" : "bg-primary/10 border border-primary/20"
@@ -2081,12 +2165,98 @@ function Part3ChallengeView({
 // ═══════════════════════════════════════════════
 // Shared Components
 // ═══════════════════════════════════════════════
-function MicrophoneInput({ speech, answer, setAnswer, disabled }: {
+function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
   speech: ReturnType<typeof useSpeechRecognition>;
   answer: string;
   setAnswer: (v: string) => void;
   disabled?: boolean;
+  isK2?: boolean;
 }) {
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTranscriptRef = useRef(answer);
+
+  // K-2 auto-stop after 3s of silence
+  useEffect(() => {
+    if (!isK2 || !speech.isListening) {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      return;
+    }
+    // Reset timer whenever transcript changes
+    if (answer !== lastTranscriptRef.current) {
+      lastTranscriptRef.current = answer;
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        if (speech.isListening) {
+          speech.stopListening();
+        }
+      }, 3000);
+    } else if (!silenceTimerRef.current) {
+      // Start initial silence timer when recording starts
+      silenceTimerRef.current = setTimeout(() => {
+        if (speech.isListening) {
+          speech.stopListening();
+        }
+      }, 5000); // 5s for initial silence (student may need time)
+    }
+    return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
+  }, [isK2, speech.isListening, answer]);
+
+  if (isK2) {
+    return (
+      <div className="flex flex-col items-center gap-4">
+        {speech.isSupported ? (
+          <>
+            {!disabled && !answer && (
+              <p className="text-2xl font-bold text-foreground text-center">
+                Tap 🎤 to talk!
+              </p>
+            )}
+            <button
+              onClick={speech.isListening ? speech.stopListening : speech.startListening}
+              disabled={disabled}
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all shadow-xl ${
+                disabled ? "bg-muted text-muted-foreground"
+                : speech.isListening
+                  ? "bg-destructive text-destructive-foreground animate-pulse scale-110"
+                  : "bg-success text-success-foreground hover:scale-105 active:scale-95"
+              }`}
+            >
+              {speech.isListening ? <MicOff className="h-14 w-14" /> : <Mic className="h-14 w-14" />}
+            </button>
+            {speech.isListening && (
+              <p className="text-lg text-destructive font-medium animate-pulse">
+                🔴 Listening...
+              </p>
+            )}
+            {answer && !speech.isListening && (
+              <div className="w-full bg-muted/50 rounded-lg p-4 border border-border">
+                <p className="text-sm text-muted-foreground mb-1">What I heard:</p>
+                <p className="text-lg text-foreground font-medium">{answer}</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 text-center">
+              <p className="text-lg text-muted-foreground">
+                🎤 Can't use the mic. Type below!
+              </p>
+            </div>
+            <Input
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Type here..."
+              className="h-14 text-lg"
+              disabled={disabled}
+            />
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {speech.isSupported ? (
