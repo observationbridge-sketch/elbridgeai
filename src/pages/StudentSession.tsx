@@ -1768,7 +1768,7 @@ function Part2StrategyView({
         )}
 
         {/* Question */}
-        <h3 className="text-lg font-medium text-foreground">{activity.question}</h3>
+        <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
 
         {/* Sentence frame */}
         {activity.sentenceFrame && inputType !== "multiple_choice" && (
