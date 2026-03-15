@@ -820,6 +820,18 @@ const StudentSession = () => {
   useEffect(() => {
     if (studentName && teacherId) {
       gamification.loadData();
+      // Load sentence frame tier from student_points
+      supabase
+        .from("student_points")
+        .select("sentence_frame_tier")
+        .eq("student_name", studentName)
+        .eq("teacher_id", teacherId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data && (data as any).sentence_frame_tier) {
+            setSentenceFrameTier((data as any).sentence_frame_tier);
+          }
+        });
     }
   }, [studentName, teacherId]);
 
