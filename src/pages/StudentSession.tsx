@@ -126,6 +126,26 @@ function validatePart3Challenge(data: any): data is Part3Challenge {
   return true;
 }
 
+// Auto-trigger finishSession when Part 3 completes
+function Part3CompletionTrigger({ finishSession }: { finishSession: () => void }) {
+  const triggered = useRef(false);
+  useEffect(() => {
+    if (!triggered.current) {
+      triggered.current = true;
+      const t = setTimeout(finishSession, 600);
+      return () => clearTimeout(t);
+    }
+  }, [finishSession]);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-fade-in">
+      <Trophy className="h-16 w-16 text-warning animate-bounce" />
+      <h2 className="text-2xl font-bold text-foreground">Challenge Complete! 🎉</h2>
+      <p className="text-muted-foreground">Preparing your celebration...</p>
+    </div>
+  );
+}
+
 // Fetch with timeout helper
 function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([
@@ -1443,6 +1463,7 @@ const StudentSession = () => {
   // ─── K-2 feeling rating state ───
   const [showFeelingRating, setShowFeelingRating] = useState(false);
   const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
+  const [showResults, setShowResults] = useState(false);
 
   // ─── Badge/Leaderboard screens ───
   if (showView === "badges") {
@@ -1452,149 +1473,183 @@ const StudentSession = () => {
     return <Leaderboard teacherId={teacherId} currentStudentName={studentName} onBack={() => setShowView("session")} />;
   }
 
-  // ─── Session ended — FULL CELEBRATION SCREEN ───
+  // ─── Session ended — FULL CELEBRATION SCREEN (2 phases) ───
+
   if (sessionEnded) {
     const animalLevel = getAnimalLevel(gamification.totalPoints);
     const nextLevel = getNextLevel(gamification.totalPoints);
-    const overallPct = domainScores
-      ? Math.round(Object.values(domainScores).reduce((a, b) => a + b, 0) / Math.max(Object.keys(domainScores).length, 1))
-      : 0;
-    const widaLabel = overallPct >= 90 ? "Bridging ⭐⭐⭐⭐⭐"
-      : overallPct >= 70 ? "Expanding ⭐⭐⭐⭐"
-      : overallPct >= 50 ? "Developing ⭐⭐⭐"
-      : overallPct >= 30 ? "Emerging ⭐⭐"
-      : "Entering ⭐";
+    const totalActivities = 5 + part2Count + 1; // Part1(5) + Part2 + Part3(1)
 
-    const companionMessages = [
-      `"You did amazing today, ${studentName}! I'm so proud of you!" 💬`,
-      `"Wow, ${studentName}! We learned so much together!" 💬`,
-      `"Great job today, ${studentName}! Can't wait for next time!" 💬`,
-      `"You're getting stronger every day, ${studentName}!" 💬`,
-    ];
-    const companionMsg = companionMessages[Math.floor(Math.random() * companionMessages.length)];
+    if (!showResults) {
+      // ─── Phase 1: Full-screen celebration ───
+      return (
+        <div className="min-h-screen bg-background relative overflow-hidden">
+          {/* Confetti background */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {["🌟", "⭐", "🎉", "✨", "💫", "🏆", "🎊", "💪", "🌈", "🎶", "🔥", "💎"].map((emoji, i) => (
+              <span
+                key={i}
+                className="absolute text-2xl"
+                style={{
+                  left: `${5 + (i * 8) % 90}%`,
+                  top: `${-10}%`,
+                  animation: `confetti-fall ${2 + (i % 3)}s ease-in ${i * 0.15}s forwards`,
+                }}
+              >
+                {emoji}
+              </span>
+            ))}
+          </div>
 
-    return (
-      <div className="min-h-screen bg-background relative overflow-hidden">
-        {/* Floating celebration emojis background */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {["🌟", "⭐", "🎉", "✨", "💫", "🏆", "🎊", "💪"].map((emoji, i) => (
-            <span
-              key={i}
-              className="absolute text-2xl animate-celebration-sparkle"
-              style={{
-                left: `${10 + (i * 12) % 80}%`,
-                top: `${5 + (i * 17) % 70}%`,
-                animationDelay: `${i * 0.3}s`,
-              }}
-            >
-              {emoji}
-            </span>
-          ))}
-        </div>
+          <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+            <div className="w-full max-w-sm space-y-6 text-center">
+              {/* Heading */}
+              <div className="animate-fade-in">
+                <h1 className="text-4xl font-bold text-foreground mb-2">You did it! 🎉</h1>
+                <p className="text-xl text-primary font-semibold">{studentName}</p>
+              </div>
 
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
-          {/* Main celebration card */}
-          <div className="w-full max-w-md space-y-5">
-            {/* Hero section - "You finished!" */}
-            <div className="text-center animate-celebration-slide-up">
-              <div className="text-7xl mb-3 animate-celebration-float">{animalLevel.emoji}</div>
-              <h1 className="text-3xl font-bold text-foreground mb-1">
-                You finished! 🎉
-              </h1>
-              <p className="text-xl text-primary font-bold">{studentName}</p>
-            </div>
-
-            {/* Animal companion message */}
-            <Card className="card-shadow border-primary/20 animate-celebration-slide-up" style={{ animationDelay: "0.15s" }}>
-              <CardContent className="py-4 px-5">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl animate-celebration-pulse">{animalLevel.emoji}</span>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground font-medium">{animalLevel.name} says:</p>
-                    <p className="text-sm text-foreground font-medium italic">{companionMsg}</p>
-                  </div>
+              {/* Animal companion — large and pulsing */}
+              <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
+                <div className="text-[100px] leading-none" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
+                  {animalLevel.emoji}
                 </div>
-              </CardContent>
-            </Card>
+                <p className="text-sm text-muted-foreground mt-2">{animalLevel.name}</p>
+              </div>
 
-            {/* Points earned */}
-            <Card className="card-shadow border-warning/30 bg-warning/5 animate-celebration-slide-up" style={{ animationDelay: "0.3s" }}>
-              <CardContent className="py-5 text-center">
-                <p className="text-sm text-muted-foreground mb-1">Points earned today</p>
-                <p className="text-4xl font-bold text-warning animate-celebration-pulse">+{gamification.sessionPoints} ⭐</p>
-                <p className="text-sm text-muted-foreground mt-1">Total: <span className="font-bold text-foreground">{gamification.totalPoints} points</span></p>
+              {/* Points total */}
+              <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
+                <p className="text-5xl font-bold text-warning" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
+                  +{gamification.sessionPoints} ⭐
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Total: <span className="font-bold text-foreground">{gamification.totalPoints} points</span>
+                </p>
                 {nextLevel && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {nextLevel.min - gamification.totalPoints} pts to become {nextLevel.emoji} {nextLevel.name}!
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {nextLevel.min - gamification.totalPoints} pts to {nextLevel.emoji} {nextLevel.name}!
                   </p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* WIDA Level */}
-            <Card className="card-shadow border-border animate-celebration-slide-up" style={{ animationDelay: "0.45s" }}>
-              <CardContent className="py-4 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Your WIDA Level</p>
-                <p className="text-lg font-bold text-primary">{widaLabel}</p>
-              </CardContent>
-            </Card>
-
-            {/* Badges unlocked */}
-            {gamification.earnedBadgeIds.length > 0 && (
-              <Card className="card-shadow border-border animate-celebration-slide-up" style={{ animationDelay: "0.6s" }}>
-                <CardContent className="py-4">
-                  <p className="text-sm font-medium text-foreground mb-3 text-center">🎖️ Your Badges</p>
+              {/* Badges earned this session */}
+              {gamification.earnedBadgeIds.length > 0 && (
+                <div className="animate-fade-in" style={{ animationDelay: "0.6s" }}>
+                  <p className="text-sm font-medium text-foreground mb-2">🎖️ Badges Earned</p>
                   <div className="flex flex-wrap gap-3 justify-center">
                     {gamification.earnedBadgeIds.map((id) => {
                       const badge = BADGES_LOOKUP[id];
                       return badge ? (
-                        <div key={id} className="flex flex-col items-center gap-1">
+                        <div key={id} className="flex flex-col items-center gap-1 bg-card rounded-lg px-3 py-2 border border-border">
                           <span className="text-3xl">{badge.icon}</span>
                           <span className="text-[10px] text-muted-foreground">{badge.name}</span>
                         </div>
                       ) : null;
                     })}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              )}
 
-            {/* Session breakdown */}
-            <div className="grid grid-cols-3 gap-3 animate-celebration-slide-up" style={{ animationDelay: "0.75s" }}>
-              <Card className="card-shadow border-border">
-                <CardContent className="py-3 text-center px-2">
-                  <p className="text-[10px] text-muted-foreground">Builder</p>
-                  <p className="text-xl font-bold text-primary">✓</p>
-                </CardContent>
-              </Card>
-              <Card className="card-shadow border-border">
-                <CardContent className="py-3 text-center px-2">
-                  <p className="text-[10px] text-muted-foreground">Practice</p>
-                  <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
-                </CardContent>
-              </Card>
-              <Card className="card-shadow border-border">
-                <CardContent className="py-3 text-center px-2">
-                  <p className="text-[10px] text-muted-foreground">Challenge</p>
-                  <p className="text-xl font-bold text-success">✓</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Actions */}
-            <div className="space-y-3 animate-celebration-slide-up" style={{ animationDelay: "0.9s" }}>
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" onClick={() => setShowView("badges")} className="gap-2">
-                  <Award className="h-4 w-4" /> My Badges
-                </Button>
-                <Button variant="outline" onClick={() => setShowView("leaderboard")} className="gap-2">
-                  <Users className="h-4 w-4" /> Leaderboard
+              {/* See My Results button */}
+              <div className="animate-fade-in pt-4" style={{ animationDelay: "0.8s" }}>
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="w-full text-xl py-7"
+                  onClick={() => setShowResults(true)}
+                >
+                  See My Results 📊
                 </Button>
               </div>
-              <Button variant="hero" onClick={() => navigate("/")} className="w-full text-lg py-6">
-                🏠 Back to Home
+            </div>
+          </div>
+
+          {/* Confetti fall keyframes */}
+          <style>{`
+            @keyframes confetti-fall {
+              0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+              100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+            }
+          `}</style>
+
+          <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
+          {gamification.evolutionData && (
+            <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
+          )}
+          {gamification.pendingBadge && (
+            <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
+          )}
+        </div>
+      );
+    }
+
+    // ─── Phase 2: Results summary ───
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-6 animate-fade-in">
+          <Card className="card-shadow border-border">
+            <CardContent className="py-8 space-y-6">
+              <div className="text-center">
+                <div className="text-6xl mb-3">{animalLevel.emoji}</div>
+                <h2 className="text-2xl font-bold text-foreground">
+                  Great job today, {studentName}! 🌟
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-warning/10 rounded-xl p-4 text-center border border-warning/20">
+                  <p className="text-3xl font-bold text-warning">{gamification.sessionPoints}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Points Earned</p>
+                </div>
+                <div className="bg-primary/10 rounded-xl p-4 text-center border border-primary/20">
+                  <p className="text-3xl font-bold text-primary">{totalActivities}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Activities Done</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-[10px] text-muted-foreground">Builder</p>
+                  <p className="text-xl font-bold text-primary">✓</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-[10px] text-muted-foreground">Practice</p>
+                  <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-[10px] text-muted-foreground">Challenge</p>
+                  <p className="text-xl font-bold text-success">✓</p>
+                </div>
+              </div>
+
+              {gamification.earnedBadgeIds.length > 0 && (
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-2">Badges</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {gamification.earnedBadgeIds.map((id) => {
+                      const badge = BADGES_LOOKUP[id];
+                      return badge ? (
+                        <span key={id} className="text-2xl" title={badge.name}>{badge.icon}</span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" onClick={() => setShowView("badges")} className="gap-2">
+                <Award className="h-4 w-4" /> My Badges
+              </Button>
+              <Button variant="outline" onClick={() => setShowView("leaderboard")} className="gap-2">
+                <Users className="h-4 w-4" /> Leaderboard
               </Button>
             </div>
+            <Button variant="hero" onClick={() => navigate("/")} className="w-full text-lg py-6">
+              Done ✅
+            </Button>
           </div>
         </div>
 
@@ -1811,18 +1866,8 @@ const StudentSession = () => {
                     </CardContent>
                   </Card>
                 ) : part3Submitted && part3Feedback ? (
-                  <Card className="card-shadow border-border">
-                    <CardContent className="pt-8 pb-8 space-y-6">
-                      <div className="text-center">
-                        <Trophy className={`${isK2 ? "h-16 w-16" : "h-12 w-12"} text-warning mx-auto mb-3`} />
-                        <h2 className={`${isK2 ? "text-2xl" : "text-xl"} font-bold text-foreground`}>Challenge Complete! 🎉</h2>
-                      </div>
-                      <FeedbackBanner feedback={part3Feedback} positive={true} />
-                      <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-7" : ""}`} size="lg" onClick={finishSession}>
-                        See My Results <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  // Auto-trigger finishSession once Part 3 is done
+                  <Part3CompletionTrigger finishSession={finishSession} />
                 ) : part3Challenge ? (
                   <Part3ChallengeView
                     challenge={part3Challenge}
