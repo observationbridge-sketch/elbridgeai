@@ -2216,14 +2216,12 @@ function Part2StrategyView({
       </div>
 
       <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
-        {/* Passage — K-2 sentence_frames: max 1 sentence */}
-        {activity.passage && (
+        {/* Passage — hidden entirely for K-2 sentence_frames */}
+        {activity.passage && !(isK2 && activity.strategy === "sentence_frames") && (
           <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
             <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-1`}>📖 Read this:</p>
             <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>
-              {isK2 && activity.strategy === "sentence_frames"
-                ? (activity.passage.split(/(?<=[.!?])\s+/)[0] || activity.passage)
-                : activity.passage}
+              {activity.passage}
             </p>
           </div>
         )}
@@ -2264,8 +2262,17 @@ function Part2StrategyView({
           </div>
         )}
 
-        {/* Question */}
-        <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
+        {/* Question — K-2 sentence_frames: show sentence with blank + tap instruction */}
+        {isK2 && activity.strategy === "sentence_frames" ? (
+          <div className="space-y-3">
+            <p className={`text-2xl font-bold text-foreground text-center leading-relaxed`}>
+              {activity.sentenceFrame || activity.question}
+            </p>
+            <p className="text-lg text-muted-foreground text-center">👆 Tap a word to finish the sentence.</p>
+          </div>
+        ) : (
+          <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
+        )}
 
         {/* Sentence frame — hide entirely for K-2 sentence_frames */}
         {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && !(isK2 && activity.strategy === "sentence_frames") && (
@@ -2286,8 +2293,8 @@ function Part2StrategyView({
         {/* Word bank — hide for K-2 recording */}
         {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
           <div className="bg-muted/50 rounded-lg p-3 border border-border">
-            <p className="text-sm text-muted-foreground mb-2">
-              {isK2 && activity.strategy === "sentence_frames" ? "👆 Tap the right word!" : "📚 Word bank — use these words if you'd like:"}
+            <p className={`${isK2 && activity.strategy === "sentence_frames" ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
+              {isK2 && activity.strategy === "sentence_frames" ? "" : "📚 Word bank — use these words if you'd like:"}
             </p>
             <div className="flex flex-wrap gap-2">
               {activity.wordBank.map((word, i) => (

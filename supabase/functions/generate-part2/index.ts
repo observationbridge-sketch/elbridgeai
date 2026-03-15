@@ -344,7 +344,8 @@ K-2 CONTENT RULES (MANDATORY):
 - Maximum 8 words per sentence, simple subject-verb-object structure ONLY
 - NO subordinate clauses, NO "but", "however", "which", "although", "features"
 - Topics must be CONCRETE and VISUAL — things kids can see, touch, or imagine
-- Maximum 3 new vocabulary words per session, single-syllable preferred
+- ALL vocabulary words must have a MAXIMUM of 2 syllables — NO exceptions
+- Maximum 3 new vocabulary words per session
 - Maximum 1 blank per sentence
 - Multiple choice must have only 2-3 options (short, 1-3 words each)
 - Use only Tier 1 (common everyday) vocabulary
@@ -352,7 +353,8 @@ K-2 CONTENT RULES (MANDATORY):
 - Instructions should be very simple — as if talking to a 6-year-old
 - For listening activities: audio is 1-2 short sentences, then ONE question with emoji/picture choices
 - For speaking activities: maximum 1 sentence, must involve the student's animal companion (Baby Chick)
-- ALL answer options must be very short (1-3 words or emojis)` : "";
+- ALL answer options must be very short (1-3 words or emojis)
+- For sentence_frames: Do NOT include a reading passage. Show ONLY the fill-in-the-blank sentence and word bank tiles.` : "";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
   const positionConstraint = getPositionConstraint(questionIndex, grade, theme);
@@ -403,21 +405,25 @@ DIFFICULTY ARC: ${positionConstraint}
 Task: ${scaffolding}
 
 STRUCTURE:
-1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
+${isK2 ? `1. Do NOT include a reading passage — omit the "passage" field entirely or set it to null
+2. Show ONLY the fill-in-the-blank sentence directly
+3. The sentenceFrame field IS the activity — show it large and clear
+4. ALL words in the sentence and word bank must be max 2 syllables
+5. ALWAYS include a "wordBank" array with correct answer words only (no distractors) — these become tappable tiles` : `1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
 2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
-4. ALWAYS include a "wordBank" array with answer choices as tappable options
-5. CRITICAL: include a fillInBlank object with EXACT schema:
+4. ALWAYS include a "wordBank" array with answer choices as tappable options`}
+${isK2 ? "" : "5. "}CRITICAL: include a fillInBlank object with EXACT schema:
    { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 
 Return ONLY valid JSON (no markdown):
 {
   "type": "sentence_frame",
   "inputType": "${inputType}",${extraFields}
-  "passage": "<3-5 sentence passage about ${topic}>",
-  "question": "<instruction + the sentence frame with ___ blanks>",
-  "sentenceFrame": "<just the frame itself>",
-  "wordBank": ["<${isK2 ? "correct answer words only" : "4-6 words including correct answers and 1-2 distractors"}>"],
+  ${isK2 ? '"passage": null,' : `"passage": "<3-5 sentence passage about ${topic}>",`}
+  "question": "${isK2 ? "Tap a word to finish the sentence." : "<instruction + the sentence frame with ___ blanks>"}",
+  "sentenceFrame": "<just the frame itself with ___ blanks>",
+  "wordBank": ["<${isK2 ? "correct answer words only, max 2 syllables each" : "4-6 words including correct answers and 1-2 distractors"}>"],
   "fillInBlank": {
     "sentence": "<sentence with ___ placeholders>",
     "blanks": ["<blank metadata or indices>"],
