@@ -522,9 +522,9 @@ const StudentSession = () => {
     }
   }, [effectiveGradeBand, contentHistory, sessionTheme]);
 
-  const inPart1 = globalStep < 8;
-  const inPart2 = globalStep >= 8 && globalStep < 8 + part2Count;
-  const inPart3 = globalStep >= 8 + part2Count;
+  const inPart1 = globalStep < 5;
+  const inPart2 = globalStep >= 5 && globalStep < 5 + part2Count;
+  const inPart3 = globalStep >= 5 + part2Count;
 
   // ─── Load student info, anchor sentence, and history on mount ───
   useEffect(() => {
