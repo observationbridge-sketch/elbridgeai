@@ -1069,9 +1069,6 @@ const StudentSession = () => {
 
   const isK2 = effectiveGradeBand === "K-2";
 
-  // ─── K-2 feeling rating state ───
-  const [showFeelingRating, setShowFeelingRating] = useState(false);
-  const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
 
   const handleFeelingSelect = (feeling: number) => {
     setFeelingRatings(prev => [...prev, feeling]);
