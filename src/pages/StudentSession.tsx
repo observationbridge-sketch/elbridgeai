@@ -101,9 +101,9 @@ const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: strin
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
 };
 
-// Part 1 = 8 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
-const TOTAL_STEPS_3_5 = 15;
-const TOTAL_STEPS_K2 = 13; // 8 + 4 + 1
+// Part 1 = 5 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
+const TOTAL_STEPS_3_5 = 12; // 5 + 6 + 1
+const TOTAL_STEPS_K2 = 10;  // 5 + 4 + 1
 
 type GradeBand = "K-2" | "3-5";
 
