@@ -1036,6 +1036,7 @@ const StudentSession = () => {
             domainScores,
             questionIndex: index,
             contentHistory,
+            sentenceFrameTier: effectiveGradeBand === "K-2" ? sentenceFrameTier : undefined,
           },
         }),
         8000
