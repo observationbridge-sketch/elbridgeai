@@ -186,6 +186,79 @@ function buildHistoryContext(contentHistory: any): string {
   return parts.join("\n");
 }
 
+function extractJsonFromAiResponse(rawContent: string): any {
+  const cleaned = rawContent
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  const arrayStart = cleaned.indexOf("[");
+  const objectStart = cleaned.indexOf("{");
+  const startCandidates = [arrayStart, objectStart].filter((v) => v >= 0);
+  const jsonStart = startCandidates.length > 0 ? Math.min(...startCandidates) : -1;
+
+  if (jsonStart === -1) {
+    throw new Error("No JSON payload found in AI response");
+  }
+
+  const startsWithArray = cleaned[jsonStart] === "[";
+  const jsonEnd = startsWithArray ? cleaned.lastIndexOf("]") : cleaned.lastIndexOf("}");
+  if (jsonEnd === -1 || jsonEnd < jsonStart) {
+    throw new Error("JSON payload appears truncated");
+  }
+
+  const candidate = cleaned.slice(jsonStart, jsonEnd + 1);
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    const repaired = candidate
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, "");
+    return JSON.parse(repaired);
+  }
+}
+
+function isValidFillInBlankSchema(value: any): boolean {
+  if (!value || typeof value !== "object") return false;
+  if (typeof value.sentence !== "string" || !value.sentence.trim()) return false;
+  if (!Array.isArray(value.blanks)) return false;
+  if (!Array.isArray(value.answers) || value.answers.length === 0) return false;
+  if (!Array.isArray(value.wordBank) || value.wordBank.length === 0) return false;
+  return true;
+}
+
+function normalizeSentenceFrameActivity(activity: any): any {
+  if (!activity || typeof activity !== "object") return activity;
+
+  const fillInBlank = activity.fillInBlank || (isValidFillInBlankSchema(activity) ? activity : null);
+  if (!fillInBlank || !isValidFillInBlankSchema(fillInBlank)) return activity;
+
+  const sentenceFrame = fillInBlank.sentence.includes("___")
+    ? fillInBlank.sentence
+    : fillInBlank.sentence;
+
+  return {
+    ...activity,
+    type: activity.type || "sentence_frame",
+    question: activity.question || `Fill in the blanks: ${sentenceFrame}`,
+    sentenceFrame: activity.sentenceFrame || sentenceFrame,
+    wordBank: Array.isArray(activity.wordBank) && activity.wordBank.length > 0
+      ? activity.wordBank
+      : fillInBlank.wordBank,
+    modelAnswer: activity.modelAnswer || fillInBlank.answers.join(" "),
+    acceptableKeywords: Array.isArray(activity.acceptableKeywords) && activity.acceptableKeywords.length > 0
+      ? activity.acceptableKeywords
+      : fillInBlank.answers,
+    fillInBlank: {
+      sentence: sentenceFrame,
+      blanks: fillInBlank.blanks,
+      answers: fillInBlank.answers,
+      wordBank: fillInBlank.wordBank,
+    },
+  };
+}
+
 // Position-specific format constraints
 function getPositionConstraint(questionIndex: number, grade: string, theme: string): string {
   const isK2 = grade === "K-2";
