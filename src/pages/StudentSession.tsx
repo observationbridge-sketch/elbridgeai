@@ -1771,13 +1771,71 @@ interface Part1Props {
 function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
   part1Submitted, part1Feedback, part1ShowSentence, setPart1ShowSentence,
-  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, isK2,
+  part1Scores, onStep1Done, onStep2Submit, onStep6WriteSubmit, onStep7RecordSubmit, onNext, onRetryFillBlanks, isK2,
 }: Part1Props) {
   // Local scaffold state
   const [blanks, setBlanks] = useState<{ blanked: string; missingWords: string[]; wordBank: string[] } | null>(null);
   const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
+  const [step3Status, setStep3Status] = useState<"loading" | "ready" | "failed">("loading");
+  const [step3RetryCount, setStep3RetryCount] = useState(0);
+  const [showStep3WaitState, setShowStep3WaitState] = useState(false);
+
+  const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
+    const anchorToUse = sourceAnchor || anchor;
+    setStep3Status("loading");
+    setShowStep3WaitState(false);
+
+    const waitTimer = setTimeout(() => {
+      setShowStep3WaitState(true);
+    }, 6000);
+
+    try {
+      const generated = generateBlanks(anchorToUse.sentence, anchorToUse.keyWords || [], isK2);
+      const rawFillPayload = {
+        sentence: generated.blanked,
+        blanks: generated.missingWords.map((_, index) => ({ index })),
+        answers: generated.missingWords,
+        wordBank: generated.wordBank,
+      };
+      console.log("[FillInBlanks] raw payload", rawFillPayload);
+
+      const normalized = normalizeFillInBlankPayload(rawFillPayload);
+      if (!normalized) {
+        throw new Error("Invalid fill-in payload schema");
+      }
+
+      setBlanks(normalized);
+      setStep3Status("ready");
+      setStep3RetryCount(0);
+    } catch (error) {
+      console.error("[FillInBlanks] step 3 content generation failed", { attempt: attempt + 1, error });
+      if (attempt < 1) {
+        setStep3RetryCount(attempt + 1);
+        setShowStep3WaitState(true);
+        setTimeout(async () => {
+          const regeneratedAnchor = await onRetryFillBlanks();
+          await prepareStep3Content(attempt + 1, regeneratedAnchor || anchorToUse);
+        }, 3000);
+      } else {
+        setStep3Status("failed");
+      }
+    } finally {
+      clearTimeout(waitTimer);
+    }
+  }, [anchor, isK2, onRetryFillBlanks]);
+
+  useEffect(() => {
+    if (anchor?.sentence) {
+      setJumble(jumbleSentence(anchor.sentence));
+    }
+  }, [anchor]);
+
+  useEffect(() => {
+    if (step !== 3) return;
+    prepareStep3Content(0);
+  }, [step, anchor, prepareStep3Content]);
 
   const handleJumbleSubmit = () => {
     setJumbleSubmitted(true);
