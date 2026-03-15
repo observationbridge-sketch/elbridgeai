@@ -196,6 +196,7 @@ export function WordBankFillBlanks({
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 2500);
       setPhase("done");
+      sounds.playCorrect();
       onComplete({ correct: blankCount, total: blankCount });
     } else if (currentAttempt >= 2) {
       // 2 attempts exhausted → reveal remaining
