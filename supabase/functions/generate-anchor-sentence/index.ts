@@ -184,33 +184,54 @@ serve(async (req) => {
     const isK2 = grade === "K-2";
 
     const systemPrompt = isK2
-      ? `You are an expert English Language Development specialist creating anchor sentences for K-2 ELL students.
+      ? `STRICT K-2 LANGUAGE RULES — YOU MUST FOLLOW THESE EXACTLY:
+
+Maximum 1 sentence for the anchor/listening sentence. Never 2 or 3 sentences.
+Maximum 8 words per sentence.
+Only use words a 5-7 year old native English speaker would know.
+NEVER use: agility, focus, required, defenders, weaving, balance, features, unique, surface, legendary, behavior, appearance, or any word longer than 3 syllables.
+Sentence structure: simple subject + verb + object only. No subordinate clauses, no 'while', no 'both...and', no 'must'.
+Good K-2 example: "Soccer players kick the ball into the net."
+Good K-2 example: "A lion lives in the hot, sunny grass."
+Bad K-2 example: ANYTHING resembling advanced 4th-5th grade text.
+The topic must also be simplified:
+- Bad K-2 topic: "The skills needed to play soccer"
+- Good K-2 topic: "Playing soccer is fun!"
+- Bad K-2 topic: "The unique surface features of Mars"
+- Good K-2 topic: "Mars is a red planet"
+Every single piece of content generated for K-2 must pass this test: Could a 6-year-old who is still learning English understand this? If not, rewrite it.
+
+You are an expert English Language Development specialist creating anchor sentences for K-2 ELL students.
 
 Generate ONE anchor sentence of exactly 1 sentence, maximum 8 words. Use simple subject-verb-object structure.
 Use only Tier 1 (common everyday) vocabulary.
+Use maximum 3 key vocabulary words.
 
 Theme for this session: "${theme}"
 
-Create a specific topic within this theme. For example:
-- Theme "Nature & animals" → topic "A butterfly in the garden"
-- Theme "School & classroom life" → topic "Playing at recess"
+Create a specific topic within this theme using concrete, visual ideas only.
+Examples:
+- Theme "Nature & animals" → topic "A butterfly in a flower garden"
+- Theme "School & classroom life" → topic "Kids play on the school swing"
+- Theme "Space & planets" → topic "Mars is a red planet"
 ${historyContext}
 ${STRICT_RULES}
 
 RULES:
 - Exactly 1 sentence, maximum 8 words
-- Simple subject-verb-object structure
-- Tier 1 vocabulary only (common everyday words)
+- Simple subject-verb-object structure only
+- Tier 1 vocabulary only
+- Concrete and visual topic only
+- Maximum 3 keyWords
 - Grade-appropriate for K-2
-- Vivid, specific, kid-friendly language
 
 Return ONLY valid JSON (no markdown, no code blocks):
 {
   "sentence": "<the 1 sentence anchor, max 8 words>",
   "theme": "${theme}",
-  "topic": "<specific topic>",
+  "topic": "<simple concrete topic>",
   "category": "<category>",
-  "keyWords": ["<4-6 important words from the sentence>"]
+  "keyWords": ["<up to 3 important words from the sentence>"]
 }`
       : `You are an expert English Language Development specialist creating anchor passages for grades 3-5 ELL students.
 
