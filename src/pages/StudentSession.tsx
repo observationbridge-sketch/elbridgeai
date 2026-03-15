@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   Brain, BookOpen, PenTool, Mic, MicOff, Headphones, CheckCircle,
-  ArrowRight, Loader2, Star, Volume2, Trophy, Flame, RefreshCw,
+  ArrowRight, Loader2, Star, Volume2, VolumeX, Trophy, Flame, RefreshCw,
   Eye, EyeOff, Target, Zap, Award, Users, Clock, Sparkles,
 } from "lucide-react";
+import { useSounds } from "@/hooks/use-sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTTS } from "@/hooks/use-tts";
