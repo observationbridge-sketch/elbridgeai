@@ -1555,13 +1555,11 @@ const StudentSession = () => {
                   setPart1Answer={setPart1Answer}
                   part1Submitted={part1Submitted}
                   part1Feedback={part1Feedback}
-                  part1ShowSentence={part1ShowSentence}
-                  setPart1ShowSentence={setPart1ShowSentence}
-                  part1Scores={part1Scores}
                   onStep1Done={handleStep1Done}
                   onStep2Submit={handleStep2Submit}
-                  onStep6WriteSubmit={handleStep6WriteSubmit}
-                  onStep7RecordSubmit={handleStep7RecordSubmit}
+                  onStep3Complete={handleStep3Complete}
+                  onStep4Complete={handleStep4Complete}
+                  onStep5Complete={handleStep5Complete}
                   onNext={handlePart1Next}
                   onRetryFillBlanks={retryStep3FromGemini}
                   isK2={isK2}
