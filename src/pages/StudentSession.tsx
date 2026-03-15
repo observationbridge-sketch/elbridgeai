@@ -203,19 +203,73 @@ function isValidK2AnchorSentence(sentence: string): boolean {
 const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
 BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
+interface FillInBlankPayload {
+  sentence: string;
+  blanks: Array<number | { index: number }>;
+  answers: string[];
+  wordBank: string[];
+}
+
+function validateFillInBlankPayload(payload: any): payload is FillInBlankPayload {
+  if (!payload || typeof payload !== "object") return false;
+  if (typeof payload.sentence !== "string" || !payload.sentence.trim()) return false;
+  if (!Array.isArray(payload.blanks)) return false;
+  if (!Array.isArray(payload.answers) || payload.answers.length === 0) return false;
+  if (!Array.isArray(payload.wordBank) || payload.wordBank.length === 0) return false;
+  return true;
+}
+
+function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWords: string[]; wordBank: string[] } | null {
+  // Legacy shape already used by WordBankFillBlanks
+  if (
+    payload &&
+    typeof payload.blankedSentence === "string" &&
+    Array.isArray(payload.missingWords) &&
+    Array.isArray(payload.wordBank)
+  ) {
+    if (!payload.blankedSentence.includes("___") || payload.missingWords.length === 0) return null;
+    return {
+      blanked: payload.blankedSentence,
+      missingWords: payload.missingWords,
+      wordBank: payload.wordBank,
+    };
+  }
+
+  // New explicit schema { sentence, blanks, answers, wordBank }
+  if (!validateFillInBlankPayload(payload)) return null;
+  if (!payload.sentence.includes("___") || payload.answers.length === 0) return null;
+
+  return {
+    blanked: payload.sentence,
+    missingWords: payload.answers,
+    wordBank: payload.wordBank,
+  };
+}
+
 function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): { blanked: string; missingWords: string[]; wordBank: string[] } {
   const words = sentence.split(/\s+/);
-  const keyLower = keyWords.map(w => w.toLowerCase());
+  const keyLower = keyWords.map((w) => w.toLowerCase());
   const candidates: number[] = [];
+
   words.forEach((w, i) => {
-    const clean = w.toLowerCase().replace(/[^a-z']/g, '');
+    const clean = w.toLowerCase().replace(/[^a-z']/g, "");
     if (keyLower.includes(clean) && clean.length > 2) candidates.push(i);
   });
-  const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+
+  // Safety fallback when Gemini keyWords are missing/misaligned
+  if (candidates.length === 0) {
+    const fallbackStopWords = new Set(["the", "and", "for", "with", "that", "this", "from", "were", "was"]);
+    words.forEach((w, i) => {
+      const clean = w.toLowerCase().replace(/[^a-z']/g, "");
+      if (clean.length > 3 && !fallbackStopWords.has(clean)) candidates.push(i);
+    });
+  }
+
+  const shuffled = [...new Set(candidates)].sort(() => Math.random() - 0.5);
   const maxBlanks = isK2 ? 2 : 3;
   const count = Math.min(maxBlanks, Math.max(1, shuffled.length));
   const picked = shuffled.slice(0, count).sort((a, b) => a - b);
-  
+
   // Ensure sentence still makes sense: don't blank consecutive words
   const filtered: number[] = [];
   for (const idx of picked) {
@@ -223,29 +277,31 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
       filtered.push(idx);
     }
   }
+
+  // Absolute fallback: guarantee at least one blank
+  if (filtered.length === 0 && words.length > 0) {
+    const fallbackIdx = words.findIndex((w) => w.replace(/[^a-zA-Z']/g, "").length > 2);
+    if (fallbackIdx >= 0) filtered.push(fallbackIdx);
+  }
+
   const finalPicked = filtered.slice(0, maxBlanks);
-  
-  const missingWords = finalPicked.map(i => words[i].replace(/[^a-zA-Z']/g, ''));
-  const blanked = words.map((w, i) => finalPicked.includes(i) ? '___' : w).join(' ');
-  
-  // Build word bank: correct words + distractors
+  const missingWords = finalPicked.map((i) => words[i].replace(/[^a-zA-Z']/g, ""));
+  const blanked = words.map((w, i) => (finalPicked.includes(i) ? "___" : w)).join(" ");
+
   const wordBank = [...missingWords];
   if (isK2) {
-    // K-2: 1 distractor (simple, clearly different)
     const distractors = keyWords
-      .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+      .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
       .slice(0, 1);
     wordBank.push(...distractors);
   } else {
-    // 3-5: 2 distractors (can be trickier)
     const distractors = keyWords
-      .filter(w => !missingWords.map(m => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+      .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
       .slice(0, 2);
     wordBank.push(...distractors);
   }
-  // Shuffle the word bank
-  const shuffledBank = [...wordBank].sort(() => Math.random() - 0.5);
-  
+
+  const shuffledBank = [...new Set(wordBank)].sort(() => Math.random() - 0.5);
   return { blanked, missingWords, wordBank: shuffledBank };
 }
 
