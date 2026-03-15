@@ -2035,15 +2035,8 @@ function Part1View({
     </Card>
   );
 }
-  };
 
-  return (
-    <Card className="card-shadow border-border">
-      <div className="px-6 pt-6">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-            Daily Language Builder
-          </span>
+
         </div>
         <h3 className="text-lg font-bold text-foreground">{stepTitles[step]}</h3>
       </div>
