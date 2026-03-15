@@ -1380,7 +1380,7 @@ function Part1View({
   // Generate blanks when entering step 3
   useEffect(() => {
     if (step === 3 && !blanks) {
-      const b = generateBlanks(anchor.sentence, anchor.keyWords);
+      const b = generateBlanks(anchor.sentence, anchor.keyWords, isK2);
       setBlanks(b);
       setBlankAnswers(new Array(b.missingWords.length).fill(""));
       setBlankSubmitted(false);
