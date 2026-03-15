@@ -1728,6 +1728,7 @@ const StudentSession = () => {
                     onSubmitMC={(option: string) => submitPart2(option)}
                     onNext={nextPart2}
                     isK2={isK2}
+                    sentenceFrameTier={sentenceFrameTier}
                   />
                   {/* K-2 Feeling Rating */}
                   {isK2 && part2Submitted && !showFeelingRating && (
