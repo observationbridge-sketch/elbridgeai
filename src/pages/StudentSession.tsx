@@ -292,6 +292,7 @@ const StudentSession = () => {
 
       let currentStudentName = "";
       let sessionForcedTheme: string | undefined;
+      let sessionGradeBand: GradeBand = "3-5";
 
       try {
         const { data: studentData } = await supabase
@@ -313,9 +314,10 @@ const StudentSession = () => {
             .single();
           if (sessionData) {
             setTeacherId(sessionData.teacher_id);
-            const gb = (sessionData as any).grade_band || "3-5";
-            setGradeBand(gb as GradeBand);
-            setEffectiveGradeBand(gb as GradeBand);
+            const gb = ((sessionData as any).grade_band || "3-5") as GradeBand;
+            sessionGradeBand = gb;
+            setGradeBand(gb);
+            setEffectiveGradeBand(gb);
           }
         }
       } catch { /* proceed */ }
@@ -346,24 +348,54 @@ const StudentSession = () => {
       } catch { /* proceed without history */ }
 
       try {
+        const invokeBody = {
+          grade: sessionGradeBand,
+          contentHistory: fetchedHistory,
+          forcedTheme: sessionForcedTheme,
+        };
+
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
-          body: { grade: gradeBand || "3-5", contentHistory: fetchedHistory, forcedTheme: sessionForcedTheme },
+          body: invokeBody,
         });
         if (error) throw error;
-        const anchorData = data as AnchorSentence;
+
+        let anchorData = data as AnchorSentence;
         if (!anchorData.topic) anchorData.topic = anchorData.theme;
+
+        if (sessionGradeBand === "K-2" && !isValidK2AnchorSentence(anchorData.sentence)) {
+          console.warn("Invalid K-2 anchor received. Regenerating...");
+          const { data: retryData, error: retryError } = await supabase.functions.invoke("generate-anchor-sentence", {
+            body: invokeBody,
+          });
+          if (retryError) throw retryError;
+          const retryAnchor = retryData as AnchorSentence;
+          if (!retryAnchor.topic) retryAnchor.topic = retryAnchor.theme;
+          if (!isValidK2AnchorSentence(retryAnchor.sentence)) {
+            throw new Error("K-2 anchor validation failed after regeneration");
+          }
+          anchorData = retryAnchor;
+        }
+
         setAnchor(anchorData);
         setSessionTheme(anchorData.theme);
         setSessionTopic(anchorData.topic);
         setTtsPreloaded(true);
       } catch {
-        const fallback: AnchorSentence = {
-          sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
-          theme: "Ancient Egypt",
-          topic: "The building of the ancient pyramids",
-          category: "Descriptive language models",
-          keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
-        };
+        const fallback: AnchorSentence = sessionGradeBand === "K-2"
+          ? {
+              sentence: "Mars is a red planet in space.",
+              theme: sessionForcedTheme || "Space & planets",
+              topic: "Mars is a red planet",
+              category: "Descriptive language models",
+              keyWords: ["Mars", "red", "planet"],
+            }
+          : {
+              sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
+              theme: "Ancient Egypt",
+              topic: "The building of the ancient pyramids",
+              category: "Descriptive language models",
+              keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
+            };
         setAnchor(fallback);
         setSessionTheme(fallback.theme);
         setSessionTopic(fallback.topic);
