@@ -1451,14 +1451,19 @@ function Part1View({
             </div>
             <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
             {!part1Submitted ? (
-              <Button variant="hero" className="w-full" size="lg" onClick={onStep2Submit} disabled={!part1Answer.trim()}>
-                Check My Speaking
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onStep2Submit} disabled={!part1Answer.trim()}>
+                {isK2 ? "Check! ✅" : "Check My Speaking"}
               </Button>
             ) : (
               <>
                 <FeedbackBanner feedback={part1Feedback} positive={part1Scores.repeatTotal > 0 && part1Scores.repeat / part1Scores.repeatTotal >= 0.5} />
-                <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
-                  Next Step <ArrowRight className="h-4 w-4 ml-2" />
+                <Button
+                  variant={isK2 ? "success" : "hero"}
+                  className={`w-full ${isK2 ? "text-2xl py-8 min-h-[70px] rounded-xl shadow-lg animate-pulse" : ""}`}
+                  size="lg"
+                  onClick={onNext}
+                >
+                  {isK2 ? "Keep Going! 🚀" : "Next Step"} {!isK2 && <ArrowRight className="h-4 w-4 ml-2" />}
                 </Button>
               </>
             )}
