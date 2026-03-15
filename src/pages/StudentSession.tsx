@@ -2497,7 +2497,7 @@ function Part2StrategyView({
           <div className="space-y-3">
             <div className="bg-muted/50 rounded-xl p-6 border border-border">
               <p className="text-2xl font-bold text-foreground text-center leading-relaxed">
-                {activity.sentenceFrame || activity.question}
+                {k2BlankSentence}
               </p>
             </div>
             {!submitted && !sfRevealed && (
@@ -2526,13 +2526,24 @@ function Part2StrategyView({
 
         {/* Word bank / tiles for K-2 Sentence Frames */}
         {isK2SF ? (() => {
-          // Use wordBank if available, otherwise fall back to MC options
-          const tiles = (activity.wordBank && activity.wordBank.length > 0)
+          const rawTiles = (activity.wordBank && activity.wordBank.length > 0)
             ? activity.wordBank
             : (activity.options && activity.options.length > 0)
               ? activity.options
               : [];
-          if (tiles.length === 0) return null;
+
+          const uniqueTiles = Array.from(
+            new Set(
+              rawTiles
+                .map((tile) => tile.replace(/^[A-D][\).:\-]\s*/i, "").trim())
+                .filter(Boolean)
+            )
+          );
+
+          if (uniqueTiles.length === 0 && activity.modelAnswer?.trim()) {
+            uniqueTiles.push(activity.modelAnswer.trim());
+          }
+
           if (submitted || (sfRevealed && submitted)) return null;
           if (sfRevealed && !submitted) {
             return (
