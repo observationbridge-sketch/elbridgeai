@@ -2431,23 +2431,16 @@ function Part2StrategyView({
             <StrategyIcon className="h-3 w-3" />
             {strategyMeta.label}
           </span>
-          {isK2 && activity.strategy === "sentence_frames" && sentenceFrameTier && (
+          {isK2 && isSentenceFramesActivity && sentenceFrameTier && (
             <span className="text-sm bg-warning/20 text-warning px-2 py-0.5 rounded-full flex items-center gap-0.5">
               {Array.from({ length: 3 }, (_, i) => (
                 <Star key={i} className={`h-3.5 w-3.5 ${i < sentenceFrameTier ? "fill-warning text-warning" : "text-warning/30"}`} />
               ))}
             </span>
           )}
-          <span className={`${isK2 ? "text-sm" : "text-xs"} text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full`}>
-            {index + 1} of {totalActivities}
-          </span>
-        </div>
-        {!isK2 && <p className="text-xs text-muted-foreground mt-1">Targeting: {strategyMeta.targetDomain}</p>}
-      </div>
-
-      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
-        {/* Passage — hidden entirely for K-2 sentence_frames */}
-        {activity.passage && !(isK2 && activity.strategy === "sentence_frames") && (
+...
+        {/* Passage — hard-disabled for K-2 sentence frames */}
+        {activity.passage && !isK2SF && (
           <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
             <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-1`}>📖 Read this:</p>
             <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>
