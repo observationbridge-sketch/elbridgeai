@@ -2319,7 +2319,7 @@ function Part2StrategyView({
         )}
 
         {/* Input area based on inputType */}
-        {!submitted && (
+        {!submitted && !(isK2 && activity.strategy === "sentence_frames") && (
           <>
             {inputType === "multiple_choice" && activity.options ? (
               <div className="grid grid-cols-1 gap-3">
