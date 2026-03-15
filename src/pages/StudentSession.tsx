@@ -2216,11 +2216,15 @@ function Part2StrategyView({
       </div>
 
       <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
-        {/* Passage (if present) */}
+        {/* Passage — K-2 sentence_frames: max 1 sentence */}
         {activity.passage && (
           <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
             <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground mb-1`}>📖 Read this:</p>
-            <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>{activity.passage}</p>
+            <p className={`text-foreground leading-relaxed ${isK2 ? "text-xl" : ""}`}>
+              {isK2 && activity.strategy === "sentence_frames"
+                ? (activity.passage.split(/(?<=[.!?])\s+/)[0] || activity.passage)
+                : activity.passage}
+            </p>
           </div>
         )}
 
@@ -2263,8 +2267,8 @@ function Part2StrategyView({
         {/* Question */}
         <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
 
-        {/* Sentence frame — hide for K-2 recording */}
-        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && (
+        {/* Sentence frame — hide entirely for K-2 sentence_frames */}
+        {activity.sentenceFrame && inputType !== "multiple_choice" && !(isK2 && inputType === "recording") && !(isK2 && activity.strategy === "sentence_frames") && (
           <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
             <p className="text-sm text-muted-foreground mb-1">Sentence frame:</p>
             <p className="text-foreground font-medium italic">{activity.sentenceFrame}</p>
@@ -2282,17 +2286,40 @@ function Part2StrategyView({
         {/* Word bank — hide for K-2 recording */}
         {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
           <div className="bg-muted/50 rounded-lg p-3 border border-border">
-            <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              {isK2 && activity.strategy === "sentence_frames" ? "👆 Tap the right word!" : "📚 Word bank — use these words if you'd like:"}
+            </p>
             <div className="flex flex-wrap gap-2">
               {activity.wordBank.map((word, i) => (
-                <span key={i} className="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full font-medium">{word}</span>
+                <button
+                  key={i}
+                  type="button"
+                  disabled={submitted}
+                  onClick={() => {
+                    if (isK2 && activity.strategy === "sentence_frames" && !submitted) {
+                      setAnswer(word);
+                      setTimeout(() => onSubmit(), 400);
+                    }
+                  }}
+                  className={`rounded-full font-medium transition-all ${
+                    isK2 && activity.strategy === "sentence_frames"
+                      ? `px-5 py-3 text-lg border-2 cursor-pointer ${
+                          answer === word
+                            ? "bg-primary text-primary-foreground border-primary scale-105"
+                            : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                        }`
+                      : "px-3 py-1 bg-primary/10 text-primary text-sm cursor-default"
+                  }`}
+                >
+                  {word}
+                </button>
               ))}
             </div>
           </div>
         )}
 
         {/* Input area based on inputType */}
-        {!submitted && (
+        {!submitted && !(isK2 && activity.strategy === "sentence_frames") && (
           <>
             {inputType === "multiple_choice" && activity.options ? (
               <div className="grid grid-cols-1 gap-3">
