@@ -293,6 +293,18 @@ ${inputType === "record_then_type" ? "The student will TYPE their answer AND THE
 
   const extraFields = getInputTypeFields(inputType, topic);
 
+  const fillInBlankRules = `
+FILL-IN-THE-BLANK QUALITY RULES (MANDATORY):
+- The sentence MUST make complete grammatical sense when the correct words are inserted
+- The sentence MUST have clear context clues so the student can reasonably guess the answer
+- NEVER remove so many words that the sentence loses all meaning
+- Maximum ${isK2 ? "2" : "3"} blanks per sentence
+- ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer words only (no distractors)" : "4-6 word choices including 1-2 distractor words"}
+- Good example: "The frog ___ on a green leaf in the jungle." (wordBank: ["sits", "runs", "jumped"])
+- Bad example: "A green ___ ___ on a ___" — too many blanks, no context, nonsensical
+- Before outputting, verify: "Does this sentence make sense with blanks? Can a student figure out the answers from context?" If not, rewrite.
+`;
+
   if (strategy === "sentence_frames") {
     const scaffolding = [
       "ONE blank to fill in. Provide a sentence frame with exactly one blank marked as ___.",
