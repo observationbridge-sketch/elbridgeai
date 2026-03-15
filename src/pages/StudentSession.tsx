@@ -1811,18 +1811,8 @@ const StudentSession = () => {
                     </CardContent>
                   </Card>
                 ) : part3Submitted && part3Feedback ? (
-                  <Card className="card-shadow border-border">
-                    <CardContent className="pt-8 pb-8 space-y-6">
-                      <div className="text-center">
-                        <Trophy className={`${isK2 ? "h-16 w-16" : "h-12 w-12"} text-warning mx-auto mb-3`} />
-                        <h2 className={`${isK2 ? "text-2xl" : "text-xl"} font-bold text-foreground`}>Challenge Complete! 🎉</h2>
-                      </div>
-                      <FeedbackBanner feedback={part3Feedback} positive={true} />
-                      <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-7" : ""}`} size="lg" onClick={finishSession}>
-                        See My Results <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  // Auto-trigger finishSession once Part 3 is done
+                  <Part3CompletionTrigger finishSession={finishSession} />
                 ) : part3Challenge ? (
                   <Part3ChallengeView
                     challenge={part3Challenge}
