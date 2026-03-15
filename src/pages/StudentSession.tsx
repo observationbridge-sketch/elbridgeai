@@ -2423,37 +2423,89 @@ function Part2StrategyView({
 
         {/* Word bank — hide for K-2 recording */}
         {activity.wordBank && activity.wordBank.length > 0 && !(isK2 && inputType === "recording") && (
-          <div className="bg-muted/50 rounded-lg p-3 border border-border">
-            <p className={`${isK2 && activity.strategy === "sentence_frames" ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
-              {isK2 && activity.strategy === "sentence_frames" ? "" : "📚 Word bank — use these words if you'd like:"}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {activity.wordBank.map((word, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  disabled={submitted}
-                  onClick={() => {
-                    if (isK2 && activity.strategy === "sentence_frames" && !submitted) {
-                      setAnswer(word);
-                      setTimeout(() => onSubmit(), 400);
-                    }
-                  }}
-                  className={`rounded-full font-medium transition-all ${
-                    isK2 && activity.strategy === "sentence_frames"
-                      ? `px-5 py-3 text-lg border-2 cursor-pointer ${
-                          answer === word
-                            ? "bg-primary text-primary-foreground border-primary scale-105"
-                            : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
-                        }`
-                      : "px-3 py-1 bg-primary/10 text-primary text-sm cursor-default"
-                  }`}
-                >
-                  {word}
-                </button>
-              ))}
+          isK2SF ? (
+            /* K-2 Sentence Frame: internal validation with retry */
+            !submitted && !sfRevealed ? (
+              <div className="space-y-3">
+                {sfWrongMessage && (
+                  <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
+                    <p className="text-lg font-medium text-warning">{sfWrongMessage}</p>
+                  </div>
+                )}
+                <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    {activity.wordBank.map((word, i) => {
+                      const isSelected = sfSelectedWord === word;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSfSelectedWord(word);
+                            // Strict match against modelAnswer
+                            const correctAnswer = activity.modelAnswer.toLowerCase().trim();
+                            const isExactCorrect = word.toLowerCase().trim() === correctAnswer;
+                            if (isExactCorrect) {
+                              // Correct! Submit to parent
+                              setAnswer(word);
+                              setSfWrongMessage(null);
+                              setTimeout(() => onSubmit(), 400);
+                            } else {
+                              const newAttempts = sfAttempts + 1;
+                              setSfAttempts(newAttempts);
+                              if (newAttempts >= 2) {
+                                // 2nd wrong: reveal model answer, award 0 points
+                                setSfRevealed(true);
+                                setSfWrongMessage(null);
+                                setAnswer(word);
+                                // Submit as wrong so tier tracking works
+                                setTimeout(() => onSubmit(), 400);
+                              } else {
+                                setSfWrongMessage("Try again! 🌟");
+                                setTimeout(() => setSfSelectedWord(null), 600);
+                              }
+                            }
+                          }}
+                          className={`px-5 py-3 text-lg border-2 rounded-full font-medium cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary scale-105"
+                              : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                          }`}
+                        >
+                          {word}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : sfRevealed && !submitted ? (
+              /* Show model answer in gold after 2 wrong attempts */
+              <div className="space-y-4 animate-fade-in">
+                <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
+                  <p className="text-lg text-muted-foreground mb-1">The answer is:</p>
+                  <p className="text-2xl font-bold text-warning">{activity.modelAnswer}</p>
+                </div>
+              </div>
+            ) : null
+          ) : (
+            /* Non-K2-SF word bank (unchanged) */
+            <div className="bg-muted/50 rounded-lg p-3 border border-border">
+              <p className="text-sm text-muted-foreground mb-2">📚 Word bank — use these words if you'd like:</p>
+              <div className="flex flex-wrap gap-2">
+                {activity.wordBank.map((word, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={submitted}
+                    className="px-3 py-1 bg-primary/10 text-primary text-sm cursor-default rounded-full font-medium transition-all"
+                  >
+                    {word}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )
         )}
 
         {/* Input area based on inputType */}
