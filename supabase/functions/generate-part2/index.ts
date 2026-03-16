@@ -32,6 +32,14 @@ const INPUT_TYPES: Record<Strategy, string[]> = {
   quick_writes: ["typing", "listen_then_type", "typing", "typing", "multiple_choice", "typing"],
 };
 
+// 3-5 multiple choice option counts by position: 1-2 warmup=2, 3-4 peak=4, 5-6 wind-down=2
+function getOptionCount(questionIndex: number, isK2: boolean): number {
+  if (isK2) return 2;
+  if (questionIndex <= 1) return 2; // warmup
+  if (questionIndex <= 3) return 4; // peak
+  return 2; // wind-down
+}
+
 // HARD RULE: Activities banned from positions 5 and 6
 const HEAVY_ACTIVITY_PATTERNS = [
   "sequential story", "4-scene", "multi-scene", "organize sentences",
