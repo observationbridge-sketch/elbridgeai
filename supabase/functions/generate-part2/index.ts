@@ -511,7 +511,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { strategy, weakestDomain, reason } = selectStrategy(domainScores);
+    const { strategy, weakestDomain, reason } = selectStrategy(domainScores, questionIndex || 0);
     const prompt = buildPrompt(
       strategy,
       theme || "Nature & animals",
