@@ -1415,7 +1415,7 @@ const StudentSession = () => {
 
     if (hasEnoughSentences && hasSequence) {
       // Full points
-      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS);
+      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
       const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
       setPart3Feedback(feedback);
     } else {
