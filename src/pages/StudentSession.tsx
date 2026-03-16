@@ -1569,8 +1569,8 @@ const StudentSession = () => {
   // ─── Session ended — FULL CELEBRATION SCREEN (2 phases) ───
 
   if (sessionEnded) {
-    const animalLevel = getAnimalLevel(gamification.totalPoints);
-    const nextLevel = getNextLevel(gamification.totalPoints);
+    const animalLevel = effectiveGradeBand === "3-5" ? getAnimalLevel35(gamification.totalPoints) : getAnimalLevel(gamification.totalPoints);
+    const nextLevel = effectiveGradeBand === "3-5" ? getNextLevel35(gamification.totalPoints) : getNextLevel(gamification.totalPoints);
     const totalActivities = 5 + part2Count + 1; // Part1(5) + Part2 + Part3(1)
 
     if (!showResults) {
