@@ -1099,28 +1099,29 @@ const StudentSession = () => {
         throw new Error("Invalid activity content");
       }
       
-      // CLIENT-SIDE VALIDATION: Ensure positions 5-6 don't have heavy writing tasks
+      // CLIENT-SIDE VALIDATION: Ensure positions 5-6 don't have heavy/complex tasks
       if (index >= 4) {
         const activityText = JSON.stringify(activity).toLowerCase();
         const isHeavy = 
-          (activityText.includes("4-scene") || activityText.includes("sequential story") || 
-           activityText.includes("multi-scene") || activityText.includes("organize sentences") ||
-           (activityText.includes("scenes") && activityText.includes("order")));
+          activity.type === "story_builder" ||
+          activityText.includes("4-scene") || activityText.includes("sequential") ||
+          activityText.includes("multi-scene") || activityText.includes("organize sentences") ||
+          (activityText.includes("scenes") && activityText.includes("order"));
         const sentenceMatch = (activity.question || "").match(/write\s+(\d+)\s+sentence/i);
         const tooManySentences = sentenceMatch && parseInt(sentenceMatch[1]) >= 3;
         
         if (isHeavy || tooManySentences) {
-          console.warn(`Position ${index + 1} had heavy activity — using light fallback`);
+          console.warn(`Position ${index + 1} had heavy activity (type: ${activity.type}) — replacing with light fallback`);
           const isK2 = effectiveGradeBand === "K-2";
           if (index === 5) {
             activity = {
-              type: "light_fun",
+              type: "sentence_completion",
               inputType: isK2 ? "recording" : "typing",
               question: isK2 
                 ? `Tell your animal companion: "My favorite thing about ${sessionTopic} is ___!" Say it out loud! 🎤`
-                : `🎉 Finish this silly sentence about ${sessionTopic}: "If I could _____, I would _____ because _____!"`,
-              modelAnswer: `My favorite thing about ${sessionTopic} is how amazing it is!`,
-              acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "fun", "favorite", "because"],
+                : `Complete this sentence about ${sessionTopic}: "The most interesting thing I learned is _____."`,
+              modelAnswer: `The most interesting thing I learned about ${sessionTopic} is how amazing it is!`,
+              acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "learned", "interesting", "because"],
               difficulty: 6,
               theme: sessionTheme,
               strategy: activity.strategy || "sentence_frames",
@@ -1133,7 +1134,7 @@ const StudentSession = () => {
               inputType: isK2 ? "recording" : "multiple_choice",
               question: `True or False: ${sessionTopic} is something you might find in a story about ${sessionTheme}. Explain why in one sentence.`,
               options: isK2 ? undefined : ["True — it fits the theme!", "False — it doesn't fit.", "True — definitely!", "False — not at all."],
-              modelAnswer: `True — ${sessionTopic} fits perfectly with ${sessionTheme}!`,
+              modelAnswer: isK2 ? "True" : "True — it fits the theme!",
               acceptableKeywords: ["true", "because", sessionTopic.split(" ")[0]?.toLowerCase() || "yes"],
               difficulty: 5,
               theme: sessionTheme,
