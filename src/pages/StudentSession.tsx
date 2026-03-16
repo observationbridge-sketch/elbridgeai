@@ -617,7 +617,7 @@ const StudentSession = () => {
               topic,
               forceType: challengeType,
               contentHistory: history,
-              weakestDomain: scores ? Object.entries(scores).sort((a, b) => ((a[1] as number) ?? 100) - ((b[1] as number) ?? 100))[0]?.[0] : undefined,
+              weakestDomain: domainScores ? Object.entries(domainScores).sort((a, b) => ((a[1] as number) ?? 100) - ((b[1] as number) ?? 100))[0]?.[0] : undefined,
             },
           }),
           15000
