@@ -124,25 +124,29 @@ serve(async (req) => {
     let systemPrompt: string;
 
     if (challengeType === "story_builder") {
+      const sceneCount = contentHistory?.belowGradeLevel ? 3 : 4;
+      const sceneTemplates = Array.from({ length: sceneCount }, (_, i) => {
+        const labels = ["opening the story", "continuing the story", "building tension", "with resolution"];
+        return `    "<Scene ${i + 1}: vivid 1-2 sentence description ${labels[i] || 'continuing'} about ${topic}>"`;
+      }).join(",\n");
+
       systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
 ${STRICT_RULES}
 
-Generate a STORY BUILDER challenge. The student will write a 4-6 sentence mini story connecting 4 vivid scene descriptions.
+Generate a STORY BUILDER challenge. The student will write a mini story connecting ${sceneCount} vivid scene descriptions.
 
-Create 4 short scene descriptions (1-2 sentences each) that form a logical sequence about "${topic}". Describe vivid scenes in words — do NOT reference any pictures or images.
+Create exactly ${sceneCount} short scene descriptions (1-2 sentences each) that form a logical sequence about "${topic}". Describe vivid scenes in words — do NOT reference any pictures or images.
 
 Return ONLY valid JSON (no markdown):
 {
   "challengeType": "story_builder",
   "title": "Story Builder",
-  "instruction": "Write a 4-6 sentence mini story connecting all 4 scenes in order!",
+  "instruction": "Write a ${sceneCount === 3 ? "3-4" : "4-6"} sentence mini story connecting all ${sceneCount} scenes in order!",
+  "sceneCount": ${sceneCount},
   "scenes": [
-    "<Scene 1: vivid 1-2 sentence description about ${topic}>",
-    "<Scene 2: vivid 1-2 sentence description continuing the story>",
-    "<Scene 3: vivid 1-2 sentence description building tension>",
-    "<Scene 4: vivid 1-2 sentence description with resolution>"
+${sceneTemplates}
   ],
   "sentenceStarter": "It all began when...",
   "acceptableKeywords": ["<8-10 keywords related to ${topic} and sequence words>"],
