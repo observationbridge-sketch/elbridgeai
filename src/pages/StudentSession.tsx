@@ -2555,12 +2555,12 @@ function Part2StrategyView({
           for (let d = 0; d < distractors.length && finalTiles.length < tierTileCount; d++) {
             finalTiles.push(distractors[d]);
           }
-          // Pad with fallback distractors if needed
-          const fallbackDistractors = ["also", "very", "some", "many", "just", "then"];
+          // Pad with fallback distractors if needed — never show a single tile alone
+          const fallbackDistractors = ["jump", "red", "big", "run", "happy", "cold", "small", "fast"];
           let fbIdx = 0;
-          while (finalTiles.length < tierTileCount && fbIdx < fallbackDistractors.length) {
+          while (finalTiles.length < Math.max(tierTileCount, 2) && fbIdx < fallbackDistractors.length) {
             const fb = fallbackDistractors[fbIdx];
-            if (!finalTiles.some(t => t.toLowerCase() === fb.toLowerCase())) {
+            if (!finalTiles.some(t => t.toLowerCase() === fb.toLowerCase()) && fb.toLowerCase() !== correctWord.toLowerCase()) {
               finalTiles.push(fb);
             }
             fbIdx++;
@@ -2573,14 +2573,21 @@ function Part2StrategyView({
             return ha - hb;
           });
 
-          if (submitted || (sfRevealed && submitted)) return null;
-          if (sfRevealed && !submitted) {
+          if (submitted && !sfRevealed) return null;
+          if (sfRevealed) {
             return (
               <div className="space-y-4 animate-fade-in">
                 <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
                   <p className="text-lg text-muted-foreground mb-1">The answer is:</p>
                   <p className="text-2xl font-bold text-warning">{activity.modelAnswer}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={onNext}
+                  className="w-full py-4 text-xl font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all animate-soft-pulse"
+                >
+                  Next Activity →
+                </button>
               </div>
             );
           }
@@ -2614,8 +2621,7 @@ function Part2StrategyView({
                             if (newAttempts >= 2) {
                               setSfRevealed(true);
                               setSfWrongMessage(null);
-                              setAnswer(word);
-                              setTimeout(() => onSubmit(), 400);
+                              // Don't call onSubmit — the "Next Activity" button handles it
                             } else {
                               setSfWrongMessage("Try again! 🌟");
                               setTimeout(() => {
