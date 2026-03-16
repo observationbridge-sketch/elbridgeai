@@ -1405,17 +1405,27 @@ const StudentSession = () => {
       return;
     }
     const norm = part3Answer.toLowerCase();
+    const sentences = part3Answer.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
     const seqWords = part3Challenge.sequenceWords || ["first", "then", "next", "finally"];
     const usedSeqWords = seqWords.filter((w) => norm.includes(w));
     const hasSequence = usedSeqWords.length >= 2;
+    const hasEnoughSentences = sentences.length >= 3;
 
-    gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE);
-    if (hasSequence) gamification.addPoints(POINTS.CHALLENGE_STORY_SEQUENCE_BONUS);
-
-    const feedback = hasSequence
-      ? `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`
-      : `Great story! Try using words like "first, then, next, finally" to make it even better! 📝 +${POINTS.CHALLENGE_STORY_COMPLETE} points!`;
-    setPart3Feedback(feedback);
+    if (hasEnoughSentences && hasSequence) {
+      // Full points
+      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS);
+      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
+      setPart3Feedback(feedback);
+    } else {
+      // Half points + encouraging feedback
+      const halfPoints = Math.round(POINTS.CHALLENGE_STORY_COMPLETE / 2);
+      gamification.addPoints(halfPoints);
+      const tips: string[] = [];
+      if (!hasEnoughSentences) tips.push("try writing at least 3 sentences");
+      if (!hasSequence) tips.push('use sequence words like "first, then, next, finally"');
+      const feedback = `Good effort! Next time, ${tips.join(" and ")} to earn full points! 📝 +${halfPoints} points!`;
+      setPart3Feedback(feedback);
+    }
     setPart3Submitted(true);
     setChallengeCompleted("Story Builder");
     saveResponse("writing", "Part 3: Story Builder", part3Answer, part3Challenge.instruction, true, "Developing", "part3", "story_builder");
