@@ -27,6 +27,11 @@ import { getAnimalLevel, getNextLevel } from "@/components/gamification/constant
 import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 import { WordBankFillBlanks } from "@/components/session/WordBankFillBlanks";
 import { MemoryMatch } from "@/components/session/MemoryMatch";
+import {
+  normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
+  isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
+  extractSingleWord, MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS,
+} from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
@@ -328,34 +333,16 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
   return { blanked, missingWords, wordBank: shuffledBank };
 }
 
-function normalizeJumbleWord(word: string): string {
-  return word.toLowerCase().replace(/[^a-z0-9']/g, "").trim();
-}
-
-function sentenceToNormalizedWords(sentence: string): string[] {
-  return sentence
-    .split(/\s+/)
-    .map(normalizeJumbleWord)
-    .filter(Boolean);
-}
-
-function wordsMatchByIndex(studentWords: string[], correctWords: string[]): boolean {
-  if (studentWords.length !== correctWords.length) return false;
-  for (let i = 0; i < correctWords.length; i++) {
-    if (studentWords[i] !== correctWords[i]) return false;
-  }
-  return true;
-}
-
 function jumbleSentence(passage: string): { original: string; correctWords: string[]; jumbled: string[] } {
   const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
   const target = sentences[0] || passage;
   const clean = target.replace(/[.!?]$/, "").trim();
-  const words = sentenceToNormalizedWords(clean);
+  // Normalize all chips to lowercase — prevents "a" vs "A" duplicates
+  const words = deduplicateChips(clean.split(/\s+/));
 
   let shuffled = [...words].sort(() => Math.random() - 0.5);
   let attempts = 0;
-  while (wordsMatchByIndex(shuffled, words) && attempts < 10) {
+  while (isExactWordOrderMatch(shuffled, words) && attempts < 10) {
     shuffled = [...words].sort(() => Math.random() - 0.5);
     attempts++;
   }
@@ -2011,6 +1998,9 @@ function Part1View({
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
   const [jumbleTappedWords, setJumbleTappedWords] = useState<string[]>([]);
   const [jumbleIsCorrect, setJumbleIsCorrect] = useState<boolean | null>(null);
+  const [jumbleAttempts, setJumbleAttempts] = useState(0);
+  const [jumbleShake, setJumbleShake] = useState(false);
+  const [jumbleTryAgainMsg, setJumbleTryAgainMsg] = useState<string | null>(null);
   const [usedJumbleIndices, setUsedJumbleIndices] = useState<Set<number>>(new Set());
 
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
@@ -2057,6 +2047,7 @@ function Part1View({
     }
   }, [anchor, isK2, onRetryFillBlanks]);
 
+  // Reset jumble state when anchor changes
   useEffect(() => {
     if (anchor?.sentence) {
       setJumble(jumbleSentence(anchor.sentence));
@@ -2064,6 +2055,9 @@ function Part1View({
       setJumbleSubmitted(false);
       setJumbleTappedWords([]);
       setJumbleIsCorrect(null);
+      setJumbleAttempts(0);
+      setJumbleShake(false);
+      setJumbleTryAgainMsg(null);
       setUsedJumbleIndices(new Set());
     }
   }, [anchor]);
@@ -2073,34 +2067,76 @@ function Part1View({
     prepareStep3Content(0);
   }, [step, anchor, prepareStep3Content]);
 
+  // K-2: Tap a chip to add to build area
   const handleChipTap = (word: string, index: number) => {
     if (!isK2 || jumbleSubmitted) return;
-    const normalizedWord = normalizeJumbleWord(word);
-    const newTapped = [...jumbleTappedWords, normalizedWord];
+    const newTapped = [...jumbleTappedWords, word]; // already lowercase from jumbleSentence
     setJumbleTappedWords(newTapped);
     setJumbleAnswer(newTapped.join(" "));
     setUsedJumbleIndices((prev) => new Set([...prev, index]));
   };
 
+  // K-2: Tap a chip in the build area to remove it and return to the chip row
+  const handleBuildChipRemove = (buildIndex: number) => {
+    if (jumbleSubmitted || !jumble) return;
+    const removedWord = jumbleTappedWords[buildIndex];
+    const originalIndex = jumble.jumbled.findIndex(
+      (w, i) => w === removedWord && usedJumbleIndices.has(i)
+    );
+    const newTapped = jumbleTappedWords.filter((_, i) => i !== buildIndex);
+    setJumbleTappedWords(newTapped);
+    setJumbleAnswer(newTapped.join(" "));
+    if (originalIndex !== -1) {
+      setUsedJumbleIndices((prev) => {
+        const next = new Set(prev);
+        next.delete(originalIndex);
+        return next;
+      });
+    }
+  };
+
+  // Submit jumbled sentence — strict index-by-index word array comparison
   const handleJumbleSubmit = () => {
     if (!jumble) return;
 
     const studentWords = isK2
-      ? jumbleTappedWords.map(normalizeJumbleWord).filter(Boolean)
-      : sentenceToNormalizedWords(jumbleAnswer);
+      ? jumbleTappedWords.map(normalizeWord).filter(Boolean)
+      : sentenceToWords(jumbleAnswer);
 
-    const isExactMatch = wordsMatchByIndex(studentWords, jumble.correctWords);
+    const isCorrect = isExactWordOrderMatch(studentWords, jumble.correctWords);
 
-    setJumbleIsCorrect(isExactMatch);
-    setJumbleSubmitted(true);
-
-    if (isExactMatch) {
-      sounds.playCorrect();
-    } else {
+    if (!isCorrect) {
+      // WRONG — award 0 points
+      const newAttempts = jumbleAttempts + 1;
+      setJumbleAttempts(newAttempts);
       sounds.playWrong();
+
+      if (newAttempts >= MAX_WRONG_ATTEMPTS) {
+        // 2nd wrong: reveal answer, show Next button
+        setJumbleIsCorrect(false);
+        setJumbleSubmitted(true);
+        setJumbleTryAgainMsg(null);
+        onStep5Complete(false);
+      } else {
+        // 1st wrong: shake + try again, tiles stay visible
+        setJumbleShake(true);
+        setJumbleTryAgainMsg("Try again! 🌟");
+        setTimeout(() => {
+          setJumbleShake(false);
+          setJumbleTappedWords([]);
+          setJumbleAnswer("");
+          setUsedJumbleIndices(new Set());
+        }, 800);
+      }
+      return;
     }
 
-    onStep5Complete(isExactMatch);
+    // CORRECT — award points
+    setJumbleIsCorrect(true);
+    setJumbleSubmitted(true);
+    setJumbleTryAgainMsg(null);
+    sounds.playCorrect();
+    onStep5Complete(true);
   };
 
   const memoryPairs = useMemo(() => generateMemoryPairs(anchor, isK2), [anchor, isK2]);
@@ -2213,16 +2249,22 @@ function Part1View({
           />
         )}
 
-        {/* Step 5: Jumbled Sentence */}
+        {/* Step 5: Jumbled Sentence — K-2: tappable chips only, no keyboard */}
         {step === 5 && jumble && (
           <>
+            {/* Try again message */}
+            {jumbleTryAgainMsg && !jumbleSubmitted && (
+              <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
+                <p className="text-lg font-medium text-warning">{jumbleTryAgainMsg}</p>
+              </div>
+            )}
 
-            {/* Word chips */}
+            {/* Word chips — all lowercase, deduplicated */}
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
               <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground mb-2`}>
                 {isK2 ? "Tap the words in the right order! 👆" : "Put these words back in the correct order:"}
               </p>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className={`flex flex-wrap gap-2 mt-2 ${jumbleShake ? "animate-[shake_0.4s_ease-in-out]" : ""}`}>
                 {jumble.jumbled.map((word, i) => {
                   const isUsed = isK2 && usedJumbleIndices.has(i);
                   return (
@@ -2242,15 +2284,22 @@ function Part1View({
               </div>
             </div>
 
-            {/* K-2: Building area showing tapped words */}
+            {/* K-2: Building area — tap chips here to remove them */}
             {isK2 ? (
               <div className="bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px]">
-                <p className="text-xs text-muted-foreground mb-2">Your sentence:</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Your sentence: {jumbleTappedWords.length > 0 && !jumbleSubmitted && "(tap a word to remove it)"}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {jumbleTappedWords.length > 0 ? jumbleTappedWords.map((word, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-primary/15 text-primary border border-primary/30 rounded-full text-lg font-medium">
+                    <button
+                      key={i}
+                      onClick={() => !jumbleSubmitted && handleBuildChipRemove(i)}
+                      disabled={jumbleSubmitted}
+                      className="px-3 py-1.5 bg-primary/15 text-primary border border-primary/30 rounded-full text-lg font-medium hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all cursor-pointer active:scale-95"
+                    >
                       {word}
-                    </span>
+                    </button>
                   )) : (
                     <p className="text-muted-foreground/50 text-lg">Tap words above...</p>
                   )}
@@ -2301,6 +2350,8 @@ function Part1View({
     </Card>
   );
 }
+
+
 
 // ═══════════════════════════════════════════════
 // Part 2 — Strategy-Based Practice (6 activities with varied input types)
@@ -2517,46 +2568,9 @@ function Part2StrategyView({
               ? activity.options
               : [];
 
-          const cleanedTiles = Array.from(
-            new Set(
-              rawTiles
-                .map((tile) => tile.replace(/^[A-D][\).:\-]\s*/i, "").trim())
-                .filter(Boolean)
-            )
-          );
-
-          // Ensure correct answer is always present
-          const correctWord = (activity.modelAnswer || "").trim();
-          if (correctWord && !cleanedTiles.some(t => t.toLowerCase() === correctWord.toLowerCase())) {
-            cleanedTiles.unshift(correctWord);
-          }
-
-          // Enforce tile count by tier: T1=2, T2=3, T3=4
-          const tierTileCount = (sentenceFrameTier || 1) === 1 ? 2 : (sentenceFrameTier || 1) === 2 ? 3 : 4;
-
-          // Build final tile list: correct word + distractors up to tierTileCount
-          const distractors = cleanedTiles.filter(t => t.toLowerCase() !== correctWord.toLowerCase());
-          const finalTiles: string[] = correctWord ? [correctWord] : [];
-          for (let d = 0; d < distractors.length && finalTiles.length < tierTileCount; d++) {
-            finalTiles.push(distractors[d]);
-          }
-          // Pad with fallback distractors if needed — never show a single tile alone
-          const fallbackDistractors = ["jump", "red", "big", "run", "happy", "cold", "small", "fast"];
-          let fbIdx = 0;
-          while (finalTiles.length < Math.max(tierTileCount, 2) && fbIdx < fallbackDistractors.length) {
-            const fb = fallbackDistractors[fbIdx];
-            if (!finalTiles.some(t => t.toLowerCase() === fb.toLowerCase()) && fb.toLowerCase() !== correctWord.toLowerCase()) {
-              finalTiles.push(fb);
-            }
-            fbIdx++;
-          }
-
-          // Shuffle tiles deterministically based on question content
-          const shuffled = [...finalTiles].sort((a, b) => {
-            const ha = Array.from(a + (activity.question || "")).reduce((s, c) => s + c.charCodeAt(0), 0);
-            const hb = Array.from(b + (activity.question || "")).reduce((s, c) => s + c.charCodeAt(0), 0);
-            return ha - hb;
-          });
+          const correctWord = normalizeWord(activity.modelAnswer || "");
+          const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1);
+          const shuffled = deterministicShuffle(finalTiles, activity.question || "");
 
           if (submitted && !sfRevealed) return null;
           if (sfRevealed) {
@@ -2595,18 +2609,18 @@ function Part2StrategyView({
                         onClick={() => {
                           if (sfSelectedWord) return;
                           setSfSelectedWord(word);
-                          const isExactCorrect = word.toLowerCase().trim() === correctWord.toLowerCase();
-                          if (isExactCorrect) {
+                          if (isSentenceFrameCorrect(word, activity.modelAnswer || "")) {
+                            // CORRECT — award points
                             setAnswer(word);
                             setSfWrongMessage(null);
                             setTimeout(() => onSubmit(), 400);
                           } else {
+                            // WRONG — 0 points
                             const newAttempts = sfAttempts + 1;
                             setSfAttempts(newAttempts);
-                            if (newAttempts >= 2) {
+                            if (newAttempts >= MAX_WRONG_ATTEMPTS) {
                               setSfRevealed(true);
                               setSfWrongMessage(null);
-                              // Don't call onSubmit — the "Next Activity" button handles it
                             } else {
                               setSfWrongMessage("Try again! 🌟");
                               setTimeout(() => {
