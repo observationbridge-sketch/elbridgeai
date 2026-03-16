@@ -2518,18 +2518,15 @@ function Part2StrategyView({
     }
   }, [isK2SF, sfAttempts, sfRevealed]);
 
-  // Safety: if submitted + correct but Next button might not be visible, force-show after 500ms
-  const [sfForceNextVisible, setSfForceNextVisible] = useState(false);
+  // Safety net: when parent sets submitted=true, clear all SF intermediate state
+  // so the parent feedback block renders cleanly with the Next Activity button
   useEffect(() => {
-    if (submitted && isCorrect && isK2SF) {
-      const timer = setTimeout(() => {
-        setSfForceNextVisible(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setSfForceNextVisible(false);
+    if (submitted) {
+      setSfRevealed(false);
+      setSfWrongMessage(null);
+      setSfSelectedWord(null);
     }
-  }, [submitted, isCorrect, isK2SF]);
+  }, [submitted]);
 
 
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
