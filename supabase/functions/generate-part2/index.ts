@@ -379,7 +379,7 @@ FILL-IN-THE-BLANK QUALITY RULES (MANDATORY):
 - The sentence MUST make complete grammatical sense when the correct words are inserted
 - The sentence MUST have clear context clues so the student can reasonably guess the answer
 - NEVER remove so many words that the sentence loses all meaning
-- Maximum ${isK2 ? "2" : "3"} blanks per sentence
+- Maximum ${isK2 ? "blanks per tier (Tier 1=1, Tier 2=2, Tier 3=3)" : "3"} blanks per sentence
 - ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer words only (no distractors)" : "4-6 word choices including 1-2 distractor words"}
 - Good example: "The frog ___ on a green leaf in the jungle." (wordBank: ["sits", "runs", "jumped"])
 - Bad example: "A green ___ ___ on a ___" — too many blanks, no context, nonsensical
