@@ -286,7 +286,8 @@ interface AnchorSentenceInput {
 export function generateK2SentenceFrame(
   anchor: AnchorSentenceInput,
   tier: number,
-  gradeLevel: "K-1" | "2"
+  gradeLevel: "K-1" | "2",
+  activityIndex: number = 0
 ): { blankSentence: string; correctWords: string[]; tiles: string[] } {
   const SIMPLE_DISTRACTORS = ["jump", "sit", "run", "big", "red", "fast", "swim", "fly", "eat", "sleep"];
 
@@ -299,8 +300,22 @@ export function generateK2SentenceFrame(
   const effectiveTier = gradeLevel === "K-1" ? 1 : Math.min(tier, 3);
   const blankCount = effectiveTier === 1 ? 1 : effectiveTier === 2 ? 2 : 3;
 
-  // Pick words to blank — take from end of content words for naturalness
-  const toBlank = contentWords.slice(-Math.min(blankCount, contentWords.length));
+  // Rotate which content word gets blanked based on activityIndex
+  // index 0: last content word, index 1: second-to-last, index 2: first, index 3: last again
+  let toBlank: string[];
+  if (blankCount === 1 && contentWords.length > 1) {
+    const rotationPatterns = [
+      contentWords.length - 1,                          // index 0: last
+      Math.max(0, contentWords.length - 2),             // index 1: second-to-last
+      0,                                                 // index 2: first
+      contentWords.length - 1,                          // index 3: last again
+    ];
+    const pickIdx = rotationPatterns[activityIndex % rotationPatterns.length];
+    toBlank = [contentWords[pickIdx]];
+  } else {
+    // Multi-blank tiers: take from end as before
+    toBlank = contentWords.slice(-Math.min(blankCount, contentWords.length));
+  }
 
   // If we couldn't find enough content words, fall back to last words of the sentence
   if (toBlank.length === 0) {

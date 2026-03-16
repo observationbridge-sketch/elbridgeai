@@ -2982,7 +2982,7 @@ function Part3ChallengeView({
               🏎️ Speed Round
             </span>
             <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-              {speedIndex + 1} of 5
+              {speedIndex + 1} of {challenge.questions.length}
             </span>
           </div>
         </div>
