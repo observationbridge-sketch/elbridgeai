@@ -1496,7 +1496,7 @@ const StudentSession = () => {
     if (domainScores) {
       for (const [, pct] of Object.entries(domainScores)) {
         if (pct >= 80) {
-          gamification.addPoints(POINTS.DOMAIN_80_BONUS);
+          gamification.addPoints(POINTS.DOMAIN_80_BONUS, effectiveGradeBand);
           break;
         }
       }
