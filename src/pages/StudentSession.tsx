@@ -328,18 +328,39 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
   return { blanked, missingWords, wordBank: shuffledBank };
 }
 
-function jumbleSentence(passage: string): { original: string; jumbled: string[] } {
+function normalizeJumbleWord(word: string): string {
+  return word.toLowerCase().replace(/[^a-z0-9']/g, "").trim();
+}
+
+function sentenceToNormalizedWords(sentence: string): string[] {
+  return sentence
+    .split(/\s+/)
+    .map(normalizeJumbleWord)
+    .filter(Boolean);
+}
+
+function wordsMatchByIndex(studentWords: string[], correctWords: string[]): boolean {
+  if (studentWords.length !== correctWords.length) return false;
+  for (let i = 0; i < correctWords.length; i++) {
+    if (studentWords[i] !== correctWords[i]) return false;
+  }
+  return true;
+}
+
+function jumbleSentence(passage: string): { original: string; correctWords: string[]; jumbled: string[] } {
   const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
   const target = sentences[0] || passage;
-  const clean = target.replace(/[.!?]$/, '').trim();
-  const words = clean.split(/\s+/);
+  const clean = target.replace(/[.!?]$/, "").trim();
+  const words = sentenceToNormalizedWords(clean);
+
   let shuffled = [...words].sort(() => Math.random() - 0.5);
   let attempts = 0;
-  while (shuffled.join(' ') === words.join(' ') && attempts < 10) {
+  while (wordsMatchByIndex(shuffled, words) && attempts < 10) {
     shuffled = [...words].sort(() => Math.random() - 0.5);
     attempts++;
   }
-  return { original: target.trim(), jumbled: shuffled };
+
+  return { original: target.trim(), correctWords: words, jumbled: shuffled };
 }
 
 // ═══════════════════════════════════════════════
