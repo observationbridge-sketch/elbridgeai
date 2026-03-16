@@ -2281,6 +2281,9 @@ function Part1View({
                  anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" : "📚🌟"}
               </div>
               <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{anchor.sentence}</p>
+              {tts.isSupported && tts.isSpeaking && (
+                <p className={`${isK2 ? "text-lg" : "text-sm"} text-warning font-medium animate-pulse`}>Playing... 🔊</p>
+              )}
               {tts.isSupported && (
                 <Button variant="outline" onClick={() => tts.speak(anchor.sentence)} disabled={tts.isSpeaking} className={`gap-2 ${isK2 ? "text-lg px-6 py-4 h-auto" : ""}`}>
                   <RefreshCw className={`${isK2 ? "h-5 w-5" : "h-4 w-4"} ${tts.isSpeaking ? "animate-spin" : ""}`} />
