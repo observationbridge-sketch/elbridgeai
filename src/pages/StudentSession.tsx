@@ -2458,7 +2458,7 @@ interface Part2Props {
   isCorrect: boolean;
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
-  onSubmit: () => void;
+  onSubmit: (overrideAnswer?: string) => void;
   onSubmitMC: (option: string) => void;
   onNext: () => void;
   isK2?: boolean;
