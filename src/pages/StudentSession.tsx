@@ -1592,7 +1592,7 @@ const StudentSession = () => {
           <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
           <p className="text-3xl font-bold text-yellow-400">+{gamification.sessionPoints} ⭐</p>
           <p className="text-gray-300">Total: <span className="font-bold text-white">{gamification.totalPoints} points</span></p>
-          <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/")}>
+          <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/student/join")}>
             Done ✅
           </Button>
         </div>
