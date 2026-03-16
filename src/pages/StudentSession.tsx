@@ -31,6 +31,7 @@ import {
   normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
   isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
   MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS, shouldForceRevealAfterAttempts,
+  generateK2SentenceFrame,
 } from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
