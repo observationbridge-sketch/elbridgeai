@@ -2568,46 +2568,9 @@ function Part2StrategyView({
               ? activity.options
               : [];
 
-          const cleanedTiles = Array.from(
-            new Set(
-              rawTiles
-                .map((tile) => tile.replace(/^[A-D][\).:\-]\s*/i, "").trim())
-                .filter(Boolean)
-            )
-          );
-
-          // Ensure correct answer is always present
-          const correctWord = (activity.modelAnswer || "").trim();
-          if (correctWord && !cleanedTiles.some(t => t.toLowerCase() === correctWord.toLowerCase())) {
-            cleanedTiles.unshift(correctWord);
-          }
-
-          // Enforce tile count by tier: T1=2, T2=3, T3=4
-          const tierTileCount = (sentenceFrameTier || 1) === 1 ? 2 : (sentenceFrameTier || 1) === 2 ? 3 : 4;
-
-          // Build final tile list: correct word + distractors up to tierTileCount
-          const distractors = cleanedTiles.filter(t => t.toLowerCase() !== correctWord.toLowerCase());
-          const finalTiles: string[] = correctWord ? [correctWord] : [];
-          for (let d = 0; d < distractors.length && finalTiles.length < tierTileCount; d++) {
-            finalTiles.push(distractors[d]);
-          }
-          // Pad with fallback distractors if needed — never show a single tile alone
-          const fallbackDistractors = ["jump", "red", "big", "run", "happy", "cold", "small", "fast"];
-          let fbIdx = 0;
-          while (finalTiles.length < Math.max(tierTileCount, 2) && fbIdx < fallbackDistractors.length) {
-            const fb = fallbackDistractors[fbIdx];
-            if (!finalTiles.some(t => t.toLowerCase() === fb.toLowerCase()) && fb.toLowerCase() !== correctWord.toLowerCase()) {
-              finalTiles.push(fb);
-            }
-            fbIdx++;
-          }
-
-          // Shuffle tiles deterministically based on question content
-          const shuffled = [...finalTiles].sort((a, b) => {
-            const ha = Array.from(a + (activity.question || "")).reduce((s, c) => s + c.charCodeAt(0), 0);
-            const hb = Array.from(b + (activity.question || "")).reduce((s, c) => s + c.charCodeAt(0), 0);
-            return ha - hb;
-          });
+          const correctWord = normalizeWord(activity.modelAnswer || "");
+          const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1);
+          const shuffled = deterministicShuffle(finalTiles, activity.question || "");
 
           if (submitted && !sfRevealed) return null;
           if (sfRevealed) {
@@ -2646,18 +2609,18 @@ function Part2StrategyView({
                         onClick={() => {
                           if (sfSelectedWord) return;
                           setSfSelectedWord(word);
-                          const isExactCorrect = word.toLowerCase().trim() === correctWord.toLowerCase();
-                          if (isExactCorrect) {
+                          if (isSentenceFrameCorrect(word, activity.modelAnswer || "")) {
+                            // CORRECT — award points
                             setAnswer(word);
                             setSfWrongMessage(null);
                             setTimeout(() => onSubmit(), 400);
                           } else {
+                            // WRONG — 0 points
                             const newAttempts = sfAttempts + 1;
                             setSfAttempts(newAttempts);
-                            if (newAttempts >= 2) {
+                            if (newAttempts >= MAX_WRONG_ATTEMPTS) {
                               setSfRevealed(true);
                               setSfWrongMessage(null);
-                              // Don't call onSubmit — the "Next Activity" button handles it
                             } else {
                               setSfWrongMessage("Try again! 🌟");
                               setTimeout(() => {
