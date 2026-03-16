@@ -56,28 +56,25 @@ export function isMultiWord(text: string): boolean {
 }
 
 /** Extract a single word from a potentially multi-word tile.
- *  If multi-word, returns the first word NOT already in the blank sentence.
- *  If single word, returns as-is. Never concatenates words. */
-export function extractSingleWord(text: string, blankSentence?: string): string {
-  // Strip A/B/C/D prefixes
-  const stripped = text.replace(/^[A-Da-d][\).:\-]\s*/i, "").trim();
-  const words = stripped.split(/\s+/).filter(Boolean);
+ *  NEVER concatenates words. If multi-word, picks the first short word.
+ *  If single word ≤12 chars, returns it. Otherwise returns a fallback. */
+export function extractSingleWord(input: string): string {
+  const fallbacks = ['jump', 'swim', 'run', 'big', 'red', 'fast'];
+  const words = input.trim().split(/\s+/);
 
-  // Single word — return as-is
-  if (words.length <= 1) return words[0] || stripped;
-
-  // Multi-word: find first word NOT already in the blank sentence
-  if (blankSentence) {
-    const sentenceWords = new Set(
-      blankSentence.toLowerCase().replace(/[^a-z0-9' ]/g, "").split(/\s+/)
-    );
-    for (const w of words) {
-      if (!sentenceWords.has(w.toLowerCase())) return w;
-    }
+  // Single word that's short enough — return as-is
+  if (words.length === 1 && words[0].length <= 12) {
+    return words[0].toLowerCase();
   }
 
-  // Fallback: return first word
-  return words[0];
+  // Multi-word: pick first short word
+  const singleWords = words.filter(w => w.length <= 12);
+  if (singleWords.length > 0) {
+    return singleWords[0].toLowerCase();
+  }
+
+  // All words too long — use a random fallback
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
 }
 
 /** Validate a tile string. Rejects non-space strings longer than 12 chars. */
@@ -163,15 +160,14 @@ export function isSentenceFrameCorrect(
 export function buildSentenceFrameTiles(
   rawTiles: string[],
   correctAnswer: string,
-  tier: number,
-  blankSentence?: string
+  tier: number
 ): string[] {
   const targetCount = TIER_TILE_COUNTS[tier] || TIER_TILE_COUNTS[1];
   const correctNorm = normalizeWord(correctAnswer);
 
   // 1. Clean all tiles: extract single words, validate, normalize
   const cleanedTiles = rawTiles
-    .map((t) => extractSingleWord(t, blankSentence))
+    .map((t) => extractSingleWord(t))
     .map((t) => validateTile(t))
     .filter((t): t is string => t !== null)
     .map(normalizeWord)
