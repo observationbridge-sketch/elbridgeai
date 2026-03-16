@@ -1702,7 +1702,7 @@ const StudentSession = () => {
 
     // ─── Phase 2: Results summary ───
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "linear-gradient(135deg, #0a0f1a, #1a1040)" }}>
         <div className="w-full max-w-md space-y-6 animate-fade-in">
           <Card className="card-shadow border-border">
             <CardContent className="py-8 space-y-6">
