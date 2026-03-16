@@ -1657,9 +1657,9 @@ const StudentSession = () => {
                     {gamification.earnedBadgeIds.map((id) => {
                       const badge = BADGES_LOOKUP[id];
                       return badge ? (
-                        <div key={id} className="flex flex-col items-center gap-1 bg-card rounded-lg px-3 py-2 border border-border">
+                        <div key={id} className="flex flex-col items-center gap-1 rounded-lg px-3 py-2 border" style={{ background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)" }}>
                           <span className="text-3xl">{badge.icon}</span>
-                          <span className="text-[10px] text-muted-foreground">{badge.name}</span>
+                          <span className="text-[10px] text-gray-400">{badge.name}</span>
                         </div>
                       ) : null;
                     })}
