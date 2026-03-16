@@ -63,8 +63,8 @@ function validateChallenge(challenge: any, challengeType: string, isK2: boolean)
       }
     }
   } else if (challengeType === "story_builder") {
-    if (!Array.isArray(challenge.scenes) || challenge.scenes.length !== 4) {
-      throw new Error(`story_builder must have exactly 4 scenes, got ${challenge.scenes?.length ?? 0}`);
+    if (!Array.isArray(challenge.scenes) || challenge.scenes.length < 3 || challenge.scenes.length > 4) {
+      throw new Error(`story_builder must have 3-4 scenes, got ${challenge.scenes?.length ?? 0}`);
     }
   } else if (challengeType === "teach_it_back") {
     if (!Array.isArray(challenge.guidingQuestions) || challenge.guidingQuestions.length === 0) {
