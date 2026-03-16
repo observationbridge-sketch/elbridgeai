@@ -1999,9 +1999,8 @@ function generateMemoryPairs(anchor: AnchorSentence, isK2?: boolean): { words: s
   while (selected.length < pairCount && sentenceWords.length > 0) selected.push(sentenceWords.shift()!);
   while (selected.length < pairCount) selected.push(selected[selected.length - 1] || "word");
   if (isK2) {
-    const emojiMap: Record<string, string> = { sun:"☀️",moon:"🌙",star:"⭐",tree:"🌳",flower:"🌸",fish:"🐟",bird:"🐦",cat:"🐱",dog:"🐕",lion:"🦁",bear:"🐻",water:"💧",fire:"🔥",ball:"⚽",book:"📖",house:"🏠",mars:"🔴",planet:"🪐",space:"🚀",red:"🔴",butterfly:"🦋",garden:"🌻",kick:"🦶",play:"🎮",run:"🏃" };
-    const defaults = ["🌟","🎯","💎","🌈","🔮","🎪"];
-    return { words: selected, matches: selected.map((w,i) => emojiMap[w.toLowerCase()] || defaults[i % defaults.length]) };
+    // Both cards show the same word: one plain, one bold colored — matching compares the word string
+    return { words: selected, matches: selected.map(w => w) };
   }
   return { words: selected, matches: selected.map(w => `means "${w}"`) };
 }
