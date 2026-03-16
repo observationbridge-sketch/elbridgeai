@@ -712,8 +712,9 @@ const StudentSession = () => {
         if (studentData) {
           currentStudentName = studentData.student_name;
           setStudentName(studentData.student_name);
-          if ((studentData as any).theme) {
-            sessionForcedTheme = (studentData as any).theme;
+          console.log("[init] student theme from DB:", studentData.theme);
+          if (studentData.theme) {
+            sessionForcedTheme = studentData.theme;
           }
           const { data: sessionData } = await supabase
             .from("sessions")
