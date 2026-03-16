@@ -846,17 +846,18 @@ const StudentSession = () => {
 
       try {
         if (resolvedTheme && resolvedTopic) {
-          setLoadingMessage("Checking activity content...");
+          setLoadingMessage("Building your activities... 🎨");
           await prefetchSessionContent({
             grade: sessionGradeBand,
             theme: resolvedTheme,
             topic: resolvedTopic,
             domainScores: computedDomainScores,
             history: fetchedHistory,
+            setMsg: setLoadingMessage,
           });
         }
       } catch (error) {
-        console.error("Session health check failed", error);
+        console.error("Activity pre-generation failed", error);
       }
 
       setLoading(false);
