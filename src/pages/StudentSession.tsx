@@ -2459,11 +2459,12 @@ interface Part2Props {
   onNext: () => void;
   isK2?: boolean;
   sentenceFrameTier?: number;
+  sounds?: ReturnType<typeof useSounds>;
 }
 
 function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
-  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier,
+  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
