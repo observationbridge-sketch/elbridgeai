@@ -2517,7 +2517,20 @@ function Part2StrategyView({
     }
   }, [isK2SF, sfAttempts, sfRevealed]);
 
-  // K-2 auto-advance countdown
+  // Safety: if submitted + correct but Next button might not be visible, force-show after 500ms
+  const [sfForceNextVisible, setSfForceNextVisible] = useState(false);
+  useEffect(() => {
+    if (submitted && isCorrect && isK2SF) {
+      const timer = setTimeout(() => {
+        setSfForceNextVisible(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setSfForceNextVisible(false);
+    }
+  }, [submitted, isCorrect, isK2SF]);
+
+
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
