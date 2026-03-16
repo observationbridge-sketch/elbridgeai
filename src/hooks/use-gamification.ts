@@ -13,6 +13,12 @@ interface FailedBadge {
   badgeIcon: string;
 }
 
+// Grade band point multipliers
+const GRADE_MULTIPLIERS: Record<string, number> = {
+  "K-2": 1.0,
+  "3-5": 1.5,
+};
+
 export function useGamification(studentName: string, teacherId: string) {
   const [totalPoints, setTotalPoints] = useState(0);
   const [sessionPoints, setSessionPoints] = useState(0);
@@ -81,17 +87,21 @@ export function useGamification(studentName: string, teacherId: string) {
     setLoaded(true);
   }, [studentName, teacherId]);
 
-  const addPoints = useCallback((points: number) => {
+  const addPoints = useCallback((points: number, gradeBand?: string) => {
     if (!studentName || !teacherId || points <= 0) return;
 
+    // Apply grade band multiplier
+    const multiplier = GRADE_MULTIPLIERS[gradeBand || "K-2"] ?? 1.0;
+    const adjustedPoints = Math.round(points * multiplier);
+
     // Use ref for immediate calculation to avoid stale state
-    totalPointsRef.current += points;
-    pendingPointsRef.current += points;
+    totalPointsRef.current += adjustedPoints;
+    pendingPointsRef.current += adjustedPoints;
     const newTotal = totalPointsRef.current;
 
     setTotalPoints(newTotal);
-    setSessionPoints((s) => s + points);
-    setLastPointsEarned(points);
+    setSessionPoints((s) => s + adjustedPoints);
+    setLastPointsEarned(adjustedPoints);
     setShowPointsAnim(true);
 
     // Check evolution — only fire once per level per session
@@ -110,7 +120,7 @@ export function useGamification(studentName: string, teacherId: string) {
     // No DB write here — points are saved in completeSession
   }, [studentName, teacherId]);
 
-  const completeSession = useCallback(async (finalSessionPoints?: number) => {
+  const completeSession = useCallback(async (finalSessionPoints?: number, gradeBand?: string) => {
     if (!studentName || !teacherId) return;
 
     const pointsToSave = finalSessionPoints ?? pendingPointsRef.current;
