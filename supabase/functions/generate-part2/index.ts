@@ -343,11 +343,11 @@ function buildPrompt(strategy: Strategy, theme: string, topic: string, questionI
   const k2Override = isK2 ? `
 K-2 CONTENT RULES (MANDATORY):
 - Maximum 8 words per sentence, simple subject-verb-object structure ONLY
-- NO subordinate clauses, NO "but", "however", "which", "although", "features"
+- NO subordinate clauses, NO "but", "however", "which", "although", "when", "because", "features"
+- NEVER use "because", "although", "when", or any subordinate clause connector — BANNED in K-2
 - Topics must be CONCRETE and VISUAL — things kids can see, touch, or imagine
 - ALL vocabulary words must have a MAXIMUM of 2 syllables — NO exceptions
 - Maximum 3 new vocabulary words per session
-- Maximum 1 blank per sentence
 - Multiple choice must have only 2-3 options (short, 1-3 words each)
 - Use only Tier 1 (common everyday) vocabulary
 - Keep all sentences under 8 words
