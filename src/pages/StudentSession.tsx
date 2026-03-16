@@ -2611,7 +2611,7 @@ function Part2StrategyView({
         {!isK2 && <p className="text-xs text-muted-foreground mt-1">Targeting: {strategyMeta.targetDomain}</p>}
       </div>
 
-      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
+      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-2xl" : ""}`}>
         {/* Passage — hard-disabled for K-2 sentence frames */}
         {activity.passage && !isK2SF && (
           <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
