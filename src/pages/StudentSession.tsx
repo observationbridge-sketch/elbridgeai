@@ -973,11 +973,9 @@ const StudentSession = () => {
         setEffectiveGradeBand("K-2");
         setGradeBandAdjusted(true);
         console.log("Auto-adjusted student to K-2 band (Part 1 score:", Math.round(pct), "%)");
-      } else if (gradeBand === "K-2" && pct > 85) {
+      } else if (false) {
+        // K-2 students placed by teacher must stay K-2 for the full session — no upward adjustment
         newBand = "3-5";
-        setEffectiveGradeBand("3-5");
-        setGradeBandAdjusted(true);
-        console.log("Auto-adjusted student to 3-5 band (Part 1 score:", Math.round(pct), "%)");
       }
 
       setGlobalStep(5);
