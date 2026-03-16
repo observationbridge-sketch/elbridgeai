@@ -1583,12 +1583,12 @@ const StudentSession = () => {
     // Safety: if animalLevel is undefined, show a simple completion screen instead of white screen
     if (!animalLevel) {
       return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center space-y-6">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6" style={{ background: "linear-gradient(135deg, #0a0f1a, #1a1040)" }}>
           <div className="text-[100px] leading-none">🎉</div>
-          <h1 className="text-4xl font-bold text-foreground">Great job! You finished!</h1>
-          <p className="text-xl text-primary font-semibold">{studentName}</p>
-          <p className="text-3xl font-bold text-warning">+{gamification.sessionPoints} ⭐</p>
-          <p className="text-muted-foreground">Total: <span className="font-bold text-foreground">{gamification.totalPoints} points</span></p>
+          <h1 className="text-4xl font-bold text-white">Great job! You finished!</h1>
+          <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
+          <p className="text-3xl font-bold text-yellow-400">+{gamification.sessionPoints} ⭐</p>
+          <p className="text-gray-300">Total: <span className="font-bold text-white">{gamification.totalPoints} points</span></p>
           <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/")}>
             Done ✅
           </Button>
