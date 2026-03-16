@@ -2350,10 +2350,8 @@ function Part1View({
     </Card>
   );
 }
-      </CardContent>
-    </Card>
-  );
-}
+
+
 
 // ═══════════════════════════════════════════════
 // Part 2 — Strategy-Based Practice (6 activities with varied input types)
