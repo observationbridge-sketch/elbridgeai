@@ -2743,9 +2743,9 @@ function Part2StrategyView({
                             setAnswer(tappedWord);
                             setSfWrongMessage(null);
                             setSfRevealed(false);
-                            // Use requestAnimationFrame to ensure state is flushed before submitting
+                            // Pass answer directly to avoid React state race condition
                             setTimeout(() => {
-                              onSubmit();
+                              onSubmit(tappedWord);
                             }, 300);
                           } else {
                             // WRONG — 0 points
