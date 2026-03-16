@@ -161,63 +161,24 @@ ${sceneTemplates}
         ? `"options": ["<option A>", "<option B>"]`
         : `"options": ["<option A>", "<option B>", "<option C>", "<option D>"]`;
 
-      const k2QuestionsTemplate = `
-    {
-      "domain": "reading",
-      "passage": "<2-3 simple sentences about ${topic}>",
-      "question": "<simple comprehension question under 10 words>",
-      ${optionPlaceholders},
-      "correctAnswer": "<exact text of correct option>"
-    },
-    {
-      "domain": "reading",
-      "passage": "<different 2-3 simple sentences about ${topic}>",
-      ${optionPlaceholders},
-      "question": "<simple comprehension question under 10 words>",
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "listening",
-      "audioDescription": "Listen to this story: <2-3 simple sentences about ${topic}>",
-      "question": "<simple question under 10 words>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    }`;
-
-      const fullQuestionsTemplate = `
-    {
-      "domain": "reading",
-      "passage": "<2-3 sentence passage about ${topic}>",
-      "question": "<comprehension question>",
-      ${optionPlaceholders},
-      "correctAnswer": "<exact text of correct option>"
-    },
-    {
-      "domain": "reading",
-      "passage": "<different 2-3 sentence passage>",
-      "question": "<comprehension question>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "listening",
-      "audioDescription": "Listen to this story: <2-3 sentence story about ${topic}>",
-      "question": "<comprehension question>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "speaking",
-      "question": "<open-ended speaking prompt about ${topic}>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "writing",
-      "question": "<sentence completion about ${topic}>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    }`;
+      // Domain mix based on weakest domain for 3-5
+      let domainMixInstruction: string;
+      if (isK2) {
+        domainMixInstruction = "Generate exactly 3 questions: 2 reading + 1 listening.";
+      } else {
+        const weak = (weakestDomain || "").toLowerCase();
+        if (weak === "writing") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 writing (sentence completion) + 1 reading (with passage) + 1 listening (with audioDescription) + 1 speaking.";
+        } else if (weak === "speaking") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 speaking (open-ended prompts) + 1 reading (with passage) + 1 listening (with audioDescription) + 1 writing.";
+        } else if (weak === "listening") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 listening (with audioDescription) + 1 reading (with passage) + 1 speaking + 1 writing.";
+        } else if (weak === "reading") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 reading (with passage each) + 1 listening (with audioDescription) + 1 speaking + 1 writing.";
+        } else {
+          domainMixInstruction = "Generate exactly 5 questions: 2 reading (with passage each) + 1 listening (with audioDescription) + 1 speaking + 1 writing.";
+        }
+      }
 
       systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
 
@@ -227,22 +188,27 @@ ${STRICT_RULES}
 Generate a SPEED ROUND challenge with exactly ${questionCount} multiple-choice questions about "${topic}".
 ${isK2 ? `K-2 RULES: 
 - Each question must have exactly ${optionCount} options only (NOT 4).
-- Use simple Tier 1 vocabulary. Short sentences under 10 words.
-- Generate exactly 3 questions: 2 reading + 1 listening.` : `Generate exactly 5 questions:
-- 2 reading comprehension (include a short 2-3 sentence passage each)
-- 1 listening comprehension (include an audioDescription field with a 2-3 sentence story)
-- 1 speaking prompt (open-ended, multiple reasonable answers — frame as multiple choice for speed)
-- 1 writing prompt (include a sentence to complete)`}
+- Use simple Tier 1 vocabulary. Short sentences under 10 words.` : ""}
+${domainMixInstruction}
 
 Each question must have exactly ${optionCount} options with one clearly correct answer.
 Do NOT reference any images, pictures, or visuals.
+Each question MUST include a "domain" field with one of: "reading", "listening", "speaking", "writing".
 
 Return ONLY valid JSON (no markdown):
 {
   "challengeType": "speed_round",
   "title": "Speed Round",
   "instruction": "Answer ${questionCount} quick questions about ${topic}! How fast can you go?",
-  "questions": [${isK2 ? k2QuestionsTemplate : fullQuestionsTemplate}
+  "questions": [
+    {
+      "domain": "<domain>",
+      ${isK2 ? "" : `"passage": "<2-3 sentence passage if reading domain, omit otherwise>",
+      "audioDescription": "<2-3 sentence story if listening domain, omit otherwise>",
+      `}"question": "<the question>",
+      ${optionPlaceholders},
+      "correctAnswer": "<exact text of correct option>"
+    }
   ],
   "theme": "${theme}",
   "topic": "${topic}"
