@@ -1,0 +1,1 @@
+ALTER TABLE public.session_students ADD COLUMN grade_level text DEFAULT 'K-1';

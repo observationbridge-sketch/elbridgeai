@@ -31,6 +31,7 @@ import {
   normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
   isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
   MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS, shouldForceRevealAfterAttempts,
+  generateK2SentenceFrame,
 } from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
@@ -1897,6 +1898,8 @@ const StudentSession = () => {
                     isK2={isK2}
                     sentenceFrameTier={sentenceFrameTier}
                     sounds={sounds}
+                    anchor={anchor}
+                    gradeBand={effectiveGradeBand}
                   />
                   {/* K-2 Feeling Rating */}
                   {isK2 && part2Submitted && !showFeelingRating && (
@@ -2461,11 +2464,13 @@ interface Part2Props {
   isK2?: boolean;
   sentenceFrameTier?: number;
   sounds?: ReturnType<typeof useSounds>;
+  anchor?: AnchorSentence | null;
+  gradeBand?: GradeBand;
 }
 
 function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
-  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds,
+  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds, anchor, gradeBand,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
@@ -2479,27 +2484,20 @@ function Part2StrategyView({
   const [sfRevealed, setSfRevealed] = useState(false);
   const [sfSelectedWord, setSfSelectedWord] = useState<string | null>(null);
 
+  // Deterministic K-2 sentence frame — replaces Gemini-generated blank/tiles
+  const k2SfData = useMemo(() => {
+    if (!isK2SF || !anchor) return null;
+    const gradeLevel = gradeBand === "K-2" ? "K-1" : "2";
+    return generateK2SentenceFrame(anchor, sentenceFrameTier || 1, gradeLevel as "K-1" | "2");
+  }, [isK2SF, anchor, sentenceFrameTier, gradeBand]);
+
   const k2BlankSentence = useMemo(() => {
     if (!isK2SF) return "";
-    // Priority 1: sentenceFrame with explicit blank
-    if (activity.sentenceFrame?.includes("___")) return activity.sentenceFrame.trim();
-    // Priority 2: extract only the sentence part after any colon in question
-    if (activity.question) {
-      const colonIdx = activity.question.lastIndexOf(":");
-      if (colonIdx !== -1) {
-        const afterColon = activity.question.slice(colonIdx + 1).trim();
-        if (afterColon.length > 0) return afterColon;
-      }
-      if (activity.question.includes("___")) return activity.question.trim();
-    }
-    // Priority 3: build blank from modelAnswer
-    if (activity.modelAnswer) {
-      const words = activity.modelAnswer.trim().split(/\s+/);
-      const lastWord = words[words.length - 1];
-      return activity.modelAnswer.replace(new RegExp(`\\b${lastWord}\\b`), "___");
-    }
+    // Use deterministic generator output
+    if (k2SfData) return k2SfData.blankSentence;
+    // Fallback (shouldn't happen)
     return "___";
-  }, [isK2SF, activity.sentenceFrame, activity.question, activity.modelAnswer]);
+  }, [isK2SF, k2SfData]);
 
   // Reset retry state when activity changes
   useEffect(() => {
@@ -2653,13 +2651,10 @@ function Part2StrategyView({
 
         {/* Word bank / tiles for K-2 Sentence Frames */}
         {isK2SF ? (() => {
-          const correctWord = (activity.modelAnswer || "").trim().split(/\s+/).pop() || "";
-          const rawWordBank = (activity.wordBank || []).filter(w => !w.includes(" ") && w.length <= 12);
-          const rawOptions = (activity.options || []).filter(w => !w.includes(" ") && w.length <= 12);
-          const rawTiles = rawWordBank.length > 0 ? rawWordBank : rawOptions.length > 0 ? rawOptions : [correctWord].filter(Boolean);
-
-          const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1);
-          const shuffled = deterministicShuffle(finalTiles, activity.question || "");
+          // Use deterministic k2SfData for tiles and correctness checking
+          const sfTiles = k2SfData ? k2SfData.tiles : [];
+          const sfCorrectWords = k2SfData ? k2SfData.correctWords : [];
+          const sfRevealAnswer = k2SfData ? k2SfData.correctWords.join(", ") : (activity.modelAnswer || "");
           const sfForceReveal = shouldForceRevealAfterAttempts(sfAttempts);
 
           if (submitted && !sfRevealed && !sfForceReveal) return null;
@@ -2668,7 +2663,7 @@ function Part2StrategyView({
               <div className="space-y-4 animate-fade-in">
                 <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
                   <p className="text-lg text-muted-foreground mb-1">The answer is:</p>
-                  <p className="text-2xl font-bold text-warning">{activity.modelAnswer}</p>
+                  <p className="text-2xl font-bold text-warning">{sfRevealAnswer}</p>
                 </div>
                 <button
                   type="button"
@@ -2689,7 +2684,7 @@ function Part2StrategyView({
               )}
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex flex-wrap gap-3 justify-center">
-                  {shuffled.map((word, i) => {
+                  {sfTiles.map((word, i) => {
                     const isWrongBounce = sfSelectedWord === word && !!sfWrongMessage;
                     return (
                       <button
@@ -2727,7 +2722,9 @@ function Part2StrategyView({
                             return;
                           }
 
-                          if (isSentenceFrameCorrect(tappedWord, activity.modelAnswer || "")) {
+                          // Check against deterministic correct words
+                          const isCorrectTile = sfCorrectWords.includes(normalizeWord(tappedWord));
+                          if (isCorrectTile) {
                             // CORRECT — award points
                             setAnswer(tappedWord);
                             setSfWrongMessage(null);
