@@ -1652,7 +1652,7 @@ const StudentSession = () => {
               {/* Badges earned this session */}
               {gamification.earnedBadgeIds.length > 0 && (
                 <div className="animate-fade-in" style={{ animationDelay: "0.6s" }}>
-                  <p className="text-sm font-medium text-foreground mb-2">🎖️ Badges Earned</p>
+                  <p className="text-sm font-medium text-white mb-2">🎖️ Badges Earned</p>
                   <div className="flex flex-wrap gap-3 justify-center">
                     {gamification.earnedBadgeIds.map((id) => {
                       const badge = BADGES_LOOKUP[id];
