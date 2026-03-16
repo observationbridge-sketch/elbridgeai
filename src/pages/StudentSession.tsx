@@ -380,7 +380,16 @@ function getThemeEmoji(theme: string): string {
 const LOADING_PHRASES = [
   "Getting your adventure ready... 🚀",
   "Loading your words... 📚",
-  "Almost there... ⭐",
+  "Building something awesome... ⭐",
+  "Warming up your brain... 🧠",
+  "Mixing up some fun activities... 🎨",
+  "Your animal companion is stretching... 🐣",
+  "Gathering your superpowers... 💪",
+  "Sprinkling some magic... ✨",
+  "Almost there, keep going... 🌟",
+  "Preparing your challenge... 🏆",
+  "Loading word adventures... 🎮",
+  "Your lesson is almost ready... 🎉",
 ];
 
 function SessionLoadingScreen({ studentName, theme }: { studentName: string; theme: string }) {
