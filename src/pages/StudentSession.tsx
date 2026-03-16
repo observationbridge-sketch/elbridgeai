@@ -892,13 +892,12 @@ const StudentSession = () => {
     }
   }, [studentName, teacherId]);
 
-  // Auto-play TTS for Step 1 (Listen & Look)
+  // Auto-play TTS for Step 1 (Listen & Look) — with fallback
   useEffect(() => {
-    if (!loading && inPart1 && anchor && tts.isSupported && ttsPreloaded) {
-      if (part1Step === 1) {
-        const timer = setTimeout(() => tts.speak(anchor.sentence), 300);
-        return () => clearTimeout(timer);
-      }
+    if (!loading && inPart1 && anchor && tts.isSupported && part1Step === 1) {
+      const delay = ttsPreloaded ? 300 : 500;
+      const timer = setTimeout(() => tts.speak(anchor.sentence), delay);
+      return () => clearTimeout(timer);
     }
   }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
@@ -1583,12 +1582,12 @@ const StudentSession = () => {
     // Safety: if animalLevel is undefined, show a simple completion screen instead of white screen
     if (!animalLevel) {
       return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center space-y-6">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6" style={{ background: "linear-gradient(135deg, #0a0f1a, #1a1040)" }}>
           <div className="text-[100px] leading-none">🎉</div>
-          <h1 className="text-4xl font-bold text-foreground">Great job! You finished!</h1>
-          <p className="text-xl text-primary font-semibold">{studentName}</p>
-          <p className="text-3xl font-bold text-warning">+{gamification.sessionPoints} ⭐</p>
-          <p className="text-muted-foreground">Total: <span className="font-bold text-foreground">{gamification.totalPoints} points</span></p>
+          <h1 className="text-4xl font-bold text-white">Great job! You finished!</h1>
+          <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
+          <p className="text-3xl font-bold text-yellow-400">+{gamification.sessionPoints} ⭐</p>
+          <p className="text-gray-300">Total: <span className="font-bold text-white">{gamification.totalPoints} points</span></p>
           <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/")}>
             Done ✅
           </Button>
@@ -1600,7 +1599,7 @@ const StudentSession = () => {
     if (!showResults) {
       // ─── Phase 1: Full-screen celebration ───
       return (
-        <div className="min-h-screen bg-background relative overflow-hidden">
+        <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0a0f1a, #1a1040)" }}>
           {/* Confetti background */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {["🌟", "⭐", "🎉", "✨", "💫", "🏆", "🎊", "💪", "🌈", "🎶", "🔥", "💎"].map((emoji, i) => (
@@ -1622,8 +1621,8 @@ const StudentSession = () => {
             <div className="w-full max-w-sm space-y-6 text-center">
               {/* Heading */}
               <div className="animate-fade-in">
-                <h1 className="text-4xl font-bold text-foreground mb-2">You did it! 🎉</h1>
-                <p className="text-xl text-primary font-semibold">{studentName}</p>
+                <h1 className="text-4xl font-bold text-white mb-2">You did it! 🎉</h1>
+                <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
               </div>
 
               {/* Animal companion — large and pulsing */}
@@ -1631,19 +1630,19 @@ const StudentSession = () => {
                 <div className="text-[100px] leading-none" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
                   {animalLevel.emoji}
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">{animalLevel.name}</p>
+                <p className="text-sm text-gray-400 mt-2">{animalLevel.name}</p>
               </div>
 
               {/* Points total */}
               <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
-                <p className="text-5xl font-bold text-warning" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
+                <p className="text-5xl font-bold text-yellow-400" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
                   +{gamification.sessionPoints} ⭐
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Total: <span className="font-bold text-foreground">{gamification.totalPoints} points</span>
+                <p className="text-sm text-gray-400 mt-1">
+                  Total: <span className="font-bold text-white">{gamification.totalPoints} points</span>
                 </p>
                 {nextLevel && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     {nextLevel.min - gamification.totalPoints} pts to {nextLevel.emoji} {nextLevel.name}!
                   </p>
                 )}
@@ -1652,14 +1651,14 @@ const StudentSession = () => {
               {/* Badges earned this session */}
               {gamification.earnedBadgeIds.length > 0 && (
                 <div className="animate-fade-in" style={{ animationDelay: "0.6s" }}>
-                  <p className="text-sm font-medium text-foreground mb-2">🎖️ Badges Earned</p>
+                  <p className="text-sm font-medium text-white mb-2">🎖️ Badges Earned</p>
                   <div className="flex flex-wrap gap-3 justify-center">
                     {gamification.earnedBadgeIds.map((id) => {
                       const badge = BADGES_LOOKUP[id];
                       return badge ? (
-                        <div key={id} className="flex flex-col items-center gap-1 bg-card rounded-lg px-3 py-2 border border-border">
+                        <div key={id} className="flex flex-col items-center gap-1 rounded-lg px-3 py-2 border" style={{ background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)" }}>
                           <span className="text-3xl">{badge.icon}</span>
-                          <span className="text-[10px] text-muted-foreground">{badge.name}</span>
+                          <span className="text-[10px] text-gray-400">{badge.name}</span>
                         </div>
                       ) : null;
                     })}
@@ -1702,46 +1701,46 @@ const StudentSession = () => {
 
     // ─── Phase 2: Results summary ───
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "linear-gradient(135deg, #0a0f1a, #1a1040)" }}>
         <div className="w-full max-w-md space-y-6 animate-fade-in">
-          <Card className="card-shadow border-border">
+          <Card className="border" style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)" }}>
             <CardContent className="py-8 space-y-6">
               <div className="text-center">
                 <div className="text-6xl mb-3">{animalLevel.emoji}</div>
-                <h2 className="text-2xl font-bold text-foreground">
+                <h2 className="text-2xl font-bold text-white">
                   Great job today, {studentName}! 🌟
                 </h2>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-warning/10 rounded-xl p-4 text-center border border-warning/20">
-                  <p className="text-3xl font-bold text-warning">{gamification.sessionPoints}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Points Earned</p>
+                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(234,179,8,0.15)", borderColor: "rgba(234,179,8,0.25)" }}>
+                  <p className="text-3xl font-bold text-yellow-400">{gamification.sessionPoints}</p>
+                  <p className="text-xs text-gray-400 mt-1">Points Earned</p>
                 </div>
-                <div className="bg-primary/10 rounded-xl p-4 text-center border border-primary/20">
-                  <p className="text-3xl font-bold text-primary">{totalActivities}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Activities Done</p>
+                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.25)" }}>
+                  <p className="text-3xl font-bold text-blue-400">{totalActivities}</p>
+                  <p className="text-xs text-gray-400 mt-1">Activities Done</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">Builder</p>
-                  <p className="text-xl font-bold text-primary">✓</p>
+                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] text-gray-400">Builder</p>
+                  <p className="text-xl font-bold text-blue-400">✓</p>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">Practice</p>
-                  <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
+                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] text-gray-400">Practice</p>
+                  <p className="text-xl font-bold text-teal-400">{part2Score}/{part2Count}</p>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">Challenge</p>
-                  <p className="text-xl font-bold text-success">✓</p>
+                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] text-gray-400">Challenge</p>
+                  <p className="text-xl font-bold text-green-400">✓</p>
                 </div>
               </div>
 
               {gamification.earnedBadgeIds.length > 0 && (
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-2">Badges</p>
+                  <p className="text-xs text-gray-400 mb-2">Badges</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {gamification.earnedBadgeIds.map((id) => {
                       const badge = BADGES_LOOKUP[id];
@@ -2282,6 +2281,9 @@ function Part1View({
                  anchor.theme?.toLowerCase().includes("sport") ? "⚽🏆" : "📚🌟"}
               </div>
               <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{anchor.sentence}</p>
+              {tts.isSupported && tts.isSpeaking && (
+                <p className={`${isK2 ? "text-lg" : "text-sm"} text-warning font-medium animate-pulse`}>Playing... 🔊</p>
+              )}
               {tts.isSupported && (
                 <Button variant="outline" onClick={() => tts.speak(anchor.sentence)} disabled={tts.isSpeaking} className={`gap-2 ${isK2 ? "text-lg px-6 py-4 h-auto" : ""}`}>
                   <RefreshCw className={`${isK2 ? "h-5 w-5" : "h-4 w-4"} ${tts.isSpeaking ? "animate-spin" : ""}`} />
