@@ -2578,7 +2578,6 @@ function Part2StrategyView({
               ? activity.options
               : [];
 
-          const correctWord = normalizeWord(activity.modelAnswer || "");
           const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1, activity.question || "");
           const shuffled = deterministicShuffle(finalTiles, activity.question || "");
           const sfForceReveal = shouldForceRevealAfterAttempts(sfAttempts);
