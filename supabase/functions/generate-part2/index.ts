@@ -414,7 +414,8 @@ ${isK2 ? `1. Do NOT include a reading passage — omit the "passage" field entir
 2. Show ONLY the fill-in-the-blank sentence directly
 3. The sentenceFrame field IS the activity — show it large and clear
 4. ALL words in the sentence and word bank must be max 2 syllables
-5. ALWAYS include a "wordBank" array with correct answer words only (no distractors) — these become tappable tiles` : `1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
+5. ALWAYS include a "wordBank" array with correct answer words only (no distractors) — these become tappable tiles
+6. Return distractors as SINGLE WORDS ONLY. Never return a phrase, sentence, or multiple words as a distractor. Example correct format: {"correct": "fly", "distractors": ["swim", "jump"]}. Example WRONG format: {"correct": "fly", "distractors": ["The red dragon can fly"]}` : `1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
 2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
 4. ALWAYS include a "wordBank" array with answer choices as tappable options`}

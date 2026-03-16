@@ -160,8 +160,7 @@ export function isSentenceFrameCorrect(
 export function buildSentenceFrameTiles(
   rawTiles: string[],
   correctAnswer: string,
-  tier: number,
-  blankSentence?: string
+  tier: number
 ): string[] {
   const targetCount = TIER_TILE_COUNTS[tier] || TIER_TILE_COUNTS[1];
   const correctNorm = normalizeWord(correctAnswer);
