@@ -43,6 +43,7 @@ export type Database = {
       }
       session_students: {
         Row: {
+          grade_level: string | null
           id: string
           joined_at: string
           session_id: string
@@ -50,6 +51,7 @@ export type Database = {
           theme: string | null
         }
         Insert: {
+          grade_level?: string | null
           id?: string
           joined_at?: string
           session_id: string
@@ -57,6 +59,7 @@ export type Database = {
           theme?: string | null
         }
         Update: {
+          grade_level?: string | null
           id?: string
           joined_at?: string
           session_id?: string
