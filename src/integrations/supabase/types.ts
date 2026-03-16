@@ -204,7 +204,11 @@ export type Database = {
           created_at: string
           current_streak: number
           id: string
+          last_domain_scores: Json | null
+          last_grade_band: string | null
           last_session_date: string | null
+          last_session_score: number | null
+          last_session_total: number | null
           sentence_frame_tier: number
           sessions_completed: number
           student_name: string
@@ -217,7 +221,11 @@ export type Database = {
           created_at?: string
           current_streak?: number
           id?: string
+          last_domain_scores?: Json | null
+          last_grade_band?: string | null
           last_session_date?: string | null
+          last_session_score?: number | null
+          last_session_total?: number | null
           sentence_frame_tier?: number
           sessions_completed?: number
           student_name: string
@@ -230,7 +238,11 @@ export type Database = {
           created_at?: string
           current_streak?: number
           id?: string
+          last_domain_scores?: Json | null
+          last_grade_band?: string | null
           last_session_date?: string | null
+          last_session_score?: number | null
+          last_session_total?: number | null
           sentence_frame_tier?: number
           sessions_completed?: number
           student_name?: string
