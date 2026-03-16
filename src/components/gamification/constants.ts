@@ -106,7 +106,7 @@ export const BADGES: BadgeDef[] = [
   // 3-5 Specific
   { id: "quick_writer", name: "Quick Writer", icon: "🖊️", description: "Complete 3 Quick Write activities", category: "skill" },
   { id: "sequence_master", name: "Sequence Master", icon: "📋", description: "Use 3+ sequence words in Story Builder", category: "skill" },
-  { id: "speed_demon", name: "Speed Demon", icon: "🏎️", description: "Get all 5 correct in Speed Round", category: "skill" },
+  { id: "speed_star", name: "Speed Star", icon: "⭐", description: "Get all 5 correct in Speed Round", category: "skill" },
   { id: "domain_ace", name: "Domain Ace", icon: "🎯", description: "Score 80%+ in any domain in one session", category: "skill" },
   // Champion
   { id: "language_champion", name: "Language Champion", icon: "🏆", description: "Earn all 4 skill badges", category: "champion" },
