@@ -380,7 +380,16 @@ function getThemeEmoji(theme: string): string {
 const LOADING_PHRASES = [
   "Getting your adventure ready... 🚀",
   "Loading your words... 📚",
-  "Almost there... ⭐",
+  "Building something awesome... ⭐",
+  "Warming up your brain... 🧠",
+  "Mixing up some fun activities... 🎨",
+  "Your animal companion is stretching... 🐣",
+  "Gathering your superpowers... 💪",
+  "Sprinkling some magic... ✨",
+  "Almost there, keep going... 🌟",
+  "Preparing your challenge... 🏆",
+  "Loading word adventures... 🎮",
+  "Your lesson is almost ready... 🎉",
 ];
 
 function SessionLoadingScreen({ studentName, theme }: { studentName: string; theme: string }) {
@@ -389,7 +398,7 @@ function SessionLoadingScreen({ studentName, theme }: { studentName: string; the
   useEffect(() => {
     const interval = setInterval(() => {
       setPhraseIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
-    }, 2200);
+    }, 1800);
     return () => clearInterval(interval);
   }, []);
 
@@ -535,9 +544,10 @@ const StudentSession = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showMotivational, setShowMotivational] = useState(false);
 
-  // Prefetched activity cache (session-start health check)
+  // Prefetched activity cache (batch-generated at session start)
   const prefetchedPart2Ref = useRef<Record<number, Part2Activity>>({});
   const prefetchedPart3Ref = useRef<Part3Challenge | null>(null);
+  const allPrefetchedRef = useRef(false);
 
   const prefetchSessionContent = useCallback(async (params: {
     grade: GradeBand;
@@ -545,12 +555,17 @@ const StudentSession = () => {
     topic: string;
     domainScores: Record<string, number> | null;
     history: any;
+    setMsg?: (msg: string) => void;
   }) => {
-    const { grade, theme, topic, domainScores, history } = params;
+    const { grade, theme, topic, domainScores, history, setMsg } = params;
     const total = grade === "K-2" ? 4 : 6;
     prefetchedPart2Ref.current = {};
     prefetchedPart3Ref.current = null;
+    allPrefetchedRef.current = false;
 
+    setMsg?.("Creating your activities... 🎨");
+
+    // Generate ALL Part 2 activities in parallel
     const part2Results = await Promise.all(
       Array.from({ length: total }, async (_, index) => {
         for (let attempt = 0; attempt < 2; attempt++) {
@@ -567,18 +582,18 @@ const StudentSession = () => {
                   sentenceFrameTier: grade === "K-2" ? sentenceFrameTier : undefined,
                 },
               }),
-              8000
+              15000
             );
             if (error) throw error;
             const activity = data as Part2Activity;
-            console.log("[HealthCheck][Part2] raw activity", { index, attempt: attempt + 1, activity });
+            console.log("[Prefetch][Part2] activity", { index, attempt: attempt + 1, type: activity.type });
             if (!validatePart2Activity(activity)) {
-              console.error("[HealthCheck][Part2] invalid schema", { index, activity });
+              console.error("[Prefetch][Part2] invalid schema", { index, activity });
               throw new Error("Invalid Part2 activity schema");
             }
             return activity;
           } catch (error) {
-            console.error(`[HealthCheck][Part2] attempt ${attempt + 1} failed for index ${index}`, error);
+            console.error(`[Prefetch][Part2] attempt ${attempt + 1} failed for index ${index}`, error);
           }
         }
         return null;
@@ -591,6 +606,9 @@ const StudentSession = () => {
       }
     });
 
+    setMsg?.("Preparing your challenge... 🏆");
+
+    // Generate Part 3 challenge
     const challengeType = grade === "K-2" ? "speed_round" : undefined;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -604,22 +622,23 @@ const StudentSession = () => {
               contentHistory: history,
             },
           }),
-          8000
+          15000
         );
         if (error) throw error;
-        console.log("[HealthCheck][Part3] raw challenge", { attempt: attempt + 1, challenge: data });
+        console.log("[Prefetch][Part3] challenge", { attempt: attempt + 1, type: (data as any)?.challengeType });
         if (!validatePart3Challenge(data)) {
-          console.error("[HealthCheck][Part3] invalid schema", data);
+          console.error("[Prefetch][Part3] invalid schema", data);
           throw new Error("Invalid Part3 challenge schema");
         }
         prefetchedPart3Ref.current = data as Part3Challenge;
         break;
       } catch (error) {
-        console.error(`[HealthCheck][Part3] attempt ${attempt + 1} failed`, error);
+        console.error(`[Prefetch][Part3] attempt ${attempt + 1} failed`, error);
       }
     }
 
-    console.log("[HealthCheck] completed", {
+    allPrefetchedRef.current = true;
+    console.log("[Prefetch] completed", {
       part2Prefetched: Object.keys(prefetchedPart2Ref.current).length,
       part2Expected: total,
       hasPart3: Boolean(prefetchedPart3Ref.current),
@@ -827,17 +846,18 @@ const StudentSession = () => {
 
       try {
         if (resolvedTheme && resolvedTopic) {
-          setLoadingMessage("Checking activity content...");
+          setLoadingMessage("Building your activities... 🎨");
           await prefetchSessionContent({
             grade: sessionGradeBand,
             theme: resolvedTheme,
             topic: resolvedTopic,
             domainScores: computedDomainScores,
             history: fetchedHistory,
+            setMsg: setLoadingMessage,
           });
         }
       } catch (error) {
-        console.error("Session health check failed", error);
+        console.error("Activity pre-generation failed", error);
       }
 
       setLoading(false);
@@ -1038,24 +1058,27 @@ const StudentSession = () => {
   }), [sessionTheme, sessionTopic]);
 
   const fetchPart2Activity = useCallback(async (index: number, retryAttempt = 0) => {
-    setLoading(true);
-    setActivityError(false);
-    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Getting your next activity ready...");
     setPart2Submitted(false);
     setPart2Feedback(null);
     setPart2Answer("");
     killSpeech();
     tts.stop();
+    setActivityError(false);
 
+    // Serve instantly from pre-generated cache — no loading screen
     const cachedActivity = prefetchedPart2Ref.current[index];
     if (cachedActivity && retryAttempt === 0) {
       setPart2Activity(cachedActivity);
       setPart2Strategy(cachedActivity.strategy);
-      setPart2StrategyReason(cachedActivity.strategyReason || "Prefetched and validated");
+      setPart2StrategyReason(cachedActivity.strategyReason || "Pre-generated at session start");
       setActivityRetryCount(0);
       setLoading(false);
       return;
     }
+
+    // Fallback: fetch on-demand if cache miss (shouldn't happen normally)
+    setLoading(true);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Getting your next activity ready...");
 
     try {
       const { data, error } = await fetchWithTimeout(
@@ -1307,10 +1330,9 @@ const StudentSession = () => {
 
   const fetchPart3Challenge = useCallback(async (retryAttempt = 0) => {
     killSpeech();
-    setLoading(true);
     setActivityError(false);
-    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
 
+    // Serve instantly from pre-generated cache — no loading screen
     const cachedChallenge = prefetchedPart3Ref.current;
     if (cachedChallenge && retryAttempt === 0) {
       setPart3Challenge(cachedChallenge);
@@ -1319,6 +1341,10 @@ const StudentSession = () => {
       setPart3StartTime(Date.now());
       return;
     }
+
+    // Fallback: fetch on-demand if cache miss
+    setLoading(true);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
 
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
