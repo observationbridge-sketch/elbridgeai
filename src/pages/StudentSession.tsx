@@ -1592,7 +1592,7 @@ const StudentSession = () => {
           <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
           <p className="text-3xl font-bold text-yellow-400">+{gamification.sessionPoints} ⭐</p>
           <p className="text-gray-300">Total: <span className="font-bold text-white">{gamification.totalPoints} points</span></p>
-          <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/")}>
+          <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/student/join")}>
             Done ✅
           </Button>
         </div>
@@ -1767,7 +1767,7 @@ const StudentSession = () => {
                 <Users className="h-4 w-4" /> Leaderboard
               </Button>
             </div>
-            <Button variant="hero" onClick={() => navigate("/")} className="w-full text-lg py-6">
+            <Button variant="hero" onClick={() => navigate("/student/join")} className="w-full text-lg py-6">
               Done ✅
             </Button>
           </div>
@@ -1789,7 +1789,7 @@ const StudentSession = () => {
           <div style={{fontSize:'80px'}}>🎉</div>
           <h1 style={{color:'white', fontSize:'32px'}}>You did it, {studentName}!</h1>
           <p style={{color:'#aaa', fontSize:'20px'}}>{gamification.sessionPoints} points earned!</p>
-          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/')}>Done ✅</button>
+          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/student/join')}>Done ✅</button>
         </div>
       );
     }
