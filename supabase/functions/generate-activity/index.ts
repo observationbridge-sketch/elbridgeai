@@ -135,7 +135,7 @@ Use vivid, specific, kid-friendly language connected to the theme "${theme}".`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Generate a ${actualDomain} activity at proficiency level ${proficiencyLevel} with theme "${theme}" for grades ${grade}. Make it engaging, vivid, and fully self-contained.` },
