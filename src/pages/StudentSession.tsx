@@ -2739,14 +2739,14 @@ function Part2StrategyView({
                           // Check against deterministic correct words
                           const isCorrectTile = sfCorrectWords.includes(normalizeWord(tappedWord));
                           if (isCorrectTile) {
-                            // CORRECT — award points, always advance regardless of attempt count
-                            setAnswer(tappedWord);
+                            // CORRECT — set selected word, reset attempts so feedback renders success state
+                            setSfSelectedWord(tappedWord);
                             setSfWrongMessage(null);
-                            setSfRevealed(false);
-                            // Pass answer directly to avoid React state race condition
+                            setSfAttempts(0);
+                            setAnswer(tappedWord);
                             setTimeout(() => {
                               onSubmit(tappedWord);
-                            }, 300);
+                            }, 400);
                           } else {
                             // WRONG — 0 points
                             registerWrongAttempt();
