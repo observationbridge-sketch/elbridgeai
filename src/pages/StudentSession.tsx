@@ -1472,7 +1472,7 @@ const StudentSession = () => {
 
     saveResponse(q.domain, q.question, selectedOption, q.correctAnswer, isCorrect, "Developing", "part3", "speed_round");
 
-    if (part3SpeedIndex < 4) {
+    if (part3SpeedIndex < (part3Challenge?.questions?.length ?? 1) - 1) {
       setPart3SpeedIndex((i) => i + 1);
     } else {
       const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
