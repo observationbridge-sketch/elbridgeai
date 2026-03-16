@@ -223,7 +223,12 @@ ${STRICT_RULES}
 
 Generate a TEACH IT BACK challenge. The student will record themselves explaining "${topic}" in their own words.
 
-Provide helpful vocabulary words they learned during the session and guiding questions. Do NOT reference any images, pictures, or visuals.
+Provide helpful vocabulary words and 3 progressive guiding questions:
+1. Basic recall: "What is ${topic}?" — ask specifically what ${topic} is or means
+2. Interpretation: "Why is ${topic} important?" — ask why it matters or what makes it interesting  
+3. Personal connection: "How does ${topic} connect to your life?" — ask how the student relates to it
+
+Do NOT use generic placeholders. Each question must mention "${topic}" by name. Do NOT reference any images, pictures, or visuals.
 
 Return ONLY valid JSON (no markdown):
 {
@@ -231,9 +236,9 @@ Return ONLY valid JSON (no markdown):
   "title": "Teach It Back",
   "instruction": "You just learned about ${topic}. Now teach it to someone else! Record yourself explaining the topic in your own words for at least 30 seconds.",
   "guidingQuestions": [
-    "<What is ${topic} about?>",
-    "<Why is it important or interesting?>",
-    "<What is one cool fact about ${topic}?>"
+    "What is ${topic}?",
+    "Why is ${topic} important or interesting?",
+    "How does ${topic} connect to something in your own life?"
   ],
   "vocabularyHints": ["<6-8 key vocabulary words from the session about ${topic}>"],
   "acceptableKeywords": ["<8-10 keywords for scoring relevance>"],
