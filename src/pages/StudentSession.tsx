@@ -2418,26 +2418,24 @@ function Part2StrategyView({
 
   const k2BlankSentence = useMemo(() => {
     if (!isK2SF) return "";
-
-    const normalizeSpaces = (text: string) => text.replace(/\s+/g, " ").trim();
-    const candidates = [activity.sentenceFrame, activity.question]
-      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-      .map(normalizeSpaces);
-
-    const explicitBlank = candidates.find((text) => text.includes("___"));
-    if (explicitBlank) return explicitBlank;
-
-    const baseSentence = candidates[0] ?? "";
-    if (!baseSentence) return "___";
-
-    const modelAnswer = normalizeSpaces(activity.modelAnswer || "");
-    if (modelAnswer) {
-      const escaped = modelAnswer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const replaced = baseSentence.replace(new RegExp(`\\b${escaped}\\b`, "i"), "___");
-      if (replaced !== baseSentence) return replaced;
+    // Priority 1: sentenceFrame with explicit blank
+    if (activity.sentenceFrame?.includes("___")) return activity.sentenceFrame.trim();
+    // Priority 2: extract only the sentence part after any colon in question
+    if (activity.question) {
+      const colonIdx = activity.question.lastIndexOf(":");
+      if (colonIdx !== -1) {
+        const afterColon = activity.question.slice(colonIdx + 1).trim();
+        if (afterColon.length > 0) return afterColon;
+      }
+      if (activity.question.includes("___")) return activity.question.trim();
     }
-
-    return `${baseSentence.replace(/[.!?]+$/, "")} ___`;
+    // Priority 3: build blank from modelAnswer
+    if (activity.modelAnswer) {
+      const words = activity.modelAnswer.trim().split(/\s+/);
+      const lastWord = words[words.length - 1];
+      return activity.modelAnswer.replace(new RegExp(`\\b${lastWord}\\b`), "___");
+    }
+    return "___";
   }, [isK2SF, activity.sentenceFrame, activity.question, activity.modelAnswer]);
 
   // Reset retry state when activity changes
