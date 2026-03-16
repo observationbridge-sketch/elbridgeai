@@ -1476,7 +1476,7 @@ const StudentSession = () => {
         return;
       }
     }
-    gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE);
+    gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE, effectiveGradeBand);
     const keywords = part3Challenge?.acceptableKeywords || [];
     const norm = part3Answer.toLowerCase();
     const usedWords = keywords.filter((kw) => norm.includes(kw.toLowerCase())).slice(0, 3);
