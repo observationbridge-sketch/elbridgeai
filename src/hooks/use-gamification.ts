@@ -120,11 +120,24 @@ export function useGamification(studentName: string, teacherId: string) {
     // No DB write here — points are saved in completeSession
   }, [studentName, teacherId]);
 
-  const completeSession = useCallback(async (finalSessionPoints?: number, gradeBand?: string) => {
+  const completeSession = useCallback(async (opts?: {
+    finalSessionPoints?: number;
+    gradeBand?: string;
+    part2Score?: number;
+    part2Count?: number;
+    domainScores?: Record<string, number>;
+  }) => {
     if (!studentName || !teacherId) return;
 
-    const pointsToSave = finalSessionPoints ?? pendingPointsRef.current;
+    const pointsToSave = opts?.finalSessionPoints ?? pendingPointsRef.current;
     const today = new Date().toISOString().split("T")[0];
+
+    const sessionPerformance: Record<string, unknown> = {
+      last_session_score: opts?.part2Score ?? 0,
+      last_session_total: opts?.part2Count ?? 0,
+      last_domain_scores: opts?.domainScores ?? {},
+      last_grade_band: opts?.gradeBand ?? "3-5",
+    };
 
     try {
       const { data: existing } = await supabase
@@ -154,7 +167,8 @@ export function useGamification(studentName: string, teacherId: string) {
             current_streak: streak,
             last_session_date: today,
             updated_at: new Date().toISOString(),
-          })
+            ...sessionPerformance,
+          } as any)
           .eq("id", existing.id);
       } else {
         await supabase.from("student_points").insert({
@@ -164,7 +178,8 @@ export function useGamification(studentName: string, teacherId: string) {
           sessions_completed: 1,
           current_streak: 1,
           last_session_date: today,
-        });
+          ...sessionPerformance,
+        } as any);
       }
     } catch (err) {
       console.error("[gamification] Failed to save session points:", err);
