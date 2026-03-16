@@ -1898,6 +1898,8 @@ const StudentSession = () => {
                     isK2={isK2}
                     sentenceFrameTier={sentenceFrameTier}
                     sounds={sounds}
+                    anchor={anchor}
+                    gradeBand={effectiveGradeBand}
                   />
                   {/* K-2 Feeling Rating */}
                   {isK2 && part2Submitted && !showFeelingRating && (
