@@ -892,13 +892,12 @@ const StudentSession = () => {
     }
   }, [studentName, teacherId]);
 
-  // Auto-play TTS for Step 1 (Listen & Look)
+  // Auto-play TTS for Step 1 (Listen & Look) — with fallback
   useEffect(() => {
-    if (!loading && inPart1 && anchor && tts.isSupported && ttsPreloaded) {
-      if (part1Step === 1) {
-        const timer = setTimeout(() => tts.speak(anchor.sentence), 300);
-        return () => clearTimeout(timer);
-      }
+    if (!loading && inPart1 && anchor && tts.isSupported && part1Step === 1) {
+      const delay = ttsPreloaded ? 300 : 500;
+      const timer = setTimeout(() => tts.speak(anchor.sentence), delay);
+      return () => clearTimeout(timer);
     }
   }, [loading, inPart1, part1Step, anchor, ttsPreloaded]);
 
