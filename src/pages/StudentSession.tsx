@@ -785,11 +785,11 @@ const StudentSession = () => {
       } catch {
         const fallback: AnchorSentence = sessionGradeBand === "K-2"
           ? {
-              sentence: "Mars is a red planet in space.",
-              theme: sessionForcedTheme || "Space & planets",
-              topic: "Mars is a red planet",
+              sentence: "The dog runs in the park.",
+              theme: sessionForcedTheme || "Animals & nature",
+              topic: "The dog runs in the park",
               category: "Descriptive language models",
-              keyWords: ["Mars", "red", "planet"],
+              keyWords: ["dog", "runs", "park"],
             }
           : {
               sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
