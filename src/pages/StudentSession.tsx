@@ -1782,6 +1782,17 @@ const StudentSession = () => {
         )}
       </div>
     );
+    } catch (celebrationError) {
+      console.error("Celebration screen error:", celebrationError);
+      return (
+        <div style={{minHeight:'100vh', background:'#1a1a2e', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'24px'}}>
+          <div style={{fontSize:'80px'}}>🎉</div>
+          <h1 style={{color:'white', fontSize:'32px'}}>You did it, {studentName}!</h1>
+          <p style={{color:'#aaa', fontSize:'20px'}}>{gamification.sessionPoints} points earned!</p>
+          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/')}>Done ✅</button>
+        </div>
+      );
+    }
   }
 
   // ─── Progress label ───
