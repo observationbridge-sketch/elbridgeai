@@ -269,6 +269,74 @@ export function validateK2Anchor(sentence: string): { valid: boolean; reason?: s
 // K-2 BANNED TOPICS
 // ════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════
+// DETERMINISTIC K-2 SENTENCE FRAME GENERATOR
+// ════════════════════════════════════════════════
+
+interface AnchorSentenceInput {
+  sentence: string;
+  keyWords?: string[];
+}
+
+/**
+ * Generate a K-2 sentence frame deterministically from the anchor sentence.
+ * Eliminates Gemini from K-2 SF generation entirely — no concatenation bugs,
+ * no wrong blank counts. Template-based, tier-aware, grade-aware.
+ */
+export function generateK2SentenceFrame(
+  anchor: AnchorSentenceInput,
+  tier: number,
+  gradeLevel: "K-1" | "2"
+): { blankSentence: string; correctWords: string[]; tiles: string[] } {
+  const SIMPLE_DISTRACTORS = ["jump", "sit", "run", "big", "red", "fast", "swim", "fly", "eat", "sleep"];
+
+  // Get content words from anchor — skip stop words
+  const STOP_WORDS = new Set(["the", "a", "an", "is", "are", "was", "in", "on", "at", "to", "and", "of", "it"]);
+  const words = anchor.sentence.replace(/[.!?]/g, "").split(/\s+/);
+  const contentWords = words.filter(w => !STOP_WORDS.has(w.toLowerCase()) && w.length > 2);
+
+  // Force K-1 to always Tier 1 regardless of passed tier
+  const effectiveTier = gradeLevel === "K-1" ? 1 : Math.min(tier, 3);
+  const blankCount = effectiveTier === 1 ? 1 : effectiveTier === 2 ? 2 : 3;
+
+  // Pick words to blank — take from end of content words for naturalness
+  const toBlank = contentWords.slice(-Math.min(blankCount, contentWords.length));
+
+  // If we couldn't find enough content words, fall back to last words of the sentence
+  if (toBlank.length === 0) {
+    const lastWord = words[words.length - 1]?.replace(/[.!?]/g, "") || "";
+    if (lastWord) toBlank.push(lastWord);
+  }
+
+  // Build blanked sentence
+  let blankSentence = anchor.sentence.replace(/[.!?]$/, "").trim();
+  for (const word of toBlank) {
+    blankSentence = blankSentence.replace(new RegExp(`\\b${word}\\b`, "i"), "___");
+  }
+  blankSentence += ".";
+
+  // Build tiles — correct words + distractors
+  const correctWords = toBlank.map(w => w.toLowerCase());
+  const usedWords = new Set(correctWords);
+  const distractors: string[] = [];
+  for (const d of SIMPLE_DISTRACTORS) {
+    if (distractors.length >= blankCount) break;
+    if (!usedWords.has(d)) {
+      distractors.push(d);
+      usedWords.add(d);
+    }
+  }
+
+  // Shuffle tiles
+  const tiles = [...correctWords, ...distractors].sort(() => Math.random() - 0.5);
+
+  return { blankSentence, correctWords, tiles };
+}
+
+// ════════════════════════════════════════════════
+// K-2 BANNED TOPICS
+// ════════════════════════════════════════════════
+
 export const K2_BANNED_TOPICS = [
   "volcano", "hurricane", "ecosystem", "photosynthesis", "earthquake",
   "civilization", "democracy", "evolution", "atmosphere", "metamorphosis",
