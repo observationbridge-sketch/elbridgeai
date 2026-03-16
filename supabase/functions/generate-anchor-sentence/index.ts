@@ -342,44 +342,36 @@ Return ONLY valid JSON (no markdown, no code blocks):
         : "";
 
       try {
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const userMessage = `${systemPrompt}\n\n${isK2 ? "Generate one simple K-2 anchor sentence" : "Generate an anchor passage"} with theme "${theme}" for grades ${grade}. ${retryInstruction}`;
+
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-pro",
-            messages: [
-              { role: "system", content: systemPrompt },
-              {
-                role: "user",
-                content: `${isK2 ? "Generate one simple K-2 anchor sentence" : "Generate an anchor passage"} with theme "${theme}" for grades ${grade}. ${retryInstruction}`,
-              },
-            ],
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 1000,
+            messages: [{ role: "user", content: userMessage }],
           }),
         });
 
         if (!response.ok) {
           const t = await response.text();
-          console.error("AI gateway error:", response.status, t);
+          console.error("Anthropic API error:", response.status, t);
           if (response.status === 429) {
             return new Response(JSON.stringify({ error: "Rate limited" }), {
               status: 429,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
-          if (response.status === 402) {
-            return new Response(JSON.stringify({ error: "Payment required" }), {
-              status: 402,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-          throw new Error("AI gateway error");
+          throw new Error(`Anthropic API error: ${response.status}`);
         }
 
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
+        const content = data.content?.[0]?.text;
 
         if (!content || typeof content !== "string") {
           throw new Error("Empty AI response");
