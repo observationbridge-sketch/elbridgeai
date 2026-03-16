@@ -198,12 +198,9 @@ function getBadge(scores: Part1Scores): { icon: any; label: string; color: strin
 
 function flexibleGrade(input: string, keywords: string[]): boolean {
   const norm = input.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
-  if (keywords.length > 0) {
-    const matchCount = keywords.filter((kw) => norm.includes(kw.toLowerCase())).length;
-    if (matchCount >= Math.max(2, Math.ceil(keywords.length * 0.3))) return true;
-  }
-  if (norm.split(/\s+/).length >= 3) return true;
-  return false;
+  if (keywords.length === 0) return false;
+  const matchCount = keywords.filter((kw) => norm.includes(kw.toLowerCase())).length;
+  return matchCount >= Math.max(2, Math.ceil(keywords.length * 0.3));
 }
 
 function sentenceCount(text: string): number {
@@ -785,11 +782,11 @@ const StudentSession = () => {
       } catch {
         const fallback: AnchorSentence = sessionGradeBand === "K-2"
           ? {
-              sentence: "Mars is a red planet in space.",
-              theme: sessionForcedTheme || "Space & planets",
-              topic: "Mars is a red planet",
+              sentence: "The dog runs in the park.",
+              theme: sessionForcedTheme || "Animals & nature",
+              topic: "The dog runs in the park",
               category: "Descriptive language models",
-              keyWords: ["Mars", "red", "planet"],
+              keyWords: ["dog", "runs", "park"],
             }
           : {
               sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
@@ -976,11 +973,9 @@ const StudentSession = () => {
         setEffectiveGradeBand("K-2");
         setGradeBandAdjusted(true);
         console.log("Auto-adjusted student to K-2 band (Part 1 score:", Math.round(pct), "%)");
-      } else if (gradeBand === "K-2" && pct > 85) {
+      } else if (false) {
+        // K-2 students placed by teacher must stay K-2 for the full session — no upward adjustment
         newBand = "3-5";
-        setEffectiveGradeBand("3-5");
-        setGradeBandAdjusted(true);
-        console.log("Auto-adjusted student to 3-5 band (Part 1 score:", Math.round(pct), "%)");
       }
 
       setGlobalStep(5);
@@ -1485,7 +1480,7 @@ const StudentSession = () => {
         theme: sessionTheme,
         topic: sessionTopic,
         key_vocabulary: usedVocabulary.concat(anchor?.keyWords || []),
-        vocabulary_results: vocabularyResults,
+        vocabulary_results: { ...vocabularyResults as any, part2Score, part2Count },
         activity_formats: usedActivityFormats,
         challenge_type: challengeCompleted?.toLowerCase().replace(/ /g, "_") || null,
         grade_band: effectiveGradeBand,
@@ -2002,9 +1997,8 @@ function generateMemoryPairs(anchor: AnchorSentence, isK2?: boolean): { words: s
   while (selected.length < pairCount && sentenceWords.length > 0) selected.push(sentenceWords.shift()!);
   while (selected.length < pairCount) selected.push(selected[selected.length - 1] || "word");
   if (isK2) {
-    const emojiMap: Record<string, string> = { sun:"☀️",moon:"🌙",star:"⭐",tree:"🌳",flower:"🌸",fish:"🐟",bird:"🐦",cat:"🐱",dog:"🐕",lion:"🦁",bear:"🐻",water:"💧",fire:"🔥",ball:"⚽",book:"📖",house:"🏠",mars:"🔴",planet:"🪐",space:"🚀",red:"🔴",butterfly:"🦋",garden:"🌻",kick:"🦶",play:"🎮",run:"🏃" };
-    const defaults = ["🌟","🎯","💎","🌈","🔮","🎪"];
-    return { words: selected, matches: selected.map((w,i) => emojiMap[w.toLowerCase()] || defaults[i % defaults.length]) };
+    // Both cards show the same word: one plain, one bold colored — matching compares the word string
+    return { words: selected, matches: selected.map(w => w) };
   }
   return { words: selected, matches: selected.map(w => `means "${w}"`) };
 }
