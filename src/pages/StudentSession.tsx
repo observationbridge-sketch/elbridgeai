@@ -2671,7 +2671,7 @@ function Part2StrategyView({
             )}
           </div>
         ) : (
-          <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
+          <h3 className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
         )}
 
         {/* Sentence frame box removed — sentence is shown inline via WordBankFillBlanks or k2BlankSentence */}
