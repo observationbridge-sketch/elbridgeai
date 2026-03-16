@@ -2470,7 +2470,7 @@ interface Part2Props {
 
 function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
-  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds,
+  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds, anchor, gradeBand,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
