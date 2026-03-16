@@ -1998,6 +1998,9 @@ function Part1View({
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
   const [jumbleTappedWords, setJumbleTappedWords] = useState<string[]>([]);
   const [jumbleIsCorrect, setJumbleIsCorrect] = useState<boolean | null>(null);
+  const [jumbleAttempts, setJumbleAttempts] = useState(0);
+  const [jumbleShake, setJumbleShake] = useState(false);
+  const [jumbleTryAgainMsg, setJumbleTryAgainMsg] = useState<string | null>(null);
   const [usedJumbleIndices, setUsedJumbleIndices] = useState<Set<number>>(new Set());
 
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
@@ -2044,6 +2047,7 @@ function Part1View({
     }
   }, [anchor, isK2, onRetryFillBlanks]);
 
+  // Reset jumble state when anchor changes
   useEffect(() => {
     if (anchor?.sentence) {
       setJumble(jumbleSentence(anchor.sentence));
@@ -2051,6 +2055,9 @@ function Part1View({
       setJumbleSubmitted(false);
       setJumbleTappedWords([]);
       setJumbleIsCorrect(null);
+      setJumbleAttempts(0);
+      setJumbleShake(false);
+      setJumbleTryAgainMsg(null);
       setUsedJumbleIndices(new Set());
     }
   }, [anchor]);
@@ -2060,34 +2067,76 @@ function Part1View({
     prepareStep3Content(0);
   }, [step, anchor, prepareStep3Content]);
 
+  // K-2: Tap a chip to add to build area
   const handleChipTap = (word: string, index: number) => {
     if (!isK2 || jumbleSubmitted) return;
-    const normalizedWord = normalizeJumbleWord(word);
-    const newTapped = [...jumbleTappedWords, normalizedWord];
+    const newTapped = [...jumbleTappedWords, word]; // already lowercase from jumbleSentence
     setJumbleTappedWords(newTapped);
     setJumbleAnswer(newTapped.join(" "));
     setUsedJumbleIndices((prev) => new Set([...prev, index]));
   };
 
+  // K-2: Tap a chip in the build area to remove it and return to the chip row
+  const handleBuildChipRemove = (buildIndex: number) => {
+    if (jumbleSubmitted || !jumble) return;
+    const removedWord = jumbleTappedWords[buildIndex];
+    const originalIndex = jumble.jumbled.findIndex(
+      (w, i) => w === removedWord && usedJumbleIndices.has(i)
+    );
+    const newTapped = jumbleTappedWords.filter((_, i) => i !== buildIndex);
+    setJumbleTappedWords(newTapped);
+    setJumbleAnswer(newTapped.join(" "));
+    if (originalIndex !== -1) {
+      setUsedJumbleIndices((prev) => {
+        const next = new Set(prev);
+        next.delete(originalIndex);
+        return next;
+      });
+    }
+  };
+
+  // Submit jumbled sentence — strict index-by-index word array comparison
   const handleJumbleSubmit = () => {
     if (!jumble) return;
 
     const studentWords = isK2
-      ? jumbleTappedWords.map(normalizeJumbleWord).filter(Boolean)
-      : sentenceToNormalizedWords(jumbleAnswer);
+      ? jumbleTappedWords.map(normalizeWord).filter(Boolean)
+      : sentenceToWords(jumbleAnswer);
 
-    const isExactMatch = wordsMatchByIndex(studentWords, jumble.correctWords);
+    const isCorrect = isExactWordOrderMatch(studentWords, jumble.correctWords);
 
-    setJumbleIsCorrect(isExactMatch);
-    setJumbleSubmitted(true);
-
-    if (isExactMatch) {
-      sounds.playCorrect();
-    } else {
+    if (!isCorrect) {
+      // WRONG — award 0 points
+      const newAttempts = jumbleAttempts + 1;
+      setJumbleAttempts(newAttempts);
       sounds.playWrong();
+
+      if (newAttempts >= MAX_WRONG_ATTEMPTS) {
+        // 2nd wrong: reveal answer, show Next button
+        setJumbleIsCorrect(false);
+        setJumbleSubmitted(true);
+        setJumbleTryAgainMsg(null);
+        onStep5Complete(false);
+      } else {
+        // 1st wrong: shake + try again, tiles stay visible
+        setJumbleShake(true);
+        setJumbleTryAgainMsg("Try again! 🌟");
+        setTimeout(() => {
+          setJumbleShake(false);
+          setJumbleTappedWords([]);
+          setJumbleAnswer("");
+          setUsedJumbleIndices(new Set());
+        }, 800);
+      }
+      return;
     }
 
-    onStep5Complete(isExactMatch);
+    // CORRECT — award points
+    setJumbleIsCorrect(true);
+    setJumbleSubmitted(true);
+    setJumbleTryAgainMsg(null);
+    sounds.playCorrect();
+    onStep5Complete(true);
   };
 
   const memoryPairs = useMemo(() => generateMemoryPairs(anchor, isK2), [anchor, isK2]);
