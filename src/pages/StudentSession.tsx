@@ -2828,7 +2828,7 @@ function Part2StrategyView({
             )}
 
             {inputType !== "multiple_choice" && (
-              <Button variant="hero" className="w-full" size="lg" onClick={onSubmit} disabled={!answer.trim()}>
+              <Button variant="hero" className="w-full" size="lg" onClick={() => onSubmit()} disabled={!answer.trim()}>
                 Submit Answer
               </Button>
             )}
