@@ -2462,6 +2462,8 @@ interface Part2Props {
   isK2?: boolean;
   sentenceFrameTier?: number;
   sounds?: ReturnType<typeof useSounds>;
+  anchor?: AnchorSentence | null;
+  gradeBand?: GradeBand;
 }
 
 function Part2StrategyView({
