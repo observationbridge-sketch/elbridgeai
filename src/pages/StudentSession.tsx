@@ -2619,26 +2619,42 @@ function Part2StrategyView({
                         disabled={!!sfSelectedWord}
                         onClick={() => {
                           if (sfSelectedWord) return;
-                          setSfSelectedWord(word);
-                          if (isSentenceFrameCorrect(word, activity.modelAnswer || "")) {
+
+                          const tappedWord = typeof word === "string" ? word.trim() : "";
+                          setSfSelectedWord(tappedWord || word);
+
+                          const registerWrongAttempt = () => {
+                            const newAttempts = sfAttempts + 1;
+                            setSfAttempts(newAttempts);
+
+                            if (shouldForceRevealAfterAttempts(newAttempts)) {
+                              setSfRevealed(true);
+                              setSfWrongMessage(null);
+                              setSfSelectedWord(null);
+                              return;
+                            }
+
+                            setSfWrongMessage("Try again! 🌟");
+                            setTimeout(() => {
+                              setSfSelectedWord(null);
+                              setSfWrongMessage(null);
+                            }, 1200);
+                          };
+
+                          // Broken/empty tile safety: count as wrong attempt
+                          if (!tappedWord) {
+                            registerWrongAttempt();
+                            return;
+                          }
+
+                          if (isSentenceFrameCorrect(tappedWord, activity.modelAnswer || "")) {
                             // CORRECT — award points
-                            setAnswer(word);
+                            setAnswer(tappedWord);
                             setSfWrongMessage(null);
                             setTimeout(() => onSubmit(), 400);
                           } else {
                             // WRONG — 0 points
-                            const newAttempts = sfAttempts + 1;
-                            setSfAttempts(newAttempts);
-                            if (newAttempts >= MAX_WRONG_ATTEMPTS) {
-                              setSfRevealed(true);
-                              setSfWrongMessage(null);
-                            } else {
-                              setSfWrongMessage("Try again! 🌟");
-                              setTimeout(() => {
-                                setSfSelectedWord(null);
-                                setSfWrongMessage(null);
-                              }, 1200);
-                            }
+                            registerWrongAttempt();
                           }
                         }}
                         className={`px-5 py-3 text-lg border-2 rounded-full font-medium transition-all ${
