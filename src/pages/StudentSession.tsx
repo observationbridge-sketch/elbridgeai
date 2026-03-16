@@ -1482,9 +1482,9 @@ const StudentSession = () => {
       setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
       setPart3Submitted(true);
       setChallengeCompleted("Speed Round");
-      // Award speed_demon badge for perfect 5/5
+      // Award speed_star badge for perfect 5/5
       if (finalScore === 5 && effectiveGradeBand === "3-5") {
-        gamification.awardBadge("speed_demon");
+        gamification.awardBadge("speed_star");
       }
     }
   };
