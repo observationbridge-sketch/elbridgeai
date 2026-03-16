@@ -2277,27 +2277,14 @@ function Part1View({
               </Button>
             ) : (
               <>
-                {(() => {
-                  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s']/g, "").trim().split(/\s+/).filter(Boolean);
-                  const studentWords = normalize(jumbleAnswer);
-                  const correctWords = normalize(jumble.original);
-                  const isExact = studentWords.length === correctWords.length && studentWords.every((w, i) => w === correctWords[i]);
-                  return (
-                    <>
-                      {isExact ? (
-                        <FeedbackBanner feedback="Nice work! 🧩🌟" positive={true} />
-                      ) : (
-                        <>
-                          <FeedbackBanner feedback="Good try! Here's the correct sentence:" positive={false} />
-                          <div className="bg-warning/10 rounded-lg p-3 border border-warning/20">
-                            <p className="text-xs text-muted-foreground mb-1">Correct sentence:</p>
-                            <p className="text-lg font-bold text-warning">{jumble.original}</p>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
+                {jumbleIsCorrect ? (
+                  <FeedbackBanner feedback="Nice work! 🧩🌟" positive={true} />
+                ) : (
+                  <div className="bg-warning/10 rounded-lg p-3 border border-warning/20 space-y-1">
+                    <p className="text-lg font-bold text-warning">Good try! Here's the correct sentence:</p>
+                    <p className="text-lg font-bold text-warning">{jumble.original}</p>
+                  </div>
+                )}
                 <Button
                   variant="success"
                   className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
