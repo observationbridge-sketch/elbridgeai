@@ -493,6 +493,13 @@ const StudentSession = () => {
   const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
   const quickWriteCountRef = useRef(0);
 
+  // Play evolution sound when animal evolves
+  useEffect(() => {
+    if (gamification.evolutionData) {
+      sounds.playEvolution();
+    }
+  }, [gamification.evolutionData]);
+
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
   const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5>(1);
