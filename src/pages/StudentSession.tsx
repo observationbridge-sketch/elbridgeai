@@ -1636,14 +1636,14 @@ const StudentSession = () => {
 
               {/* Points total */}
               <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
-                <p className="text-5xl font-bold text-warning" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
+                <p className="text-5xl font-bold text-yellow-400" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
                   +{gamification.sessionPoints} ⭐
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Total: <span className="font-bold text-foreground">{gamification.totalPoints} points</span>
+                <p className="text-sm text-gray-400 mt-1">
+                  Total: <span className="font-bold text-white">{gamification.totalPoints} points</span>
                 </p>
                 {nextLevel && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     {nextLevel.min - gamification.totalPoints} pts to {nextLevel.emoji} {nextLevel.name}!
                   </p>
                 )}
