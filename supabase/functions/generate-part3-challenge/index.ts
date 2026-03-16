@@ -18,6 +18,89 @@ ABSOLUTE RULES FOR ALL ACTIVITIES:
 
 type ChallengeType = "story_builder" | "speed_round" | "teach_it_back";
 
+function extractJsonFromAiResponse(rawContent: string): any {
+  const cleaned = rawContent
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  const arrayStart = cleaned.indexOf("[");
+  const objectStart = cleaned.indexOf("{");
+  const startCandidates = [arrayStart, objectStart].filter((v) => v >= 0);
+  const jsonStart = startCandidates.length > 0 ? Math.min(...startCandidates) : -1;
+
+  if (jsonStart === -1) {
+    throw new Error("No JSON payload found in AI response");
+  }
+
+  const startsWithArray = cleaned[jsonStart] === "[";
+  const jsonEnd = startsWithArray ? cleaned.lastIndexOf("]") : cleaned.lastIndexOf("}");
+  if (jsonEnd === -1 || jsonEnd < jsonStart) {
+    throw new Error("JSON payload appears truncated");
+  }
+
+  const candidate = cleaned.slice(jsonStart, jsonEnd + 1);
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    const repaired = candidate
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, "");
+    return JSON.parse(repaired);
+  }
+}
+
+function validateChallenge(challenge: any, challengeType: string, isK2: boolean): void {
+  if (challengeType === "speed_round") {
+    const expectedCount = isK2 ? 3 : 5;
+    if (!Array.isArray(challenge.questions) || challenge.questions.length !== expectedCount) {
+      throw new Error(`speed_round must have exactly ${expectedCount} questions, got ${challenge.questions?.length ?? 0}`);
+    }
+    for (const q of challenge.questions) {
+      if (!Array.isArray(q.options) || !q.correctAnswer || !q.question) {
+        throw new Error("Each speed_round question must have options, question, and correctAnswer");
+      }
+    }
+  } else if (challengeType === "story_builder") {
+    if (!Array.isArray(challenge.scenes) || challenge.scenes.length !== 4) {
+      throw new Error(`story_builder must have exactly 4 scenes, got ${challenge.scenes?.length ?? 0}`);
+    }
+  } else if (challengeType === "teach_it_back") {
+    if (!Array.isArray(challenge.guidingQuestions) || challenge.guidingQuestions.length === 0) {
+      throw new Error("teach_it_back must have guidingQuestions array");
+    }
+    if (!Array.isArray(challenge.vocabularyHints) || challenge.vocabularyHints.length === 0) {
+      throw new Error("teach_it_back must have vocabularyHints array");
+    }
+  }
+}
+
+function generateFallbackChallenge(topic: string, theme: string, isK2: boolean): any {
+  const questions = isK2
+    ? [
+        { domain: "reading", question: `What is ${topic} about?`, options: ["Something fun", "Something scary"], correctAnswer: "Something fun" },
+        { domain: "reading", question: `Where can you find ${topic}?`, options: ["Outside", "In a box"], correctAnswer: "Outside" },
+        { domain: "listening", audioDescription: `Listen: ${topic} is very interesting. Many people like to learn about ${topic}.`, question: `Do people like ${topic}?`, options: ["Yes", "No"], correctAnswer: "Yes" },
+      ]
+    : [
+        { domain: "reading", passage: `${topic} is a fascinating subject. Many students enjoy learning about it because it connects to the world around us.`, question: `Why do students enjoy learning about ${topic}?`, options: ["It connects to the world", "It is boring", "It is too hard", "It is only for adults"], correctAnswer: "It connects to the world" },
+        { domain: "reading", passage: `Learning about ${topic} helps us understand ${theme} better. There are many interesting facts to discover.`, question: `What does learning about ${topic} help us understand?`, options: [`${theme}`, "Nothing", "Only math", "Only science"], correctAnswer: `${theme}` },
+        { domain: "listening", audioDescription: `Listen to this: ${topic} is something you can explore every day. The more you learn, the more interesting it gets!`, question: "What happens the more you learn?", options: ["It gets more interesting", "It gets boring", "It disappears", "It stops"], correctAnswer: "It gets more interesting" },
+        { domain: "speaking", question: `What is one thing you learned about ${topic} today?`, options: ["I learned something new", "I learned nothing", "I forgot everything", "I didn't listen"], correctAnswer: "I learned something new" },
+        { domain: "writing", question: `Complete this sentence: The best thing about ${topic} is _____.`, options: ["how interesting it is", "nothing at all", "that it is boring", "that it ended"], correctAnswer: "how interesting it is" },
+      ];
+
+  return {
+    challengeType: "speed_round",
+    title: "Speed Round",
+    instruction: `Answer ${questions.length} quick questions about ${topic}! How fast can you go?`,
+    questions,
+    theme,
+    topic,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -28,7 +111,6 @@ serve(async (req) => {
 
     const isK2 = grade === "K-2";
     
-    // Use history to avoid repeating challenge types
     let challenges: ChallengeType[] = isK2 ? ["speed_round"] : ["story_builder", "speed_round", "teach_it_back"];
     if (contentHistory?.challengeTypes?.length > 0 && !isK2) {
       const recent = contentHistory.challengeTypes.slice(0, 2);
@@ -69,59 +151,94 @@ Return ONLY valid JSON (no markdown):
   "topic": "${topic}"
 }`;
     } else if (challengeType === "speed_round") {
-      systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
+      const questionCount = isK2 ? 3 : 5;
+      const optionCount = isK2 ? 2 : 4;
+      const optionPlaceholders = isK2
+        ? `"options": ["<option A>", "<option B>"]`
+        : `"options": ["<option A>", "<option B>", "<option C>", "<option D>"]`;
 
-${themeDirective}
-${STRICT_RULES}
+      const k2QuestionsTemplate = `
+    {
+      "domain": "reading",
+      "passage": "<2-3 simple sentences about ${topic}>",
+      "question": "<simple comprehension question under 10 words>",
+      ${optionPlaceholders},
+      "correctAnswer": "<exact text of correct option>"
+    },
+    {
+      "domain": "reading",
+      "passage": "<different 2-3 simple sentences about ${topic}>",
+      ${optionPlaceholders},
+      "question": "<simple comprehension question under 10 words>",
+      "correctAnswer": "<correct>"
+    },
+    {
+      "domain": "listening",
+      "audioDescription": "Listen to this story: <2-3 simple sentences about ${topic}>",
+      "question": "<simple question under 10 words>",
+      ${optionPlaceholders},
+      "correctAnswer": "<correct>"
+    }`;
 
-Generate a SPEED ROUND challenge with exactly ${isK2 ? "3" : "5"} multiple-choice questions about "${topic}".${isK2 ? "\nK-2 RULES: Each question must have exactly 2 options only. Use simple Tier 1 vocabulary. Short sentences under 10 words." : ""}
-- 2 reading comprehension (include a short 2-3 sentence passage each)
-- 1 listening comprehension (include an audioDescription field with a 2-3 sentence story)
-- 1 speaking prompt (open-ended, multiple reasonable answers — frame as multiple choice for speed)
-- 1 writing prompt (include a sentence to complete)
-
-Each question must have exactly 4 options with one clearly correct answer.
-Do NOT reference any images, pictures, or visuals.
-
-Return ONLY valid JSON (no markdown):
-{
-  "challengeType": "speed_round",
-  "title": "Speed Round",
-  "instruction": "Answer 5 quick questions about ${topic}! How fast can you go?",
-  "questions": [
+      const fullQuestionsTemplate = `
     {
       "domain": "reading",
       "passage": "<2-3 sentence passage about ${topic}>",
       "question": "<comprehension question>",
-      "options": ["<option A>", "<option B>", "<option C>", "<option D>"],
+      ${optionPlaceholders},
       "correctAnswer": "<exact text of correct option>"
     },
     {
       "domain": "reading",
       "passage": "<different 2-3 sentence passage>",
       "question": "<comprehension question>",
-      "options": ["<A>", "<B>", "<C>", "<D>"],
+      ${optionPlaceholders},
       "correctAnswer": "<correct>"
     },
     {
       "domain": "listening",
       "audioDescription": "Listen to this story: <2-3 sentence story about ${topic}>",
       "question": "<comprehension question>",
-      "options": ["<A>", "<B>", "<C>", "<D>"],
+      ${optionPlaceholders},
       "correctAnswer": "<correct>"
     },
     {
       "domain": "speaking",
       "question": "<open-ended speaking prompt about ${topic}>",
-      "options": ["<A>", "<B>", "<C>", "<D>"],
+      ${optionPlaceholders},
       "correctAnswer": "<correct>"
     },
     {
       "domain": "writing",
       "question": "<sentence completion about ${topic}>",
-      "options": ["<A>", "<B>", "<C>", "<D>"],
+      ${optionPlaceholders},
       "correctAnswer": "<correct>"
-    }
+    }`;
+
+      systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
+
+${themeDirective}
+${STRICT_RULES}
+
+Generate a SPEED ROUND challenge with exactly ${questionCount} multiple-choice questions about "${topic}".
+${isK2 ? `K-2 RULES: 
+- Each question must have exactly ${optionCount} options only (NOT 4).
+- Use simple Tier 1 vocabulary. Short sentences under 10 words.
+- Generate exactly 3 questions: 2 reading + 1 listening.` : `Generate exactly 5 questions:
+- 2 reading comprehension (include a short 2-3 sentence passage each)
+- 1 listening comprehension (include an audioDescription field with a 2-3 sentence story)
+- 1 speaking prompt (open-ended, multiple reasonable answers — frame as multiple choice for speed)
+- 1 writing prompt (include a sentence to complete)`}
+
+Each question must have exactly ${optionCount} options with one clearly correct answer.
+Do NOT reference any images, pictures, or visuals.
+
+Return ONLY valid JSON (no markdown):
+{
+  "challengeType": "speed_round",
+  "title": "Speed Round",
+  "instruction": "Answer ${questionCount} quick questions about ${topic}! How fast can you go?",
+  "questions": [${isK2 ? k2QuestionsTemplate : fullQuestionsTemplate}
   ],
   "theme": "${theme}",
   "topic": "${topic}"
@@ -155,50 +272,68 @@ Return ONLY valid JSON (no markdown):
 }`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate a ${challengeType.replace(/_/g, " ")} challenge about "${topic}" for grades ${grade}. Make it fun and engaging!` },
-        ],
-      }),
-    });
+    let challenge: any = null;
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-pro",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `Generate a ${challengeType.replace(/_/g, " ")} challenge about "${topic}" for grades ${grade}. Make it fun and engaging!` },
+            ],
+          }),
         });
+
+        if (!response.ok) {
+          const t = await response.text();
+          console.error("AI gateway error:", response.status, t);
+          if (response.status === 429) {
+            return new Response(JSON.stringify({ error: "Rate limited" }), {
+              status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          if (response.status === 402) {
+            return new Response(JSON.stringify({ error: "Payment required" }), {
+              status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          throw new Error(`AI gateway error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+
+        if (!content || typeof content !== "string") {
+          throw new Error("Empty AI response content");
+        }
+
+        challenge = extractJsonFromAiResponse(content);
+        validateChallenge(challenge, challengeType, isK2);
+        challenge.challengeType = challengeType;
+        break; // Success
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.error(`generate-part3-challenge attempt ${attempt + 1} failed:`, lastError.message);
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error("AI gateway error");
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    let challenge;
-    try {
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      challenge = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse:", content);
-      throw new Error("Invalid AI response format");
+    if (!challenge) {
+      // All retries failed — return fallback
+      console.warn("All retries failed, returning fallback challenge");
+      challenge = generateFallbackChallenge(
+        topic || theme || "our topic",
+        theme || "Nature & animals",
+        isK2
+      );
     }
-
-    challenge.challengeType = challengeType;
 
     return new Response(JSON.stringify(challenge), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
