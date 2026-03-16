@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { POINTS, getAnimalLevel, BADGES } from "@/components/gamification/constants";
+import { POINTS, getAnimalLevel, getAnimalLevel35, BADGES } from "@/components/gamification/constants";
 
 interface PendingBadge {
   icon: string;
