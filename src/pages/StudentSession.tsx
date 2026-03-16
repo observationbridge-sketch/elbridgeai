@@ -328,18 +328,39 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
   return { blanked, missingWords, wordBank: shuffledBank };
 }
 
-function jumbleSentence(passage: string): { original: string; jumbled: string[] } {
+function normalizeJumbleWord(word: string): string {
+  return word.toLowerCase().replace(/[^a-z0-9']/g, "").trim();
+}
+
+function sentenceToNormalizedWords(sentence: string): string[] {
+  return sentence
+    .split(/\s+/)
+    .map(normalizeJumbleWord)
+    .filter(Boolean);
+}
+
+function wordsMatchByIndex(studentWords: string[], correctWords: string[]): boolean {
+  if (studentWords.length !== correctWords.length) return false;
+  for (let i = 0; i < correctWords.length; i++) {
+    if (studentWords[i] !== correctWords[i]) return false;
+  }
+  return true;
+}
+
+function jumbleSentence(passage: string): { original: string; correctWords: string[]; jumbled: string[] } {
   const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
   const target = sentences[0] || passage;
-  const clean = target.replace(/[.!?]$/, '').trim();
-  const words = clean.split(/\s+/);
+  const clean = target.replace(/[.!?]$/, "").trim();
+  const words = sentenceToNormalizedWords(clean);
+
   let shuffled = [...words].sort(() => Math.random() - 0.5);
   let attempts = 0;
-  while (shuffled.join(' ') === words.join(' ') && attempts < 10) {
+  while (wordsMatchByIndex(shuffled, words) && attempts < 10) {
     shuffled = [...words].sort(() => Math.random() - 0.5);
     attempts++;
   }
-  return { original: target.trim(), jumbled: shuffled };
+
+  return { original: target.trim(), correctWords: words, jumbled: shuffled };
 }
 
 // ═══════════════════════════════════════════════
@@ -1985,13 +2006,11 @@ function Part1View({
   const [step3Status, setStep3Status] = useState<"loading" | "ready" | "failed">("loading");
   const [step3RetryCount, setStep3RetryCount] = useState(0);
   const [showStep3WaitState, setShowStep3WaitState] = useState(false);
-  const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
+  const [jumble, setJumble] = useState<{ original: string; correctWords: string[]; jumbled: string[] } | null>(null);
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
   const [jumbleTappedWords, setJumbleTappedWords] = useState<string[]>([]);
-  const [jumbleAttempts, setJumbleAttempts] = useState(0);
-  const [jumbleShake, setJumbleShake] = useState(false);
-  const [jumbleTryAgainMsg, setJumbleTryAgainMsg] = useState<string | null>(null);
+  const [jumbleIsCorrect, setJumbleIsCorrect] = useState<boolean | null>(null);
   const [usedJumbleIndices, setUsedJumbleIndices] = useState<Set<number>>(new Set());
 
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
@@ -2041,6 +2060,11 @@ function Part1View({
   useEffect(() => {
     if (anchor?.sentence) {
       setJumble(jumbleSentence(anchor.sentence));
+      setJumbleAnswer("");
+      setJumbleSubmitted(false);
+      setJumbleTappedWords([]);
+      setJumbleIsCorrect(null);
+      setUsedJumbleIndices(new Set());
     }
   }, [anchor]);
 
@@ -2050,52 +2074,32 @@ function Part1View({
   }, [step, anchor, prepareStep3Content]);
 
   const handleChipTap = (word: string, index: number) => {
-    if (isK2) {
-      const newTapped = [...jumbleTappedWords, word];
-      setJumbleTappedWords(newTapped);
-      setJumbleAnswer(newTapped.join(" "));
-      // Track used indices via a separate state
-      setUsedJumbleIndices(prev => new Set([...prev, index]));
-    }
+    if (!isK2 || jumbleSubmitted) return;
+    const normalizedWord = normalizeJumbleWord(word);
+    const newTapped = [...jumbleTappedWords, normalizedWord];
+    setJumbleTappedWords(newTapped);
+    setJumbleAnswer(newTapped.join(" "));
+    setUsedJumbleIndices((prev) => new Set([...prev, index]));
   };
 
   const handleJumbleSubmit = () => {
     if (!jumble) return;
-    // Exact word-for-word order comparison
-    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s']/g, "").trim().split(/\s+/).filter(Boolean);
-    const studentWords = normalize(jumbleAnswer);
-    const correctWords = normalize(jumble.original);
-    const isExactMatch = studentWords.length === correctWords.length && studentWords.every((w, i) => w === correctWords[i]);
 
-    if (isK2 && !isExactMatch) {
-      const newAttempts = jumbleAttempts + 1;
-      setJumbleAttempts(newAttempts);
-      if (newAttempts >= 2) {
-        // 2nd wrong: reveal answer, 0 points
-        setJumbleSubmitted(true);
-        sounds.playWrong();
-        onStep5Complete(false);
-      } else {
-        // 1st wrong: shake + try again
-        setJumbleShake(true);
-        setJumbleTryAgainMsg("Try again! 🌟");
-        sounds.playWrong();
-        setTimeout(() => {
-          setJumbleShake(false);
-          setJumbleTappedWords([]);
-          setJumbleAnswer("");
-          setUsedJumbleIndices(new Set());
-        }, 800);
-      }
-      return;
-    }
+    const studentWords = isK2
+      ? jumbleTappedWords.map(normalizeJumbleWord).filter(Boolean)
+      : sentenceToNormalizedWords(jumbleAnswer);
 
+    const isExactMatch = wordsMatchByIndex(studentWords, jumble.correctWords);
+
+    setJumbleIsCorrect(isExactMatch);
     setJumbleSubmitted(true);
+
     if (isExactMatch) {
       sounds.playCorrect();
     } else {
       sounds.playWrong();
     }
+
     onStep5Complete(isExactMatch);
   };
 
@@ -2212,12 +2216,6 @@ function Part1View({
         {/* Step 5: Jumbled Sentence */}
         {step === 5 && jumble && (
           <>
-            {/* Try again message */}
-            {jumbleTryAgainMsg && !jumbleSubmitted && (
-              <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
-                <p className="text-lg font-medium text-warning">{jumbleTryAgainMsg}</p>
-              </div>
-            )}
 
             {/* Word chips */}
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
@@ -2246,7 +2244,7 @@ function Part1View({
 
             {/* K-2: Building area showing tapped words */}
             {isK2 ? (
-              <div className={`bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px] ${jumbleShake ? "animate-[shake_0.4s_ease-in-out]" : ""}`}>
+              <div className="bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px]">
                 <p className="text-xs text-muted-foreground mb-2">Your sentence:</p>
                 <div className="flex flex-wrap gap-2">
                   {jumbleTappedWords.length > 0 ? jumbleTappedWords.map((word, i) => (
@@ -2279,27 +2277,14 @@ function Part1View({
               </Button>
             ) : (
               <>
-                {(() => {
-                  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s']/g, "").trim().split(/\s+/).filter(Boolean);
-                  const studentWords = normalize(jumbleAnswer);
-                  const correctWords = normalize(jumble.original);
-                  const isExact = studentWords.length === correctWords.length && studentWords.every((w, i) => w === correctWords[i]);
-                  return (
-                    <>
-                      {isExact ? (
-                        <FeedbackBanner feedback="Nice work! 🧩🌟" positive={true} />
-                      ) : (
-                        <>
-                          <FeedbackBanner feedback="Good try! Here's the correct sentence:" positive={false} />
-                          <div className="bg-warning/10 rounded-lg p-3 border border-warning/20">
-                            <p className="text-xs text-muted-foreground mb-1">Correct sentence:</p>
-                            <p className="text-lg font-bold text-warning">{jumble.original}</p>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
+                {jumbleIsCorrect ? (
+                  <FeedbackBanner feedback="Nice work! 🧩🌟" positive={true} />
+                ) : (
+                  <div className="bg-warning/10 rounded-lg p-3 border border-warning/20 space-y-1">
+                    <p className="text-lg font-bold text-warning">Good try! Here's the correct sentence:</p>
+                    <p className="text-lg font-bold text-warning">{jumble.original}</p>
+                  </div>
+                )}
                 <Button
                   variant="success"
                   className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
