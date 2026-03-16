@@ -1417,12 +1417,16 @@ const StudentSession = () => {
 
     if (hasEnoughSentences && hasSequence) {
       // Full points
-      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
-      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
+      gamification.addPoints(pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
+      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
       setPart3Feedback(feedback);
+      // Award sequence_master badge if 3+ sequence words used
+      if (usedSeqWords.length >= 3 && effectiveGradeBand === "3-5") {
+        gamification.awardBadge("sequence_master");
+      }
     } else {
       // Half points + encouraging feedback
-      const halfPoints = Math.round(POINTS.CHALLENGE_STORY_COMPLETE / 2);
+      const halfPoints = Math.round(pts.CHALLENGE_STORY_COMPLETE / 2);
       gamification.addPoints(halfPoints, effectiveGradeBand);
       const tips: string[] = [];
       if (!hasEnoughSentences) tips.push("try writing at least 3 sentences");
