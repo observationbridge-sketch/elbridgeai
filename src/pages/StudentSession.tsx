@@ -2662,7 +2662,7 @@ function Part2StrategyView({
         {isK2SF ? (
           <div className="space-y-3">
             <div className="bg-muted/50 rounded-xl p-6 border border-border">
-              <p className="text-2xl font-bold text-foreground text-center leading-relaxed">
+              <p className="text-3xl font-bold text-foreground text-center leading-relaxed">
                 {k2BlankSentence}
               </p>
             </div>
