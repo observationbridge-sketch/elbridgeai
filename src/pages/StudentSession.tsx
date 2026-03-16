@@ -1058,24 +1058,27 @@ const StudentSession = () => {
   }), [sessionTheme, sessionTopic]);
 
   const fetchPart2Activity = useCallback(async (index: number, retryAttempt = 0) => {
-    setLoading(true);
-    setActivityError(false);
-    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Getting your next activity ready...");
     setPart2Submitted(false);
     setPart2Feedback(null);
     setPart2Answer("");
     killSpeech();
     tts.stop();
+    setActivityError(false);
 
+    // Serve instantly from pre-generated cache — no loading screen
     const cachedActivity = prefetchedPart2Ref.current[index];
     if (cachedActivity && retryAttempt === 0) {
       setPart2Activity(cachedActivity);
       setPart2Strategy(cachedActivity.strategy);
-      setPart2StrategyReason(cachedActivity.strategyReason || "Prefetched and validated");
+      setPart2StrategyReason(cachedActivity.strategyReason || "Pre-generated at session start");
       setActivityRetryCount(0);
       setLoading(false);
       return;
     }
+
+    // Fallback: fetch on-demand if cache miss (shouldn't happen normally)
+    setLoading(true);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Getting your next activity ready...");
 
     try {
       const { data, error } = await fetchWithTimeout(
