@@ -2480,27 +2480,20 @@ function Part2StrategyView({
   const [sfRevealed, setSfRevealed] = useState(false);
   const [sfSelectedWord, setSfSelectedWord] = useState<string | null>(null);
 
+  // Deterministic K-2 sentence frame — replaces Gemini-generated blank/tiles
+  const k2SfData = useMemo(() => {
+    if (!isK2SF || !anchor) return null;
+    const gradeLevel = gradeBand === "K-2" ? "K-1" : "2";
+    return generateK2SentenceFrame(anchor, sentenceFrameTier || 1, gradeLevel as "K-1" | "2");
+  }, [isK2SF, anchor, sentenceFrameTier, gradeBand]);
+
   const k2BlankSentence = useMemo(() => {
     if (!isK2SF) return "";
-    // Priority 1: sentenceFrame with explicit blank
-    if (activity.sentenceFrame?.includes("___")) return activity.sentenceFrame.trim();
-    // Priority 2: extract only the sentence part after any colon in question
-    if (activity.question) {
-      const colonIdx = activity.question.lastIndexOf(":");
-      if (colonIdx !== -1) {
-        const afterColon = activity.question.slice(colonIdx + 1).trim();
-        if (afterColon.length > 0) return afterColon;
-      }
-      if (activity.question.includes("___")) return activity.question.trim();
-    }
-    // Priority 3: build blank from modelAnswer
-    if (activity.modelAnswer) {
-      const words = activity.modelAnswer.trim().split(/\s+/);
-      const lastWord = words[words.length - 1];
-      return activity.modelAnswer.replace(new RegExp(`\\b${lastWord}\\b`), "___");
-    }
+    // Use deterministic generator output
+    if (k2SfData) return k2SfData.blankSentence;
+    // Fallback (shouldn't happen)
     return "___";
-  }, [isK2SF, activity.sentenceFrame, activity.question, activity.modelAnswer]);
+  }, [isK2SF, k2SfData]);
 
   // Reset retry state when activity changes
   useEffect(() => {
