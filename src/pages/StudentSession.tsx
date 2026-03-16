@@ -1631,7 +1631,7 @@ const StudentSession = () => {
                 <div className="text-[100px] leading-none" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
                   {animalLevel.emoji}
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">{animalLevel.name}</p>
+                <p className="text-sm text-gray-400 mt-2">{animalLevel.name}</p>
               </div>
 
               {/* Points total */}
