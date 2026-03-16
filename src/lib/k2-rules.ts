@@ -168,7 +168,7 @@ export function buildSentenceFrameTiles(
 
   // 1. Clean all tiles: extract single words, validate, normalize
   const cleanedTiles = rawTiles
-    .map((t) => extractSingleWord(t, blankSentence))
+    .map((t) => extractSingleWord(t))
     .map((t) => validateTile(t))
     .filter((t): t is string => t !== null)
     .map(normalizeWord)
