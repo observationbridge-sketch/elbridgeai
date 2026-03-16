@@ -1491,8 +1491,8 @@ const StudentSession = () => {
 
   const finishSession = async () => {
     sounds.playSessionComplete();
-    gamification.addPoints(POINTS.SESSION_COMPLETE);
-    gamification.completeSession();
+    gamification.addPoints(POINTS.SESSION_COMPLETE, effectiveGradeBand);
+    gamification.completeSession(undefined, effectiveGradeBand);
     if (domainScores) {
       for (const [, pct] of Object.entries(domainScores)) {
         if (pct >= 80) {
