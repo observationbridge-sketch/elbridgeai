@@ -2773,7 +2773,7 @@ function Part2StrategyView({
                             registerWrongAttempt();
                           }
                         }}
-                        className={`px-5 py-3 text-lg border-2 rounded-full font-medium transition-all ${
+                        className={`px-5 py-3 text-2xl min-h-[64px] border-2 rounded-full font-medium transition-all ${
                           isWrongBounce
                             ? "bg-destructive/15 text-destructive border-destructive/40 animate-[shake_0.4s_ease-in-out]"
                             : sfSelectedWord === word
