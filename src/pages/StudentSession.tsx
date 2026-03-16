@@ -1021,7 +1021,7 @@ const StudentSession = () => {
 
   const handleStep4Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, memoryMatch: score.correct, memoryMatchTotal: score.total }));
-    gamification.addPoints(POINTS.STEP4_MEMORY_MATCH, effectiveGradeBand);
+    gamification.addPoints(pts.STEP4_MEMORY_MATCH, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Memory Match", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
