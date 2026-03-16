@@ -493,6 +493,13 @@ const StudentSession = () => {
   const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
   const quickWriteCountRef = useRef(0);
 
+  // Play evolution sound when animal evolves
+  useEffect(() => {
+    if (gamification.evolutionData) {
+      sounds.playEvolution();
+    }
+  }, [gamification.evolutionData]);
+
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
   const [part1Step, setPart1Step] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -1889,6 +1896,7 @@ const StudentSession = () => {
                     onNext={nextPart2}
                     isK2={isK2}
                     sentenceFrameTier={sentenceFrameTier}
+                    sounds={sounds}
                   />
                   {/* K-2 Feeling Rating */}
                   {isK2 && part2Submitted && !showFeelingRating && (
@@ -2452,11 +2460,12 @@ interface Part2Props {
   onNext: () => void;
   isK2?: boolean;
   sentenceFrameTier?: number;
+  sounds?: ReturnType<typeof useSounds>;
 }
 
 function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
-  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier,
+  speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds,
 }: Part2Props) {
   const strategyMeta = STRATEGY_LABELS[activity.strategy];
   const StrategyIcon = strategyMeta.icon;
@@ -2694,6 +2703,7 @@ function Part2StrategyView({
                           setSfSelectedWord(tappedWord || word);
 
                           const registerWrongAttempt = () => {
+                            sounds?.playWrong();
                             const newAttempts = sfAttempts + 1;
                             setSfAttempts(newAttempts);
 
