@@ -2590,11 +2590,10 @@ function Part2StrategyView({
 
         {/* Word bank / tiles for K-2 Sentence Frames */}
         {isK2SF ? (() => {
-          const rawTiles = (activity.wordBank && activity.wordBank.length > 0)
-            ? activity.wordBank
-            : (activity.options && activity.options.length > 0)
-              ? activity.options
-              : [];
+          const correctWord = (activity.modelAnswer || "").trim().split(/\s+/).pop() || "";
+          const rawWordBank = (activity.wordBank || []).filter(w => !w.includes(" ") && w.length <= 12);
+          const rawOptions = (activity.options || []).filter(w => !w.includes(" ") && w.length <= 12);
+          const rawTiles = rawWordBank.length > 0 ? rawWordBank : rawOptions.length > 0 ? rawOptions : [correctWord].filter(Boolean);
 
           const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1);
           const shuffled = deterministicShuffle(finalTiles, activity.question || "");
