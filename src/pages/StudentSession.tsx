@@ -22,8 +22,8 @@ import { EvolutionCelebration } from "@/components/gamification/EvolutionCelebra
 import { BadgePopup } from "@/components/gamification/BadgePopup";
 import { BadgeCollection } from "@/components/gamification/BadgeCollection";
 import { Leaderboard } from "@/components/gamification/Leaderboard";
-import { POINTS, BADGES } from "@/components/gamification/constants";
-import { getAnimalLevel, getNextLevel } from "@/components/gamification/constants";
+import { POINTS, POINTS_35, BADGES } from "@/components/gamification/constants";
+import { getAnimalLevel, getAnimalLevel35, getNextLevel, getNextLevel35 } from "@/components/gamification/constants";
 import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 import { WordBankFillBlanks } from "@/components/session/WordBankFillBlanks";
 import { MemoryMatch } from "@/components/session/MemoryMatch";
