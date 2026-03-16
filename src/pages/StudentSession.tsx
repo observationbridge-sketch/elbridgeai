@@ -1579,6 +1579,7 @@ const StudentSession = () => {
     // Force dark background on body to prevent ThemePageWrapper bleed-through
     document.body.style.background = '#0f0f1a';
 
+    try {
     const animalLevel = effectiveGradeBand === "3-5" ? getAnimalLevel35(gamification.totalPoints) : getAnimalLevel(gamification.totalPoints);
     const nextLevel = effectiveGradeBand === "3-5" ? getNextLevel35(gamification.totalPoints) : getNextLevel(gamification.totalPoints);
 
@@ -1781,6 +1782,17 @@ const StudentSession = () => {
         )}
       </div>
     );
+    } catch (celebrationError) {
+      console.error("Celebration screen error:", celebrationError);
+      return (
+        <div style={{minHeight:'100vh', background:'#1a1a2e', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'24px'}}>
+          <div style={{fontSize:'80px'}}>🎉</div>
+          <h1 style={{color:'white', fontSize:'32px'}}>You did it, {studentName}!</h1>
+          <p style={{color:'#aaa', fontSize:'20px'}}>{gamification.sessionPoints} points earned!</p>
+          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/')}>Done ✅</button>
+        </div>
+      );
+    }
   }
 
   // ─── Progress label ───
@@ -1811,7 +1823,7 @@ const StudentSession = () => {
   // ─── Main render ───
   return (
     <ThemePageWrapper theme={sessionTheme}>
-    <div className={`min-h-screen ${isK2 ? "text-[22px] leading-relaxed" : ""}`}>
+    <div className={`min-h-screen ${isK2 ? "text-2xl leading-relaxed" : ""}`}>
       {/* Top bar */}
       <div className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
@@ -2599,7 +2611,7 @@ function Part2StrategyView({
         {!isK2 && <p className="text-xs text-muted-foreground mt-1">Targeting: {strategyMeta.targetDomain}</p>}
       </div>
 
-      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
+      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-2xl" : ""}`}>
         {/* Passage — hard-disabled for K-2 sentence frames */}
         {activity.passage && !isK2SF && (
           <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border`}>
@@ -2650,7 +2662,7 @@ function Part2StrategyView({
         {isK2SF ? (
           <div className="space-y-3">
             <div className="bg-muted/50 rounded-xl p-6 border border-border">
-              <p className="text-2xl font-bold text-foreground text-center leading-relaxed">
+              <p className="text-3xl font-bold text-foreground text-center leading-relaxed">
                 {k2BlankSentence}
               </p>
             </div>
@@ -2659,7 +2671,7 @@ function Part2StrategyView({
             )}
           </div>
         ) : (
-          <h3 className={`${isK2 ? "text-xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
+          <h3 className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground`}>{activity.question}</h3>
         )}
 
         {/* Sentence frame box removed — sentence is shown inline via WordBankFillBlanks or k2BlankSentence */}
@@ -2761,7 +2773,7 @@ function Part2StrategyView({
                             registerWrongAttempt();
                           }
                         }}
-                        className={`px-5 py-3 text-lg border-2 rounded-full font-medium transition-all ${
+                        className={`px-5 py-3 text-2xl min-h-[64px] border-2 rounded-full font-medium transition-all ${
                           isWrongBounce
                             ? "bg-destructive/15 text-destructive border-destructive/40 animate-[shake_0.4s_ease-in-out]"
                             : sfSelectedWord === word
@@ -2809,7 +2821,7 @@ function Part2StrategyView({
                   <Button
                     key={i}
                     variant="outline"
-                    className={`justify-start text-left h-auto ${isK2 ? "py-5 px-5 text-xl min-h-[64px]" : "py-3 px-4"} text-foreground hover:bg-primary/10 hover:border-primary/30`}
+                    className={`justify-start text-left h-auto ${isK2 ? "py-5 px-5 text-2xl min-h-[64px]" : "py-3 px-4"} text-foreground hover:bg-primary/10 hover:border-primary/30`}
                     onClick={() => onSubmitMC(option)}
                   >
                     <span className={`font-bold text-primary mr-2 ${isK2 ? "text-xl" : ""}`}>{String.fromCharCode(65 + i)}.</span>
@@ -2854,7 +2866,7 @@ function Part2StrategyView({
                 : "bg-primary/10 border border-primary/20"
             }`}>
               <p className="text-3xl mb-2">{isCorrect ? "🎉" : sfRevealed ? "✨" : "💪"}</p>
-              <p className={`font-bold text-xl ${isCorrect ? "text-success" : sfRevealed ? "text-warning" : "text-primary"}`}>
+              <p className={`font-bold text-2xl ${isCorrect ? "text-success" : sfRevealed ? "text-warning" : "text-primary"}`}>
                 {isCorrect ? "Great job!" : sfRevealed ? "Here's the answer!" : "Good try!"}
               </p>
               {!isCorrect && (
@@ -2866,7 +2878,7 @@ function Part2StrategyView({
             {/* Large K-2 next button with pulse + countdown */}
             <Button
               variant="success"
-              className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px]" : "text-lg py-5"} ${
+              className={`w-full rounded-xl shadow-lg ${isK2 ? "text-3xl py-10 min-h-[80px]" : "text-lg py-5"} ${
                 isCorrect && k2Countdown !== null ? (isK2 ? "animate-soft-pulse" : "animate-soft-pulse-fast") : ""
               }`}
               onClick={() => {
