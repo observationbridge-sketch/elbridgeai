@@ -2505,7 +2505,7 @@ function Part2StrategyView({
     setSfWrongMessage(null);
     setSfRevealed(false);
     setSfSelectedWord(null);
-    setSfForceNextVisible(false);
+    
   }, [activity.question]);
 
   // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
@@ -2518,18 +2518,15 @@ function Part2StrategyView({
     }
   }, [isK2SF, sfAttempts, sfRevealed]);
 
-  // Safety: if submitted + correct but Next button might not be visible, force-show after 500ms
-  const [sfForceNextVisible, setSfForceNextVisible] = useState(false);
+  // Safety net: when parent sets submitted=true, clear all SF intermediate state
+  // so the parent feedback block renders cleanly with the Next Activity button
   useEffect(() => {
-    if (submitted && isCorrect && isK2SF) {
-      const timer = setTimeout(() => {
-        setSfForceNextVisible(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setSfForceNextVisible(false);
+    if (submitted) {
+      setSfRevealed(false);
+      setSfWrongMessage(null);
+      setSfSelectedWord(null);
     }
-  }, [submitted, isCorrect, isK2SF]);
+  }, [submitted]);
 
 
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
@@ -2739,14 +2736,14 @@ function Part2StrategyView({
                           // Check against deterministic correct words
                           const isCorrectTile = sfCorrectWords.includes(normalizeWord(tappedWord));
                           if (isCorrectTile) {
-                            // CORRECT — award points, always advance regardless of attempt count
-                            setAnswer(tappedWord);
+                            // CORRECT — set selected word, reset attempts so feedback renders success state
+                            setSfSelectedWord(tappedWord);
                             setSfWrongMessage(null);
-                            setSfRevealed(false);
-                            // Pass answer directly to avoid React state race condition
+                            setSfAttempts(0);
+                            setAnswer(tappedWord);
                             setTimeout(() => {
                               onSubmit(tappedWord);
-                            }, 300);
+                            }, 400);
                           } else {
                             // WRONG — 0 points
                             registerWrongAttempt();
@@ -2899,18 +2896,6 @@ function Part2StrategyView({
           </div>
         )}
 
-        {/* Safety fallback: if submitted + correct on K-2 SF but Next button not showing, force it */}
-        {sfForceNextVisible && submitted && isCorrect && isK2SF && (
-          <div className="space-y-4 animate-fade-in">
-            <Button
-              variant="success"
-              className="w-full rounded-xl shadow-lg text-2xl py-8 min-h-[70px] animate-soft-pulse"
-              onClick={onNext}
-            >
-              Keep Going! 🚀
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
