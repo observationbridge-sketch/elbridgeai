@@ -2488,8 +2488,8 @@ function Part2StrategyView({
   const k2SfData = useMemo(() => {
     if (!isK2SF || !anchor) return null;
     const gradeLevel = gradeBand === "K-2" ? "K-1" : "2";
-    return generateK2SentenceFrame(anchor, sentenceFrameTier || 1, gradeLevel as "K-1" | "2");
-  }, [isK2SF, anchor, sentenceFrameTier, gradeBand]);
+    return generateK2SentenceFrame(anchor, sentenceFrameTier || 1, gradeLevel as "K-1" | "2", index);
+  }, [isK2SF, anchor, sentenceFrameTier, gradeBand, index]);
 
   const k2BlankSentence = useMemo(() => {
     if (!isK2SF) return "";
