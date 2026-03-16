@@ -1439,7 +1439,7 @@ const StudentSession = () => {
     const isCorrect = selectedOption === q.correctAnswer;
     if (isCorrect) {
       setPart3SpeedScore((s) => s + 1);
-      gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT);
+      gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT, effectiveGradeBand);
       sounds.playCorrect();
       sounds.playPoints();
       setShowConfetti(true);
