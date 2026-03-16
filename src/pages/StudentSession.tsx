@@ -1789,7 +1789,7 @@ const StudentSession = () => {
           <div style={{fontSize:'80px'}}>🎉</div>
           <h1 style={{color:'white', fontSize:'32px'}}>You did it, {studentName}!</h1>
           <p style={{color:'#aaa', fontSize:'20px'}}>{gamification.sessionPoints} points earned!</p>
-          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/')}>Done ✅</button>
+          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/student/join')}>Done ✅</button>
         </div>
       );
     }
