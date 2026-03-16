@@ -2532,14 +2532,13 @@ function Part2StrategyView({
     return "___";
   }, [isK2SF, k2SfData]);
 
-  // Reset retry state when activity changes
+  // Reset retry state when activity changes — use index as primary trigger
   useEffect(() => {
     setSfAttempts(0);
     setSfWrongMessage(null);
     setSfRevealed(false);
     setSfSelectedWord(null);
-    
-  }, [activity.question]);
+  }, [index]);
 
   // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
   useEffect(() => {
