@@ -1714,13 +1714,13 @@ const StudentSession = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-warning/10 rounded-xl p-4 text-center border border-warning/20">
-                  <p className="text-3xl font-bold text-warning">{gamification.sessionPoints}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Points Earned</p>
+                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(234,179,8,0.15)", borderColor: "rgba(234,179,8,0.25)" }}>
+                  <p className="text-3xl font-bold text-yellow-400">{gamification.sessionPoints}</p>
+                  <p className="text-xs text-gray-400 mt-1">Points Earned</p>
                 </div>
-                <div className="bg-primary/10 rounded-xl p-4 text-center border border-primary/20">
-                  <p className="text-3xl font-bold text-primary">{totalActivities}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Activities Done</p>
+                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.25)" }}>
+                  <p className="text-3xl font-bold text-blue-400">{totalActivities}</p>
+                  <p className="text-xs text-gray-400 mt-1">Activities Done</p>
                 </div>
               </div>
 
