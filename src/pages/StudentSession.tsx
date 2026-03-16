@@ -1480,7 +1480,7 @@ const StudentSession = () => {
         theme: sessionTheme,
         topic: sessionTopic,
         key_vocabulary: usedVocabulary.concat(anchor?.keyWords || []),
-        vocabulary_results: vocabularyResults,
+        vocabulary_results: { ...vocabularyResults as any, part2Score, part2Count },
         activity_formats: usedActivityFormats,
         challenge_type: challengeCompleted?.toLowerCase().replace(/ /g, "_") || null,
         grade_band: effectiveGradeBand,
