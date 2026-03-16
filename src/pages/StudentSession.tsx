@@ -1896,6 +1896,7 @@ const StudentSession = () => {
                     onNext={nextPart2}
                     isK2={isK2}
                     sentenceFrameTier={sentenceFrameTier}
+                    sounds={sounds}
                   />
                   {/* K-2 Feeling Rating */}
                   {isK2 && part2Submitted && !showFeelingRating && (
