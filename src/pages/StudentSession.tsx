@@ -2866,7 +2866,7 @@ function Part2StrategyView({
                 : "bg-primary/10 border border-primary/20"
             }`}>
               <p className="text-3xl mb-2">{isCorrect ? "🎉" : sfRevealed ? "✨" : "💪"}</p>
-              <p className={`font-bold text-xl ${isCorrect ? "text-success" : sfRevealed ? "text-warning" : "text-primary"}`}>
+              <p className={`font-bold text-2xl ${isCorrect ? "text-success" : sfRevealed ? "text-warning" : "text-primary"}`}>
                 {isCorrect ? "Great job!" : sfRevealed ? "Here's the answer!" : "Good try!"}
               </p>
               {!isCorrect && (
