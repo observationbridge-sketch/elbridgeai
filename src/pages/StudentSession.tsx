@@ -1725,17 +1725,17 @@ const StudentSession = () => {
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">Builder</p>
-                  <p className="text-xl font-bold text-primary">✓</p>
+                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] text-gray-400">Builder</p>
+                  <p className="text-xl font-bold text-blue-400">✓</p>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">Practice</p>
-                  <p className="text-xl font-bold text-accent">{part2Score}/{part2Count}</p>
+                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] text-gray-400">Practice</p>
+                  <p className="text-xl font-bold text-teal-400">{part2Score}/{part2Count}</p>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground">Challenge</p>
-                  <p className="text-xl font-bold text-success">✓</p>
+                <div className="rounded-lg p-3 text-center" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] text-gray-400">Challenge</p>
+                  <p className="text-xl font-bold text-green-400">✓</p>
                 </div>
               </div>
 
