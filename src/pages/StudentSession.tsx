@@ -2518,15 +2518,6 @@ function Part2StrategyView({
     }
   }, [isK2SF, sfAttempts, sfRevealed]);
 
-  // Safety net: when parent sets submitted=true, clear all SF intermediate state
-  // so the parent feedback block renders cleanly with the Next Activity button
-  useEffect(() => {
-    if (submitted) {
-      setSfRevealed(false);
-      setSfWrongMessage(null);
-      setSfSelectedWord(null);
-    }
-  }, [submitted]);
 
 
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
