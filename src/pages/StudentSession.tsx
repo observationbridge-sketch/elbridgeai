@@ -1330,10 +1330,9 @@ const StudentSession = () => {
 
   const fetchPart3Challenge = useCallback(async (retryAttempt = 0) => {
     killSpeech();
-    setLoading(true);
     setActivityError(false);
-    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
 
+    // Serve instantly from pre-generated cache — no loading screen
     const cachedChallenge = prefetchedPart3Ref.current;
     if (cachedChallenge && retryAttempt === 0) {
       setPart3Challenge(cachedChallenge);
@@ -1342,6 +1341,10 @@ const StudentSession = () => {
       setPart3StartTime(Date.now());
       return;
     }
+
+    // Fallback: fetch on-demand if cache miss
+    setLoading(true);
+    setLoadingMessage(retryAttempt > 0 ? "Trying again..." : "Preparing your Language Challenge! 🎉");
 
     try {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
