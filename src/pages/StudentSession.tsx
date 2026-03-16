@@ -2060,6 +2060,11 @@ function Part1View({
   useEffect(() => {
     if (anchor?.sentence) {
       setJumble(jumbleSentence(anchor.sentence));
+      setJumbleAnswer("");
+      setJumbleSubmitted(false);
+      setJumbleTappedWords([]);
+      setJumbleIsCorrect(null);
+      setUsedJumbleIndices(new Set());
     }
   }, [anchor]);
 
@@ -2069,52 +2074,32 @@ function Part1View({
   }, [step, anchor, prepareStep3Content]);
 
   const handleChipTap = (word: string, index: number) => {
-    if (isK2) {
-      const newTapped = [...jumbleTappedWords, word];
-      setJumbleTappedWords(newTapped);
-      setJumbleAnswer(newTapped.join(" "));
-      // Track used indices via a separate state
-      setUsedJumbleIndices(prev => new Set([...prev, index]));
-    }
+    if (!isK2 || jumbleSubmitted) return;
+    const normalizedWord = normalizeJumbleWord(word);
+    const newTapped = [...jumbleTappedWords, normalizedWord];
+    setJumbleTappedWords(newTapped);
+    setJumbleAnswer(newTapped.join(" "));
+    setUsedJumbleIndices((prev) => new Set([...prev, index]));
   };
 
   const handleJumbleSubmit = () => {
     if (!jumble) return;
-    // Exact word-for-word order comparison
-    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s']/g, "").trim().split(/\s+/).filter(Boolean);
-    const studentWords = normalize(jumbleAnswer);
-    const correctWords = normalize(jumble.original);
-    const isExactMatch = studentWords.length === correctWords.length && studentWords.every((w, i) => w === correctWords[i]);
 
-    if (isK2 && !isExactMatch) {
-      const newAttempts = jumbleAttempts + 1;
-      setJumbleAttempts(newAttempts);
-      if (newAttempts >= 2) {
-        // 2nd wrong: reveal answer, 0 points
-        setJumbleSubmitted(true);
-        sounds.playWrong();
-        onStep5Complete(false);
-      } else {
-        // 1st wrong: shake + try again
-        setJumbleShake(true);
-        setJumbleTryAgainMsg("Try again! 🌟");
-        sounds.playWrong();
-        setTimeout(() => {
-          setJumbleShake(false);
-          setJumbleTappedWords([]);
-          setJumbleAnswer("");
-          setUsedJumbleIndices(new Set());
-        }, 800);
-      }
-      return;
-    }
+    const studentWords = isK2
+      ? jumbleTappedWords.map(normalizeJumbleWord).filter(Boolean)
+      : sentenceToNormalizedWords(jumbleAnswer);
 
+    const isExactMatch = wordsMatchByIndex(studentWords, jumble.correctWords);
+
+    setJumbleIsCorrect(isExactMatch);
     setJumbleSubmitted(true);
+
     if (isExactMatch) {
       sounds.playCorrect();
     } else {
       sounds.playWrong();
     }
+
     onStep5Complete(isExactMatch);
   };
 
