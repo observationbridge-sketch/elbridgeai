@@ -2581,9 +2581,10 @@ function Part2StrategyView({
           const correctWord = normalizeWord(activity.modelAnswer || "");
           const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1, activity.question || "");
           const shuffled = deterministicShuffle(finalTiles, activity.question || "");
+          const sfForceReveal = shouldForceRevealAfterAttempts(sfAttempts);
 
-          if (submitted && !sfRevealed) return null;
-          if (sfRevealed) {
+          if (submitted && !sfRevealed && !sfForceReveal) return null;
+          if (sfRevealed || sfForceReveal) {
             return (
               <div className="space-y-4 animate-fade-in">
                 <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
