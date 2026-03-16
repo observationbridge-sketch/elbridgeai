@@ -1466,6 +1466,14 @@ const StudentSession = () => {
       toast.error("Please record your explanation!");
       return;
     }
+    // For 3-5: require at least 20 words
+    if (effectiveGradeBand !== "K-2") {
+      const wc = part3Answer.trim().split(/\s+/).length;
+      if (wc < 20) {
+        toast("Tell me more! Try to explain with at least 2 sentences 🎤");
+        return;
+      }
+    }
     gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE);
     const keywords = part3Challenge?.acceptableKeywords || [];
     const norm = part3Answer.toLowerCase();
