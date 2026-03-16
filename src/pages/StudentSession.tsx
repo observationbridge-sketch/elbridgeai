@@ -2651,13 +2651,10 @@ function Part2StrategyView({
 
         {/* Word bank / tiles for K-2 Sentence Frames */}
         {isK2SF ? (() => {
-          const correctWord = (activity.modelAnswer || "").trim().split(/\s+/).pop() || "";
-          const rawWordBank = (activity.wordBank || []).filter(w => !w.includes(" ") && w.length <= 12);
-          const rawOptions = (activity.options || []).filter(w => !w.includes(" ") && w.length <= 12);
-          const rawTiles = rawWordBank.length > 0 ? rawWordBank : rawOptions.length > 0 ? rawOptions : [correctWord].filter(Boolean);
-
-          const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1);
-          const shuffled = deterministicShuffle(finalTiles, activity.question || "");
+          // Use deterministic k2SfData for tiles and correctness checking
+          const sfTiles = k2SfData ? k2SfData.tiles : [];
+          const sfCorrectWords = k2SfData ? k2SfData.correctWords : [];
+          const sfRevealAnswer = k2SfData ? k2SfData.correctWords.join(", ") : (activity.modelAnswer || "");
           const sfForceReveal = shouldForceRevealAfterAttempts(sfAttempts);
 
           if (submitted && !sfRevealed && !sfForceReveal) return null;
@@ -2666,7 +2663,7 @@ function Part2StrategyView({
               <div className="space-y-4 animate-fade-in">
                 <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
                   <p className="text-lg text-muted-foreground mb-1">The answer is:</p>
-                  <p className="text-2xl font-bold text-warning">{activity.modelAnswer}</p>
+                  <p className="text-2xl font-bold text-warning">{sfRevealAnswer}</p>
                 </div>
                 <button
                   type="button"
@@ -2687,7 +2684,7 @@ function Part2StrategyView({
               )}
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex flex-wrap gap-3 justify-center">
-                  {shuffled.map((word, i) => {
+                  {sfTiles.map((word, i) => {
                     const isWrongBounce = sfSelectedWord === word && !!sfWrongMessage;
                     return (
                       <button
@@ -2725,7 +2722,9 @@ function Part2StrategyView({
                             return;
                           }
 
-                          if (isSentenceFrameCorrect(tappedWord, activity.modelAnswer || "")) {
+                          // Check against deterministic correct words
+                          const isCorrectTile = sfCorrectWords.includes(normalizeWord(tappedWord));
+                          if (isCorrectTile) {
                             // CORRECT — award points
                             setAnswer(tappedWord);
                             setSfWrongMessage(null);
