@@ -398,7 +398,7 @@ function SessionLoadingScreen({ studentName, theme }: { studentName: string; the
   useEffect(() => {
     const interval = setInterval(() => {
       setPhraseIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
-    }, 2200);
+    }, 1800);
     return () => clearInterval(interval);
   }, []);
 
