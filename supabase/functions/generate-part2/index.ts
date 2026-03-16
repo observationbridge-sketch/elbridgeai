@@ -32,6 +32,14 @@ const INPUT_TYPES: Record<Strategy, string[]> = {
   quick_writes: ["typing", "listen_then_type", "typing", "typing", "multiple_choice", "typing"],
 };
 
+// 3-5 multiple choice option counts by position: 1-2 warmup=2, 3-4 peak=4, 5-6 wind-down=2
+function getOptionCount(questionIndex: number, isK2: boolean): number {
+  if (isK2) return 2;
+  if (questionIndex <= 1) return 2; // warmup
+  if (questionIndex <= 3) return 4; // peak
+  return 2; // wind-down
+}
+
 // HARD RULE: Activities banned from positions 5 and 6
 const HEAVY_ACTIVITY_PATTERNS = [
   "sequential story", "4-scene", "multi-scene", "organize sentences",
@@ -344,11 +352,12 @@ ${tier === 1 ? `- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly
 
   const positionConstraint = getPositionConstraint(questionIndex, grade, theme);
 
+  const optCount = getOptionCount(questionIndex, isK2);
   const inputTypeNote = `INPUT FORMAT: "${inputType}"${k2Override}
 ${inputType === "typing" ? "The student will TYPE their answer in a text field." : ""}
 ${inputType === "listen_then_type" ? "The student will LISTEN to an audio clip (via TTS), then TYPE their answer. You MUST include an 'audioClip' field with 2-3 sentences to be read aloud." : ""}
-${inputType === "multiple_choice" ? `The student will SELECT from ${isK2 ? "2" : "4"} options. You MUST include an 'options' array with exactly ${isK2 ? "2" : "4"} choices. 'modelAnswer' must exactly match one option text.` : ""}
-${inputType === "recording" ? "The student will RECORD themselves speaking. 'modelAnswer' is what they should say." : ""}
+${inputType === "multiple_choice" ? `The student will SELECT from ${optCount} options. You MUST include an 'options' array with exactly ${optCount} choices. 'modelAnswer' must exactly match one option text.` : ""}
+${inputType === "recording" ? "The student will RECORD themselves speaking. 'modelAnswer' is what they should say.\nSPEAKING QUALITY RULE: The student must produce at least one complete sentence. acceptableKeywords must include at least 3 content words from the topic that any reasonable answer would contain." : ""}
 ${inputType === "record_then_type" ? "The student will TYPE their answer AND THEN RECORD themselves saying the full sentence aloud." : ""}`;
 
   const extraFields = getInputTypeFields(inputType, topic);
@@ -359,7 +368,7 @@ FILL-IN-THE-BLANK QUALITY RULES (MANDATORY):
 - The sentence MUST have clear context clues so the student can reasonably guess the answer
 - NEVER remove so many words that the sentence loses all meaning
 - Maximum ${isK2 ? "blanks per tier (Tier 1=1, Tier 2=2, Tier 3=3)" : "3"} blanks per sentence
-- ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer word(s) PLUS exactly 1-2 distractor single words. All words must be single words only, max 2 syllables. Example: wordBank: ['fly', 'swim', 'jump'] where 'fly' is correct and 'swim'/'jump' are distractors. NEVER include phrases or full sentences in wordBank" : "4-6 word choices including 1-2 distractor words"}
+- ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer word(s) PLUS exactly 1-2 distractor single words. All words must be single words only, max 2 syllables. Example: wordBank: ['fly', 'swim', 'jump'] where 'fly' is correct and 'swim'/'jump' are distractors. NEVER include phrases or full sentences in wordBank" : "4-6 key vocabulary words from the passage as reading support hints only — not answer choices"}
 - Good example: "The frog ___ on a green leaf in the jungle." (wordBank: ["sits", "runs", "jumped"])
 - Bad example: "A green ___ ___ on a ___" — too many blanks, no context, nonsensical
 - Before outputting, verify: "Does this sentence make sense with blanks? Can a student figure out the answers from context?" If not, rewrite.
@@ -394,10 +403,10 @@ ${isK2 ? `1. Do NOT include a reading passage — omit the "passage" field entir
 2. Show ONLY the fill-in-the-blank sentence directly
 3. The sentenceFrame field IS the activity — show it large and clear
 4. ALL words in the sentence and word bank must be max 2 syllables
-5. ALWAYS include a "wordBank" array with the correct answer word(s) PLUS 1-2 distractor single words — these become tappable tiles` : `1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
+5. ALWAYS include a "wordBank" array with the correct answer word(s) PLUS 1-2 distractor single words — these become tappable tiles` : `1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}" — MAXIMUM 60 WORDS total in the passage
 2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
-4. ALWAYS include a "wordBank" array with answer choices as tappable options`}
+4. ALWAYS include a "wordBank" array with 4-6 key vocabulary words from the passage as reading support hints — NOT answer choices`}
 ${isK2 ? "" : "5. "}CRITICAL: include a fillInBlank object with EXACT schema:
    { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 
@@ -405,10 +414,10 @@ Return ONLY valid JSON (no markdown):
 {
   "type": "sentence_frame",
   "inputType": "${inputType}",${extraFields}
-  ${isK2 ? '"passage": null,' : `"passage": "<3-5 sentence passage about ${topic}>",`}
+  ${isK2 ? '"passage": null,' : `"passage": "<3-5 sentence passage about ${topic}, MAXIMUM 60 words>",`}
   "question": "${isK2 ? "Tap a word to finish the sentence." : "<instruction + the sentence frame with ___ blanks>"}",
   "sentenceFrame": "<just the frame itself with ___ blanks>",
-  "wordBank": ["<${isK2 ? "correct answer words only, max 2 syllables each" : "4-6 words including correct answers and 1-2 distractors"}>"],
+  "wordBank": ["<${isK2 ? "correct answer words plus 1-2 distractors, max 2 syllables each" : "4-6 key vocabulary words from passage as reading support hints"}>"],
   "fillInBlank": {
     "sentence": "<sentence with ___ placeholders>",
     "blanks": ["<blank metadata or indices>"],

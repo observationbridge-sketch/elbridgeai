@@ -63,8 +63,8 @@ function validateChallenge(challenge: any, challengeType: string, isK2: boolean)
       }
     }
   } else if (challengeType === "story_builder") {
-    if (!Array.isArray(challenge.scenes) || challenge.scenes.length !== 4) {
-      throw new Error(`story_builder must have exactly 4 scenes, got ${challenge.scenes?.length ?? 0}`);
+    if (!Array.isArray(challenge.scenes) || challenge.scenes.length < 3 || challenge.scenes.length > 4) {
+      throw new Error(`story_builder must have 3-4 scenes, got ${challenge.scenes?.length ?? 0}`);
     }
   } else if (challengeType === "teach_it_back") {
     if (!Array.isArray(challenge.guidingQuestions) || challenge.guidingQuestions.length === 0) {
@@ -105,7 +105,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { grade, theme, topic, forceType, contentHistory } = await req.json();
+    const { grade, theme, topic, forceType, contentHistory, weakestDomain } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -124,25 +124,29 @@ serve(async (req) => {
     let systemPrompt: string;
 
     if (challengeType === "story_builder") {
+      const sceneCount = contentHistory?.belowGradeLevel ? 3 : 4;
+      const sceneTemplates = Array.from({ length: sceneCount }, (_, i) => {
+        const labels = ["opening the story", "continuing the story", "building tension", "with resolution"];
+        return `    "<Scene ${i + 1}: vivid 1-2 sentence description ${labels[i] || 'continuing'} about ${topic}>"`;
+      }).join(",\n");
+
       systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
 
 ${themeDirective}
 ${STRICT_RULES}
 
-Generate a STORY BUILDER challenge. The student will write a 4-6 sentence mini story connecting 4 vivid scene descriptions.
+Generate a STORY BUILDER challenge. The student will write a mini story connecting ${sceneCount} vivid scene descriptions.
 
-Create 4 short scene descriptions (1-2 sentences each) that form a logical sequence about "${topic}". Describe vivid scenes in words — do NOT reference any pictures or images.
+Create exactly ${sceneCount} short scene descriptions (1-2 sentences each) that form a logical sequence about "${topic}". Describe vivid scenes in words — do NOT reference any pictures or images.
 
 Return ONLY valid JSON (no markdown):
 {
   "challengeType": "story_builder",
   "title": "Story Builder",
-  "instruction": "Write a 4-6 sentence mini story connecting all 4 scenes in order!",
+  "instruction": "Write a ${sceneCount === 3 ? "3-4" : "4-6"} sentence mini story connecting all ${sceneCount} scenes in order!",
+  "sceneCount": ${sceneCount},
   "scenes": [
-    "<Scene 1: vivid 1-2 sentence description about ${topic}>",
-    "<Scene 2: vivid 1-2 sentence description continuing the story>",
-    "<Scene 3: vivid 1-2 sentence description building tension>",
-    "<Scene 4: vivid 1-2 sentence description with resolution>"
+${sceneTemplates}
   ],
   "sentenceStarter": "It all began when...",
   "acceptableKeywords": ["<8-10 keywords related to ${topic} and sequence words>"],
@@ -157,63 +161,24 @@ Return ONLY valid JSON (no markdown):
         ? `"options": ["<option A>", "<option B>"]`
         : `"options": ["<option A>", "<option B>", "<option C>", "<option D>"]`;
 
-      const k2QuestionsTemplate = `
-    {
-      "domain": "reading",
-      "passage": "<2-3 simple sentences about ${topic}>",
-      "question": "<simple comprehension question under 10 words>",
-      ${optionPlaceholders},
-      "correctAnswer": "<exact text of correct option>"
-    },
-    {
-      "domain": "reading",
-      "passage": "<different 2-3 simple sentences about ${topic}>",
-      ${optionPlaceholders},
-      "question": "<simple comprehension question under 10 words>",
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "listening",
-      "audioDescription": "Listen to this story: <2-3 simple sentences about ${topic}>",
-      "question": "<simple question under 10 words>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    }`;
-
-      const fullQuestionsTemplate = `
-    {
-      "domain": "reading",
-      "passage": "<2-3 sentence passage about ${topic}>",
-      "question": "<comprehension question>",
-      ${optionPlaceholders},
-      "correctAnswer": "<exact text of correct option>"
-    },
-    {
-      "domain": "reading",
-      "passage": "<different 2-3 sentence passage>",
-      "question": "<comprehension question>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "listening",
-      "audioDescription": "Listen to this story: <2-3 sentence story about ${topic}>",
-      "question": "<comprehension question>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "speaking",
-      "question": "<open-ended speaking prompt about ${topic}>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    },
-    {
-      "domain": "writing",
-      "question": "<sentence completion about ${topic}>",
-      ${optionPlaceholders},
-      "correctAnswer": "<correct>"
-    }`;
+      // Domain mix based on weakest domain for 3-5
+      let domainMixInstruction: string;
+      if (isK2) {
+        domainMixInstruction = "Generate exactly 3 questions: 2 reading + 1 listening.";
+      } else {
+        const weak = (weakestDomain || "").toLowerCase();
+        if (weak === "writing") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 writing (sentence completion) + 1 reading (with passage) + 1 listening (with audioDescription) + 1 speaking.";
+        } else if (weak === "speaking") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 speaking (open-ended prompts) + 1 reading (with passage) + 1 listening (with audioDescription) + 1 writing.";
+        } else if (weak === "listening") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 listening (with audioDescription) + 1 reading (with passage) + 1 speaking + 1 writing.";
+        } else if (weak === "reading") {
+          domainMixInstruction = "Generate exactly 5 questions with this domain mix: 2 reading (with passage each) + 1 listening (with audioDescription) + 1 speaking + 1 writing.";
+        } else {
+          domainMixInstruction = "Generate exactly 5 questions: 2 reading (with passage each) + 1 listening (with audioDescription) + 1 speaking + 1 writing.";
+        }
+      }
 
       systemPrompt = `You are an expert ELD activity generator for grades ${grade} ELL students.
 
@@ -223,22 +188,27 @@ ${STRICT_RULES}
 Generate a SPEED ROUND challenge with exactly ${questionCount} multiple-choice questions about "${topic}".
 ${isK2 ? `K-2 RULES: 
 - Each question must have exactly ${optionCount} options only (NOT 4).
-- Use simple Tier 1 vocabulary. Short sentences under 10 words.
-- Generate exactly 3 questions: 2 reading + 1 listening.` : `Generate exactly 5 questions:
-- 2 reading comprehension (include a short 2-3 sentence passage each)
-- 1 listening comprehension (include an audioDescription field with a 2-3 sentence story)
-- 1 speaking prompt (open-ended, multiple reasonable answers — frame as multiple choice for speed)
-- 1 writing prompt (include a sentence to complete)`}
+- Use simple Tier 1 vocabulary. Short sentences under 10 words.` : ""}
+${domainMixInstruction}
 
 Each question must have exactly ${optionCount} options with one clearly correct answer.
 Do NOT reference any images, pictures, or visuals.
+Each question MUST include a "domain" field with one of: "reading", "listening", "speaking", "writing".
 
 Return ONLY valid JSON (no markdown):
 {
   "challengeType": "speed_round",
   "title": "Speed Round",
   "instruction": "Answer ${questionCount} quick questions about ${topic}! How fast can you go?",
-  "questions": [${isK2 ? k2QuestionsTemplate : fullQuestionsTemplate}
+  "questions": [
+    {
+      "domain": "<domain>",
+      ${isK2 ? "" : `"passage": "<2-3 sentence passage if reading domain, omit otherwise>",
+      "audioDescription": "<2-3 sentence story if listening domain, omit otherwise>",
+      `}"question": "<the question>",
+      ${optionPlaceholders},
+      "correctAnswer": "<exact text of correct option>"
+    }
   ],
   "theme": "${theme}",
   "topic": "${topic}"
@@ -253,7 +223,12 @@ ${STRICT_RULES}
 
 Generate a TEACH IT BACK challenge. The student will record themselves explaining "${topic}" in their own words.
 
-Provide helpful vocabulary words they learned during the session and guiding questions. Do NOT reference any images, pictures, or visuals.
+Provide helpful vocabulary words and 3 progressive guiding questions:
+1. Basic recall: "What is ${topic}?" — ask specifically what ${topic} is or means
+2. Interpretation: "Why is ${topic} important?" — ask why it matters or what makes it interesting  
+3. Personal connection: "How does ${topic} connect to your life?" — ask how the student relates to it
+
+Do NOT use generic placeholders. Each question must mention "${topic}" by name. Do NOT reference any images, pictures, or visuals.
 
 Return ONLY valid JSON (no markdown):
 {
@@ -261,9 +236,9 @@ Return ONLY valid JSON (no markdown):
   "title": "Teach It Back",
   "instruction": "You just learned about ${topic}. Now teach it to someone else! Record yourself explaining the topic in your own words for at least 30 seconds.",
   "guidingQuestions": [
-    "<What is ${topic} about?>",
-    "<Why is it important or interesting?>",
-    "<What is one cool fact about ${topic}?>"
+    "What is ${topic}?",
+    "Why is ${topic} important or interesting?",
+    "How does ${topic} connect to something in your own life?"
   ],
   "vocabularyHints": ["<6-8 key vocabulary words from the session about ${topic}>"],
   "acceptableKeywords": ["<8-10 keywords for scoring relevance>"],

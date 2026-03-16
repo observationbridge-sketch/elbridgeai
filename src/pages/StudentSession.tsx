@@ -617,6 +617,7 @@ const StudentSession = () => {
               topic,
               forceType: challengeType,
               contentHistory: history,
+              weakestDomain: domainScores ? Object.entries(domainScores).sort((a, b) => ((a[1] as number) ?? 100) - ((b[1] as number) ?? 100))[0]?.[0] : undefined,
             },
           }),
           15000
@@ -1358,7 +1359,7 @@ const StudentSession = () => {
       const challengeType = effectiveGradeBand === "K-2" ? "speed_round" : undefined;
       const { data, error } = await fetchWithTimeout(
         supabase.functions.invoke("generate-part3-challenge", {
-          body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory },
+          body: { grade: effectiveGradeBand, theme: sessionTheme, topic: sessionTopic, forceType: challengeType, contentHistory, weakestDomain: domainScores ? Object.entries(domainScores).sort((a, b) => (a[1] ?? 100) - (b[1] ?? 100))[0]?.[0] : undefined },
         }),
         8000
       );
