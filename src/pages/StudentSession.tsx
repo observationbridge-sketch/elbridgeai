@@ -2703,7 +2703,7 @@ function Part2StrategyView({
                           setSfSelectedWord(tappedWord || word);
 
                           const registerWrongAttempt = () => {
-                            sounds.playWrong();
+                            sounds?.playWrong();
                             const newAttempts = sfAttempts + 1;
                             setSfAttempts(newAttempts);
 
