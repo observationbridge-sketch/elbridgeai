@@ -2573,14 +2573,21 @@ function Part2StrategyView({
             return ha - hb;
           });
 
-          if (submitted || (sfRevealed && submitted)) return null;
-          if (sfRevealed && !submitted) {
+          if (submitted && !sfRevealed) return null;
+          if (sfRevealed) {
             return (
               <div className="space-y-4 animate-fade-in">
                 <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
                   <p className="text-lg text-muted-foreground mb-1">The answer is:</p>
                   <p className="text-2xl font-bold text-warning">{activity.modelAnswer}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={onNext}
+                  className="w-full py-4 text-xl font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all animate-soft-pulse"
+                >
+                  Next Activity →
+                </button>
               </div>
             );
           }
