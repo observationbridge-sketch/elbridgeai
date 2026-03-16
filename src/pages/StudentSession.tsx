@@ -2006,13 +2006,11 @@ function Part1View({
   const [step3Status, setStep3Status] = useState<"loading" | "ready" | "failed">("loading");
   const [step3RetryCount, setStep3RetryCount] = useState(0);
   const [showStep3WaitState, setShowStep3WaitState] = useState(false);
-  const [jumble, setJumble] = useState<{ original: string; jumbled: string[] } | null>(null);
+  const [jumble, setJumble] = useState<{ original: string; correctWords: string[]; jumbled: string[] } | null>(null);
   const [jumbleAnswer, setJumbleAnswer] = useState("");
   const [jumbleSubmitted, setJumbleSubmitted] = useState(false);
   const [jumbleTappedWords, setJumbleTappedWords] = useState<string[]>([]);
-  const [jumbleAttempts, setJumbleAttempts] = useState(0);
-  const [jumbleShake, setJumbleShake] = useState(false);
-  const [jumbleTryAgainMsg, setJumbleTryAgainMsg] = useState<string | null>(null);
+  const [jumbleIsCorrect, setJumbleIsCorrect] = useState<boolean | null>(null);
   const [usedJumbleIndices, setUsedJumbleIndices] = useState<Set<number>>(new Set());
 
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
