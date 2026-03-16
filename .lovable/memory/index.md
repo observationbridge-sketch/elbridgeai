@@ -14,9 +14,16 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 ## Architecture
 - Teachers: auth via Supabase (Google OAuth + email), dashboard with session codes
 - Students: anon access, join via 6-char code + first name → theme picker → session
-- AI: Lovable AI (openai/gpt-5) generates activities per domain
+- AI: Lovable AI (google/gemini-2.5-pro) generates activities per domain
 - Domains: Reading, Writing, Speaking, Listening
 - WIDA levels: Entering, Emerging, Developing, Expanding, Bridging
+
+## Performance: Batch Pre-generation
+- ALL Part 2 + Part 3 activities pre-generated in parallel during loading screen
+- Animated loading screen with 12 cycling fun messages shown ONLY during initial batch
+- After session starts: instant transitions from cache, zero loading delay
+- Fallback on-demand fetch only if cache miss (shouldn't happen normally)
+- Timeout: 15s per activity during batch (up from 8s)
 
 ## K-2 vs 3-5 Differentiation
 - K-2: max 8 words/sentence, 3 vocab words, concrete topics, Tier 1 vocab only
@@ -30,12 +37,9 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 - K-2 sentence_frames: ONLY blank sentence (large) + tappable word tiles
 
 ## Adaptive Difficulty (K-2 Sentence Frames)
-- 3 Tiers: T1 (4-word/1blank/2choices), T2 (6-word/2blanks/3choices), T3 (8-word/3blanks/4choices)
+- 3 Tiers: T1 (4-word/1blank/2tiles), T2 (6-word/2blanks/4tiles), T3 (8-word/3blanks/6tiles)
 - Advance: 3 consecutive correct → tier up. Drop: 2 consecutive wrong → tier down
 - Tier persisted in student_points.sentence_frame_tier
-- Tier history in student_tier_history table
-- consecutive_tier_drops tracked for "Needs Support" flagging (≥2 drops)
-- Labels: Beginning 🌱, Developing 🌿, Expanding 🌳
 - BANNED connectors in K-2: "because", "although", "when", all subordinate clause connectors
 
 ## Edge Functions
