@@ -2555,12 +2555,12 @@ function Part2StrategyView({
           for (let d = 0; d < distractors.length && finalTiles.length < tierTileCount; d++) {
             finalTiles.push(distractors[d]);
           }
-          // Pad with fallback distractors if needed
-          const fallbackDistractors = ["also", "very", "some", "many", "just", "then"];
+          // Pad with fallback distractors if needed — never show a single tile alone
+          const fallbackDistractors = ["jump", "red", "big", "run", "happy", "cold", "small", "fast"];
           let fbIdx = 0;
-          while (finalTiles.length < tierTileCount && fbIdx < fallbackDistractors.length) {
+          while (finalTiles.length < Math.max(tierTileCount, 2) && fbIdx < fallbackDistractors.length) {
             const fb = fallbackDistractors[fbIdx];
-            if (!finalTiles.some(t => t.toLowerCase() === fb.toLowerCase())) {
+            if (!finalTiles.some(t => t.toLowerCase() === fb.toLowerCase()) && fb.toLowerCase() !== correctWord.toLowerCase()) {
               finalTiles.push(fb);
             }
             fbIdx++;
