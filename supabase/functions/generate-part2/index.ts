@@ -352,11 +352,12 @@ ${tier === 1 ? `- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly
 
   const positionConstraint = getPositionConstraint(questionIndex, grade, theme);
 
+  const optCount = getOptionCount(questionIndex, isK2);
   const inputTypeNote = `INPUT FORMAT: "${inputType}"${k2Override}
 ${inputType === "typing" ? "The student will TYPE their answer in a text field." : ""}
 ${inputType === "listen_then_type" ? "The student will LISTEN to an audio clip (via TTS), then TYPE their answer. You MUST include an 'audioClip' field with 2-3 sentences to be read aloud." : ""}
-${inputType === "multiple_choice" ? `The student will SELECT from ${isK2 ? "2" : "4"} options. You MUST include an 'options' array with exactly ${isK2 ? "2" : "4"} choices. 'modelAnswer' must exactly match one option text.` : ""}
-${inputType === "recording" ? "The student will RECORD themselves speaking. 'modelAnswer' is what they should say." : ""}
+${inputType === "multiple_choice" ? `The student will SELECT from ${optCount} options. You MUST include an 'options' array with exactly ${optCount} choices. 'modelAnswer' must exactly match one option text.` : ""}
+${inputType === "recording" ? "The student will RECORD themselves speaking. 'modelAnswer' is what they should say.\nSPEAKING QUALITY RULE: The student must produce at least one complete sentence. acceptableKeywords must include at least 3 content words from the topic that any reasonable answer would contain." : ""}
 ${inputType === "record_then_type" ? "The student will TYPE their answer AND THEN RECORD themselves saying the full sentence aloud." : ""}`;
 
   const extraFields = getInputTypeFields(inputType, topic);
