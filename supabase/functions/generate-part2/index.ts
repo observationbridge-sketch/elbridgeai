@@ -517,8 +517,8 @@ serve(async (req) => {
 
   try {
     const { grade, theme, topic, domainScores, questionIndex, contentHistory, sentenceFrameTier } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const { strategy, weakestDomain, reason } = selectStrategy(domainScores, questionIndex || 0);
     const prompt = buildPrompt(
