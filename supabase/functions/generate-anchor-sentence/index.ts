@@ -243,7 +243,15 @@ serve(async (req) => {
 
     const history = contentHistory as ContentHistory | null;
     const isK2 = grade === "K-2";
-    const theme = forcedTheme || selectTheme(history, isK2);
+    
+    let theme: string;
+    if (forcedTheme) {
+      theme = forcedTheme;
+      console.log("[anchor] Using forcedTheme, skipping selectTheme:", theme);
+    } else {
+      theme = selectTheme(history, isK2);
+      console.log("[anchor] No forcedTheme, selected random theme:", theme);
+    }
     const historyContext = buildHistoryContext(history);
 
     const systemPrompt = isK2
