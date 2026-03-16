@@ -1892,7 +1892,7 @@ const StudentSession = () => {
                     isCorrect={part2IsCorrect}
                     speech={speech}
                     tts={tts}
-                    onSubmit={() => submitPart2()}
+                    onSubmit={(overrideAnswer?: string) => submitPart2(overrideAnswer)}
                     onSubmitMC={(option: string) => submitPart2(option)}
                     onNext={nextPart2}
                     isK2={isK2}
@@ -2458,7 +2458,7 @@ interface Part2Props {
   isCorrect: boolean;
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
-  onSubmit: () => void;
+  onSubmit: (overrideAnswer?: string) => void;
   onSubmitMC: (option: string) => void;
   onNext: () => void;
   isK2?: boolean;
@@ -2505,6 +2505,7 @@ function Part2StrategyView({
     setSfWrongMessage(null);
     setSfRevealed(false);
     setSfSelectedWord(null);
+    setSfForceNextVisible(false);
   }, [activity.question]);
 
   // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
@@ -2517,7 +2518,20 @@ function Part2StrategyView({
     }
   }, [isK2SF, sfAttempts, sfRevealed]);
 
-  // K-2 auto-advance countdown
+  // Safety: if submitted + correct but Next button might not be visible, force-show after 500ms
+  const [sfForceNextVisible, setSfForceNextVisible] = useState(false);
+  useEffect(() => {
+    if (submitted && isCorrect && isK2SF) {
+      const timer = setTimeout(() => {
+        setSfForceNextVisible(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setSfForceNextVisible(false);
+    }
+  }, [submitted, isCorrect, isK2SF]);
+
+
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -2725,10 +2739,14 @@ function Part2StrategyView({
                           // Check against deterministic correct words
                           const isCorrectTile = sfCorrectWords.includes(normalizeWord(tappedWord));
                           if (isCorrectTile) {
-                            // CORRECT — award points
+                            // CORRECT — award points, always advance regardless of attempt count
                             setAnswer(tappedWord);
                             setSfWrongMessage(null);
-                            setTimeout(() => onSubmit(), 400);
+                            setSfRevealed(false);
+                            // Pass answer directly to avoid React state race condition
+                            setTimeout(() => {
+                              onSubmit(tappedWord);
+                            }, 300);
                           } else {
                             // WRONG — 0 points
                             registerWrongAttempt();
@@ -2810,7 +2828,7 @@ function Part2StrategyView({
             )}
 
             {inputType !== "multiple_choice" && (
-              <Button variant="hero" className="w-full" size="lg" onClick={onSubmit} disabled={!answer.trim()}>
+              <Button variant="hero" className="w-full" size="lg" onClick={() => onSubmit()} disabled={!answer.trim()}>
                 Submit Answer
               </Button>
             )}
@@ -2877,6 +2895,19 @@ function Part2StrategyView({
             </div>
             <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
               {index < totalActivities - 1 ? "Next Activity" : "Continue to Challenge! 🎉"} <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        )}
+
+        {/* Safety fallback: if submitted + correct on K-2 SF but Next button not showing, force it */}
+        {sfForceNextVisible && submitted && isCorrect && isK2SF && (
+          <div className="space-y-4 animate-fade-in">
+            <Button
+              variant="success"
+              className="w-full rounded-xl shadow-lg text-2xl py-8 min-h-[70px] animate-soft-pulse"
+              onClick={onNext}
+            >
+              Keep Going! 🚀
             </Button>
           </div>
         )}
