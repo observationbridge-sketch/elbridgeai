@@ -2422,6 +2422,16 @@ function Part2StrategyView({
     setSfSelectedWord(null);
   }, [activity.question]);
 
+  // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
+  useEffect(() => {
+    if (!isK2SF) return;
+    if (shouldForceRevealAfterAttempts(sfAttempts) && !sfRevealed) {
+      setSfRevealed(true);
+      setSfWrongMessage(null);
+      setSfSelectedWord(null);
+    }
+  }, [isK2SF, sfAttempts, sfRevealed]);
+
   // K-2 auto-advance countdown
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
