@@ -1579,6 +1579,7 @@ const StudentSession = () => {
     // Force dark background on body to prevent ThemePageWrapper bleed-through
     document.body.style.background = '#0f0f1a';
 
+    try {
     const animalLevel = effectiveGradeBand === "3-5" ? getAnimalLevel35(gamification.totalPoints) : getAnimalLevel(gamification.totalPoints);
     const nextLevel = effectiveGradeBand === "3-5" ? getNextLevel35(gamification.totalPoints) : getNextLevel(gamification.totalPoints);
 
