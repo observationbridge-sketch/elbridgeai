@@ -1708,7 +1708,7 @@ const StudentSession = () => {
             <CardContent className="py-8 space-y-6">
               <div className="text-center">
                 <div className="text-6xl mb-3">{animalLevel.emoji}</div>
-                <h2 className="text-2xl font-bold text-foreground">
+                <h2 className="text-2xl font-bold text-white">
                   Great job today, {studentName}! 🌟
                 </h2>
               </div>
