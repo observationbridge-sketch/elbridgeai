@@ -30,7 +30,7 @@ import { MemoryMatch } from "@/components/session/MemoryMatch";
 import {
   normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
   isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
-  extractSingleWord, MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS,
+  MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS, shouldForceRevealAfterAttempts,
 } from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
@@ -2422,6 +2422,16 @@ function Part2StrategyView({
     setSfSelectedWord(null);
   }, [activity.question]);
 
+  // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
+  useEffect(() => {
+    if (!isK2SF) return;
+    if (shouldForceRevealAfterAttempts(sfAttempts) && !sfRevealed) {
+      setSfRevealed(true);
+      setSfWrongMessage(null);
+      setSfSelectedWord(null);
+    }
+  }, [isK2SF, sfAttempts, sfRevealed]);
+
   // K-2 auto-advance countdown
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -2568,12 +2578,12 @@ function Part2StrategyView({
               ? activity.options
               : [];
 
-          const correctWord = normalizeWord(activity.modelAnswer || "");
           const finalTiles = buildSentenceFrameTiles(rawTiles, activity.modelAnswer || "", sentenceFrameTier || 1, activity.question || "");
           const shuffled = deterministicShuffle(finalTiles, activity.question || "");
+          const sfForceReveal = shouldForceRevealAfterAttempts(sfAttempts);
 
-          if (submitted && !sfRevealed) return null;
-          if (sfRevealed) {
+          if (submitted && !sfRevealed && !sfForceReveal) return null;
+          if (sfRevealed || sfForceReveal) {
             return (
               <div className="space-y-4 animate-fade-in">
                 <div className="rounded-xl p-6 bg-warning/15 border-2 border-warning/30 text-center">
@@ -2608,26 +2618,42 @@ function Part2StrategyView({
                         disabled={!!sfSelectedWord}
                         onClick={() => {
                           if (sfSelectedWord) return;
-                          setSfSelectedWord(word);
-                          if (isSentenceFrameCorrect(word, activity.modelAnswer || "")) {
+
+                          const tappedWord = typeof word === "string" ? word.trim() : "";
+                          setSfSelectedWord(tappedWord || word);
+
+                          const registerWrongAttempt = () => {
+                            const newAttempts = sfAttempts + 1;
+                            setSfAttempts(newAttempts);
+
+                            if (shouldForceRevealAfterAttempts(newAttempts)) {
+                              setSfRevealed(true);
+                              setSfWrongMessage(null);
+                              setSfSelectedWord(null);
+                              return;
+                            }
+
+                            setSfWrongMessage("Try again! 🌟");
+                            setTimeout(() => {
+                              setSfSelectedWord(null);
+                              setSfWrongMessage(null);
+                            }, 1200);
+                          };
+
+                          // Broken/empty tile safety: count as wrong attempt
+                          if (!tappedWord) {
+                            registerWrongAttempt();
+                            return;
+                          }
+
+                          if (isSentenceFrameCorrect(tappedWord, activity.modelAnswer || "")) {
                             // CORRECT — award points
-                            setAnswer(word);
+                            setAnswer(tappedWord);
                             setSfWrongMessage(null);
                             setTimeout(() => onSubmit(), 400);
                           } else {
                             // WRONG — 0 points
-                            const newAttempts = sfAttempts + 1;
-                            setSfAttempts(newAttempts);
-                            if (newAttempts >= MAX_WRONG_ATTEMPTS) {
-                              setSfRevealed(true);
-                              setSfWrongMessage(null);
-                            } else {
-                              setSfWrongMessage("Try again! 🌟");
-                              setTimeout(() => {
-                                setSfSelectedWord(null);
-                                setSfWrongMessage(null);
-                              }, 1200);
-                            }
+                            registerWrongAttempt();
                           }
                         }}
                         className={`px-5 py-3 text-lg border-2 rounded-full font-medium transition-all ${

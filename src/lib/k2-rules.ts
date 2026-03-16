@@ -25,6 +25,11 @@ export const TIER_TILE_COUNTS: Record<number, number> = {
 /** Max wrong attempts before revealing the answer */
 export const MAX_WRONG_ATTEMPTS = 2;
 
+/** Hard safety catch: after this many attempts, force reveal + Next Activity */
+export function shouldForceRevealAfterAttempts(attemptCount: number): boolean {
+  return attemptCount >= MAX_WRONG_ATTEMPTS;
+}
+
 /** Auto-advance delay (ms) after correct answer */
 export const CORRECT_AUTO_ADVANCE_MS = 3000;
 
