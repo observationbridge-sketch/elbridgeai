@@ -13,11 +13,6 @@ interface FailedBadge {
   badgeIcon: string;
 }
 
-// Grade band point multipliers
-const GRADE_MULTIPLIERS: Record<string, number> = {
-  "K-2": 1.0,
-  "3-5": 1.5,
-};
 
 export function useGamification(studentName: string, teacherId: string) {
   const [totalPoints, setTotalPoints] = useState(0);
