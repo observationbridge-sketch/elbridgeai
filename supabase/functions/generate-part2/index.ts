@@ -98,58 +98,37 @@ function generateFallbackActivity(position: number, theme: string, topic: string
   };
 }
 
-function selectStrategy(domainScores: Record<string, number> | null): { strategy: Strategy; weakestDomain: string; reason: string } {
-  if (!domainScores || Object.keys(domainScores).length === 0) {
-    return {
-      strategy: "sentence_frames",
-      weakestDomain: "none",
-      reason: "First session — starting with Sentence Frames to build foundational skills.",
-    };
-  }
-
-  const domains = ["reading", "listening", "speaking", "writing"];
-  let weakest = domains[0];
-  let weakestScore = domainScores[domains[0]] ?? 100;
-
-  for (const d of domains) {
-    const score = domainScores[d] ?? 100;
-    if (score < weakestScore) {
-      weakestScore = score;
-      weakest = d;
+function selectStrategy(domainScores: Record<string, number> | null, questionIndex: number): { strategy: Strategy; weakestDomain: string; reason: string } {
+  // Rotation pattern: 1-2 sentence_frames, 3-4 weakest domain, 5 sentence_expansion, 6 sentence_frames
+  const getWeakestStrategy = (): { strategy: Strategy; weakest: string } => {
+    if (!domainScores || Object.keys(domainScores).length === 0) {
+      return { strategy: "sentence_frames", weakest: "none" };
     }
-  }
-
-  const allEqual = domains.every((d) => (domainScores[d] ?? 0) === weakestScore);
-
-  if (allEqual) {
-    const strategies: Strategy[] = ["sentence_frames", "sentence_expansion", "quick_writes"];
-    const idx = Math.floor(Date.now() / 86400000) % 3;
-    return {
-      strategy: strategies[idx],
-      weakestDomain: "balanced",
-      reason: "All domains are balanced — rotating strategies for variety.",
-    };
-  }
-
-  if (weakest === "reading" || weakest === "listening") {
-    return {
-      strategy: "sentence_frames",
-      weakestDomain: weakest,
-      reason: `${weakest.charAt(0).toUpperCase() + weakest.slice(1)} was this student's weakest area so today's session focused on Sentence Frames.`,
-    };
-  }
-  if (weakest === "speaking") {
-    return {
-      strategy: "sentence_expansion",
-      weakestDomain: weakest,
-      reason: "Speaking was this student's weakest area so today's session focused on Sentence Expansion.",
-    };
-  }
-  return {
-    strategy: "quick_writes",
-    weakestDomain: weakest,
-    reason: "Writing was this student's weakest area so today's session focused on Quick Writes.",
+    const domains = ["reading", "listening", "speaking", "writing"];
+    let weakest = domains[0];
+    let weakestScore = domainScores[domains[0]] ?? 100;
+    for (const d of domains) {
+      const score = domainScores[d] ?? 100;
+      if (score < weakestScore) { weakestScore = score; weakest = d; }
+    }
+    if (weakest === "reading" || weakest === "listening") return { strategy: "sentence_frames", weakest };
+    if (weakest === "speaking") return { strategy: "sentence_expansion", weakest };
+    return { strategy: "quick_writes", weakest };
   };
+
+  const weak = getWeakestStrategy();
+
+  if (questionIndex <= 1) {
+    return { strategy: "sentence_frames", weakestDomain: weak.weakest, reason: `Activities 1-2: Sentence Frames to build foundational skills.` };
+  }
+  if (questionIndex <= 3) {
+    return { strategy: weak.strategy, weakestDomain: weak.weakest, reason: `Activities 3-4: Targeting weakest domain (${weak.weakest}) with ${weak.strategy}.` };
+  }
+  if (questionIndex === 4) {
+    return { strategy: "sentence_expansion", weakestDomain: weak.weakest, reason: `Activity 5: Sentence Expansion for speaking practice.` };
+  }
+  // questionIndex === 5
+  return { strategy: "sentence_frames", weakestDomain: weak.weakest, reason: `Activity 6: Sentence Frames for a light, confident finish.` };
 }
 
 function getInputTypeFields(inputType: string, topic: string): string {
