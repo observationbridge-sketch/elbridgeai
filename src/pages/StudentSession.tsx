@@ -1280,7 +1280,7 @@ const StudentSession = () => {
     }
 
     if (correct) {
-      gamification.addPoints(POINTS.PART2_ACTIVITY);
+      gamification.addPoints(POINTS.PART2_ACTIVITY, effectiveGradeBand);
       sounds.playPoints();
     }
 
