@@ -14,7 +14,7 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 ## Architecture
 - Teachers: auth via Supabase (Google OAuth + email), dashboard with session codes
 - Students: anon access, join via 6-char code + first name → theme picker → session
-- AI: Lovable AI (google/gemini-2.5-pro) generates activities per domain
+- AI: Claude Haiku 4.5 (claude-haiku-4-5-20251001) via direct Anthropic API — NO Lovable AI gateway
 - Domains: Reading, Writing, Speaking, Listening
 - WIDA levels: Entering, Emerging, Developing, Expanding, Bridging
 
@@ -35,6 +35,7 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 - K-2 sentence_frames: No passage, tap-only word bank, max 2-syllable words
 - K-2 sentence_frames: NO "Sentence frame" box, NO text input, NO Submit button
 - K-2 sentence_frames: ONLY blank sentence (large) + tappable word tiles
+- K-2 SF now uses deterministic template system (generateK2SentenceFrame in k2-rules.ts), NOT AI
 
 ## Adaptive Difficulty (K-2 Sentence Frames)
 - 3 Tiers: T1 (4-word/1blank/2tiles), T2 (6-word/2blanks/4tiles), T3 (8-word/3blanks/6tiles)
@@ -43,7 +44,7 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 - BANNED connectors in K-2: "because", "although", "when", all subordinate clause connectors
 
 ## Edge Functions
-- generate-anchor-sentence: AI anchor (verify_jwt=false)
+- generate-anchor-sentence: AI anchor (verify_jwt=false), Claude Haiku 4.5
 - generate-activity: Part 1 activities with K-2 content rules
-- generate-part2: Strategy activities with difficulty arc + tier param for K-2
-- generate-part3-challenge: Final challenge
+- generate-part2: Strategy activities with difficulty arc + tier param for K-2, Claude Haiku 4.5
+- generate-part3-challenge: Final challenge, Claude Haiku 4.5

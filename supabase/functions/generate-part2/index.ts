@@ -517,8 +517,8 @@ serve(async (req) => {
 
   try {
     const { grade, theme, topic, domainScores, questionIndex, contentHistory, sentenceFrameTier } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const { strategy, weakestDomain, reason } = selectStrategy(domainScores, questionIndex || 0);
     const prompt = buildPrompt(
@@ -531,41 +531,36 @@ serve(async (req) => {
       sentenceFrameTier
     );
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const userMessage = `${prompt}\n\nGenerate activity ${(questionIndex || 0) + 1} of 6 for the ${strategy.replace(/_/g, " ")} strategy about "${topic || theme}". Make it engaging and grade-appropriate.`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: prompt },
-          { role: "user", content: `Generate activity ${(questionIndex || 0) + 1} of 6 for the ${strategy.replace(/_/g, " ")} strategy about "${topic || theme}". Make it engaging and grade-appropriate.` },
-        ],
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: userMessage }],
       }),
     });
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("Anthropic API error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error("AI gateway error");
+      throw new Error(`Anthropic API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const candidate = data?.choices?.[0];
-    const finishReason = candidate?.finishReason;
-    const content = candidate?.message?.content;
+    const finishReason = data?.stop_reason;
+    const content = data?.content?.[0]?.text;
 
     if (!content || typeof content !== "string") {
       console.error("Empty AI response content", { finishReason, strategy, questionIndex });
