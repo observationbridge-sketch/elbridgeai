@@ -1767,7 +1767,7 @@ const StudentSession = () => {
                 <Users className="h-4 w-4" /> Leaderboard
               </Button>
             </div>
-            <Button variant="hero" onClick={() => navigate("/")} className="w-full text-lg py-6">
+            <Button variant="hero" onClick={() => navigate("/student/join")} className="w-full text-lg py-6">
               Done ✅
             </Button>
           </div>
