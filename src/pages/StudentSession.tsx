@@ -1099,28 +1099,29 @@ const StudentSession = () => {
         throw new Error("Invalid activity content");
       }
       
-      // CLIENT-SIDE VALIDATION: Ensure positions 5-6 don't have heavy writing tasks
+      // CLIENT-SIDE VALIDATION: Ensure positions 5-6 don't have heavy/complex tasks
       if (index >= 4) {
         const activityText = JSON.stringify(activity).toLowerCase();
         const isHeavy = 
-          (activityText.includes("4-scene") || activityText.includes("sequential story") || 
-           activityText.includes("multi-scene") || activityText.includes("organize sentences") ||
-           (activityText.includes("scenes") && activityText.includes("order")));
+          activity.type === "story_builder" ||
+          activityText.includes("4-scene") || activityText.includes("sequential") ||
+          activityText.includes("multi-scene") || activityText.includes("organize sentences") ||
+          (activityText.includes("scenes") && activityText.includes("order"));
         const sentenceMatch = (activity.question || "").match(/write\s+(\d+)\s+sentence/i);
         const tooManySentences = sentenceMatch && parseInt(sentenceMatch[1]) >= 3;
         
         if (isHeavy || tooManySentences) {
-          console.warn(`Position ${index + 1} had heavy activity — using light fallback`);
+          console.warn(`Position ${index + 1} had heavy activity (type: ${activity.type}) — replacing with light fallback`);
           const isK2 = effectiveGradeBand === "K-2";
           if (index === 5) {
             activity = {
-              type: "light_fun",
+              type: "sentence_completion",
               inputType: isK2 ? "recording" : "typing",
               question: isK2 
                 ? `Tell your animal companion: "My favorite thing about ${sessionTopic} is ___!" Say it out loud! 🎤`
-                : `🎉 Finish this silly sentence about ${sessionTopic}: "If I could _____, I would _____ because _____!"`,
-              modelAnswer: `My favorite thing about ${sessionTopic} is how amazing it is!`,
-              acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "fun", "favorite", "because"],
+                : `Complete this sentence about ${sessionTopic}: "The most interesting thing I learned is _____."`,
+              modelAnswer: `The most interesting thing I learned about ${sessionTopic} is how amazing it is!`,
+              acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "learned", "interesting", "because"],
               difficulty: 6,
               theme: sessionTheme,
               strategy: activity.strategy || "sentence_frames",
@@ -1133,7 +1134,7 @@ const StudentSession = () => {
               inputType: isK2 ? "recording" : "multiple_choice",
               question: `True or False: ${sessionTopic} is something you might find in a story about ${sessionTheme}. Explain why in one sentence.`,
               options: isK2 ? undefined : ["True — it fits the theme!", "False — it doesn't fit.", "True — definitely!", "False — not at all."],
-              modelAnswer: `True — ${sessionTopic} fits perfectly with ${sessionTheme}!`,
+              modelAnswer: isK2 ? "True" : "True — it fits the theme!",
               acceptableKeywords: ["true", "because", sessionTopic.split(" ")[0]?.toLowerCase() || "yes"],
               difficulty: 5,
               theme: sessionTheme,
@@ -1185,9 +1186,21 @@ const StudentSession = () => {
     }
     if (overrideAnswer) setPart2Answer(overrideAnswer);
 
+    // Quick writes: require at least 2 sentences before accepting
+    if (part2Activity.strategy === "quick_writes") {
+      const qwSentences = answerText.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
+      if (qwSentences.length < 2) {
+        toast("Great start! Can you add one more sentence? ✍️");
+        return;
+      }
+    }
+
     let correct: boolean;
     if (part2Activity.inputType === "multiple_choice") {
-      correct = answerText === part2Activity.modelAnswer;
+      // Normalize both sides for comparison
+      const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+      const normModel = (part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+      correct = normAnswer === normModel;
     } else {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
@@ -1393,17 +1406,27 @@ const StudentSession = () => {
       return;
     }
     const norm = part3Answer.toLowerCase();
+    const sentences = part3Answer.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
     const seqWords = part3Challenge.sequenceWords || ["first", "then", "next", "finally"];
     const usedSeqWords = seqWords.filter((w) => norm.includes(w));
     const hasSequence = usedSeqWords.length >= 2;
+    const hasEnoughSentences = sentences.length >= 3;
 
-    gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE);
-    if (hasSequence) gamification.addPoints(POINTS.CHALLENGE_STORY_SEQUENCE_BONUS);
-
-    const feedback = hasSequence
-      ? `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`
-      : `Great story! Try using words like "first, then, next, finally" to make it even better! 📝 +${POINTS.CHALLENGE_STORY_COMPLETE} points!`;
-    setPart3Feedback(feedback);
+    if (hasEnoughSentences && hasSequence) {
+      // Full points
+      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS);
+      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
+      setPart3Feedback(feedback);
+    } else {
+      // Half points + encouraging feedback
+      const halfPoints = Math.round(POINTS.CHALLENGE_STORY_COMPLETE / 2);
+      gamification.addPoints(halfPoints);
+      const tips: string[] = [];
+      if (!hasEnoughSentences) tips.push("try writing at least 3 sentences");
+      if (!hasSequence) tips.push('use sequence words like "first, then, next, finally"');
+      const feedback = `Good effort! Next time, ${tips.join(" and ")} to earn full points! 📝 +${halfPoints} points!`;
+      setPart3Feedback(feedback);
+    }
     setPart3Submitted(true);
     setChallengeCompleted("Story Builder");
     saveResponse("writing", "Part 3: Story Builder", part3Answer, part3Challenge.instruction, true, "Developing", "part3", "story_builder");
@@ -1443,6 +1466,14 @@ const StudentSession = () => {
     if (!part3Answer.trim()) {
       toast.error("Please record your explanation!");
       return;
+    }
+    // For 3-5: require at least 20 words
+    if (effectiveGradeBand !== "K-2") {
+      const wc = part3Answer.trim().split(/\s+/).length;
+      if (wc < 20) {
+        toast("Tell me more! Try to explain with at least 2 sentences 🎤");
+        return;
+      }
     }
     gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE);
     const keywords = part3Challenge?.acceptableKeywords || [];
