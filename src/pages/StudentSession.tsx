@@ -27,6 +27,11 @@ import { getAnimalLevel, getNextLevel } from "@/components/gamification/constant
 import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 import { WordBankFillBlanks } from "@/components/session/WordBankFillBlanks";
 import { MemoryMatch } from "@/components/session/MemoryMatch";
+import {
+  normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
+  isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
+  extractSingleWord, MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS,
+} from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
 type Strategy = "sentence_frames" | "sentence_expansion" | "quick_writes";
