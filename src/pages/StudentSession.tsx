@@ -2532,7 +2532,7 @@ function Part2StrategyView({
               ? activity.options
               : [];
 
-          const uniqueTiles = Array.from(
+          const cleanedTiles = Array.from(
             new Set(
               rawTiles
                 .map((tile) => tile.replace(/^[A-D][\).:\-]\s*/i, "").trim())
@@ -2540,9 +2540,38 @@ function Part2StrategyView({
             )
           );
 
-          if (uniqueTiles.length === 0 && activity.modelAnswer?.trim()) {
-            uniqueTiles.push(activity.modelAnswer.trim());
+          // Ensure correct answer is always present
+          const correctWord = (activity.modelAnswer || "").trim();
+          if (correctWord && !cleanedTiles.some(t => t.toLowerCase() === correctWord.toLowerCase())) {
+            cleanedTiles.unshift(correctWord);
           }
+
+          // Enforce tile count by tier: T1=2, T2=3, T3=4
+          const tierTileCount = (sentenceFrameTier || 1) === 1 ? 2 : (sentenceFrameTier || 1) === 2 ? 3 : 4;
+
+          // Build final tile list: correct word + distractors up to tierTileCount
+          const distractors = cleanedTiles.filter(t => t.toLowerCase() !== correctWord.toLowerCase());
+          const finalTiles: string[] = correctWord ? [correctWord] : [];
+          for (let d = 0; d < distractors.length && finalTiles.length < tierTileCount; d++) {
+            finalTiles.push(distractors[d]);
+          }
+          // Pad with fallback distractors if needed
+          const fallbackDistractors = ["also", "very", "some", "many", "just", "then"];
+          let fbIdx = 0;
+          while (finalTiles.length < tierTileCount && fbIdx < fallbackDistractors.length) {
+            const fb = fallbackDistractors[fbIdx];
+            if (!finalTiles.some(t => t.toLowerCase() === fb.toLowerCase())) {
+              finalTiles.push(fb);
+            }
+            fbIdx++;
+          }
+
+          // Shuffle tiles deterministically based on question content
+          const shuffled = [...finalTiles].sort((a, b) => {
+            const ha = Array.from(a + (activity.question || "")).reduce((s, c) => s + c.charCodeAt(0), 0);
+            const hb = Array.from(b + (activity.question || "")).reduce((s, c) => s + c.charCodeAt(0), 0);
+            return ha - hb;
+          });
 
           if (submitted || (sfRevealed && submitted)) return null;
           if (sfRevealed && !submitted) {
@@ -2564,16 +2593,17 @@ function Part2StrategyView({
               )}
               <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <div className="flex flex-wrap gap-3 justify-center">
-                  {uniqueTiles.map((word, i) => {
-                    const isSelected = sfSelectedWord === word;
+                  {shuffled.map((word, i) => {
+                    const isWrongBounce = sfSelectedWord === word && !!sfWrongMessage;
                     return (
                       <button
                         key={i}
                         type="button"
+                        disabled={!!sfSelectedWord}
                         onClick={() => {
+                          if (sfSelectedWord) return;
                           setSfSelectedWord(word);
-                          const correctAnswer = activity.modelAnswer.toLowerCase().trim();
-                          const isExactCorrect = word.toLowerCase().trim() === correctAnswer;
+                          const isExactCorrect = word.toLowerCase().trim() === correctWord.toLowerCase();
                           if (isExactCorrect) {
                             setAnswer(word);
                             setSfWrongMessage(null);
@@ -2588,14 +2618,21 @@ function Part2StrategyView({
                               setTimeout(() => onSubmit(), 400);
                             } else {
                               setSfWrongMessage("Try again! 🌟");
-                              setTimeout(() => setSfSelectedWord(null), 600);
+                              setTimeout(() => {
+                                setSfSelectedWord(null);
+                                setSfWrongMessage(null);
+                              }, 1200);
                             }
                           }
                         }}
-                        className={`px-5 py-3 text-lg border-2 rounded-full font-medium cursor-pointer transition-all ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground border-primary scale-105"
-                            : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95"
+                        className={`px-5 py-3 text-lg border-2 rounded-full font-medium transition-all ${
+                          isWrongBounce
+                            ? "bg-destructive/15 text-destructive border-destructive/40 animate-[shake_0.4s_ease-in-out]"
+                            : sfSelectedWord === word
+                              ? "bg-primary text-primary-foreground border-primary scale-105"
+                              : sfSelectedWord
+                                ? "bg-muted text-muted-foreground border-muted cursor-not-allowed opacity-60"
+                                : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 hover:scale-105 active:scale-95 cursor-pointer"
                         }`}
                       >
                         {word}
