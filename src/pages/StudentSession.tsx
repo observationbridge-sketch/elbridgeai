@@ -1892,7 +1892,7 @@ const StudentSession = () => {
                     isCorrect={part2IsCorrect}
                     speech={speech}
                     tts={tts}
-                    onSubmit={() => submitPart2()}
+                    onSubmit={(overrideAnswer?: string) => submitPart2(overrideAnswer)}
                     onSubmitMC={(option: string) => submitPart2(option)}
                     onNext={nextPart2}
                     isK2={isK2}
