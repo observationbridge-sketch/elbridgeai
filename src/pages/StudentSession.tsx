@@ -2896,18 +2896,6 @@ function Part2StrategyView({
           </div>
         )}
 
-        {/* Safety fallback: if submitted + correct on K-2 SF but Next button not showing, force it */}
-        {sfForceNextVisible && submitted && isCorrect && isK2SF && (
-          <div className="space-y-4 animate-fade-in">
-            <Button
-              variant="success"
-              className="w-full rounded-xl shadow-lg text-2xl py-8 min-h-[70px] animate-soft-pulse"
-              onClick={onNext}
-            >
-              Keep Going! 🚀
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
