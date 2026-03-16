@@ -162,7 +162,7 @@ Return ONLY valid JSON (no markdown):
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Generate a ${challengeType.replace(/_/g, " ")} challenge about "${topic}" for grades ${grade}. Make it fun and engaging!` },

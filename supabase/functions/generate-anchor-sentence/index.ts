@@ -285,7 +285,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5",
+          model: "google/gemini-2.5-pro",
           messages: [
             { role: "system", content: systemPrompt },
             {
