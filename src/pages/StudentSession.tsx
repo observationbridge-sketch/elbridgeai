@@ -1622,8 +1622,8 @@ const StudentSession = () => {
             <div className="w-full max-w-sm space-y-6 text-center">
               {/* Heading */}
               <div className="animate-fade-in">
-                <h1 className="text-4xl font-bold text-foreground mb-2">You did it! 🎉</h1>
-                <p className="text-xl text-primary font-semibold">{studentName}</p>
+                <h1 className="text-4xl font-bold text-white mb-2">You did it! 🎉</h1>
+                <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
               </div>
 
               {/* Animal companion — large and pulsing */}
