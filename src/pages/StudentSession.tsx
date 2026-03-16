@@ -1472,7 +1472,7 @@ const StudentSession = () => {
 
     saveResponse(q.domain, q.question, selectedOption, q.correctAnswer, isCorrect, "Developing", "part3", "speed_round");
 
-    if (part3SpeedIndex < 4) {
+    if (part3SpeedIndex < (part3Challenge?.questions?.length ?? 1) - 1) {
       setPart3SpeedIndex((i) => i + 1);
     } else {
       const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
@@ -2538,6 +2538,8 @@ function Part2StrategyView({
     setSfWrongMessage(null);
     setSfRevealed(false);
     setSfSelectedWord(null);
+    setK2Countdown(null);
+    if (countdownRef.current) clearTimeout(countdownRef.current);
   }, [index]);
 
   // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
