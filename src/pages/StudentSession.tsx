@@ -22,8 +22,8 @@ import { EvolutionCelebration } from "@/components/gamification/EvolutionCelebra
 import { BadgePopup } from "@/components/gamification/BadgePopup";
 import { BadgeCollection } from "@/components/gamification/BadgeCollection";
 import { Leaderboard } from "@/components/gamification/Leaderboard";
-import { POINTS, BADGES } from "@/components/gamification/constants";
-import { getAnimalLevel, getNextLevel } from "@/components/gamification/constants";
+import { POINTS, POINTS_35, BADGES } from "@/components/gamification/constants";
+import { getAnimalLevel, getAnimalLevel35, getNextLevel, getNextLevel35 } from "@/components/gamification/constants";
 import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 import { WordBankFillBlanks } from "@/components/session/WordBankFillBlanks";
 import { MemoryMatch } from "@/components/session/MemoryMatch";
@@ -485,11 +485,13 @@ const StudentSession = () => {
 
   const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
   const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
+  const pts = effectiveGradeBand === "3-5" ? POINTS_35 : POINTS;
 
   // Gamification & Sounds
   const gamification = useGamification(studentName, teacherId);
   const sounds = useSounds();
   const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
+  const quickWriteCountRef = useRef(0);
 
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
@@ -986,7 +988,7 @@ const StudentSession = () => {
 
   const handleStep1Done = () => {
     setPart1Scores((s) => ({ ...s, listen: true }));
-    gamification.addPoints(POINTS.STEP1_LISTEN, effectiveGradeBand);
+    gamification.addPoints(pts.STEP1_LISTEN, effectiveGradeBand);
     saveResponse("listening", "Listened to anchor passage", "heard", anchor?.sentence || "", true, "Entering", "part1");
     handlePart1Next();
   };
@@ -999,7 +1001,7 @@ const StudentSession = () => {
     setPart1Feedback("Great job! 🌟");
     setPart1Submitted(true);
     sounds.playCorrect();
-    gamification.addPoints(POINTS.STEP2_SAY_IT, effectiveGradeBand);
+    gamification.addPoints(pts.STEP2_SAY_IT, effectiveGradeBand);
     sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
@@ -1012,14 +1014,14 @@ const StudentSession = () => {
 
   const handleStep3Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, dragDrop: score.correct, dragDropTotal: score.total }));
-    gamification.addPoints(POINTS.STEP3_DRAG_DROP, effectiveGradeBand);
+    gamification.addPoints(pts.STEP3_DRAG_DROP, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Drag & Drop fill-in-the-blank", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
 
   const handleStep4Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, memoryMatch: score.correct, memoryMatchTotal: score.total }));
-    gamification.addPoints(POINTS.STEP4_MEMORY_MATCH, effectiveGradeBand);
+    gamification.addPoints(pts.STEP4_MEMORY_MATCH, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Memory Match", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
@@ -1027,7 +1029,7 @@ const StudentSession = () => {
   const handleStep5Complete = (correct: boolean) => {
     setPart1Scores((s) => ({ ...s, jumbled: correct ? 1 : 0, jumbledTotal: 1 }));
     if (correct) {
-      gamification.addPoints(POINTS.STEP5_JUMBLED, effectiveGradeBand);
+      gamification.addPoints(pts.STEP5_JUMBLED, effectiveGradeBand);
       sounds.playPoints();
     }
     if (!hasWritten) {
@@ -1280,7 +1282,7 @@ const StudentSession = () => {
     }
 
     if (correct) {
-      gamification.addPoints(POINTS.PART2_ACTIVITY, effectiveGradeBand);
+      gamification.addPoints(pts.PART2_ACTIVITY, effectiveGradeBand);
       sounds.playPoints();
     }
 
@@ -1290,6 +1292,14 @@ const StudentSession = () => {
       quick_writes: "writing",
     };
     const domain = domainMap[part2Activity.strategy] || "reading";
+
+    // Track quick_writes completions for badge
+    if (part2Activity.strategy === "quick_writes" && effectiveGradeBand === "3-5") {
+      quickWriteCountRef.current += 1;
+      if (quickWriteCountRef.current >= 3) {
+        gamification.awardBadge("quick_writer");
+      }
+    }
 
     saveResponse(
       domain,
@@ -1415,12 +1425,16 @@ const StudentSession = () => {
 
     if (hasEnoughSentences && hasSequence) {
       // Full points
-      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
-      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
+      gamification.addPoints(pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
+      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
       setPart3Feedback(feedback);
+      // Award sequence_master badge if 3+ sequence words used
+      if (usedSeqWords.length >= 3 && effectiveGradeBand === "3-5") {
+        gamification.awardBadge("sequence_master");
+      }
     } else {
       // Half points + encouraging feedback
-      const halfPoints = Math.round(POINTS.CHALLENGE_STORY_COMPLETE / 2);
+      const halfPoints = Math.round(pts.CHALLENGE_STORY_COMPLETE / 2);
       gamification.addPoints(halfPoints, effectiveGradeBand);
       const tips: string[] = [];
       if (!hasEnoughSentences) tips.push("try writing at least 3 sentences");
@@ -1439,7 +1453,7 @@ const StudentSession = () => {
     const isCorrect = selectedOption === q.correctAnswer;
     if (isCorrect) {
       setPart3SpeedScore((s) => s + 1);
-      gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT, effectiveGradeBand);
+      gamification.addPoints(pts.CHALLENGE_SPEED_CORRECT, effectiveGradeBand);
       sounds.playCorrect();
       sounds.playPoints();
       setShowConfetti(true);
@@ -1454,12 +1468,17 @@ const StudentSession = () => {
     if (part3SpeedIndex < 4) {
       setPart3SpeedIndex((i) => i + 1);
     } else {
+      const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
       const elapsed = Math.round((Date.now() - part3StartTime) / 1000);
       const mins = Math.floor(elapsed / 60);
       const secs = elapsed % 60;
-      setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${part3SpeedScore + (isCorrect ? 1 : 0)}/5 🏎️`);
+      setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
       setPart3Submitted(true);
       setChallengeCompleted("Speed Round");
+      // Award speed_demon badge for perfect 5/5
+      if (finalScore === 5 && effectiveGradeBand === "3-5") {
+        gamification.awardBadge("speed_demon");
+      }
     }
   };
 
@@ -1476,13 +1495,13 @@ const StudentSession = () => {
         return;
       }
     }
-    gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE, effectiveGradeBand);
+    gamification.addPoints(pts.CHALLENGE_TEACH_COMPLETE, effectiveGradeBand);
     const keywords = part3Challenge?.acceptableKeywords || [];
     const norm = part3Answer.toLowerCase();
     const usedWords = keywords.filter((kw) => norm.includes(kw.toLowerCase())).slice(0, 3);
     const feedback = usedWords.length > 0
-      ? `Amazing! You explained ${sessionTopic} really well. You used these great words: ${usedWords.join(", ")}! 🎤🌟 +${POINTS.CHALLENGE_TEACH_COMPLETE} points!`
-      : `Great job explaining ${sessionTopic}! Keep using topic vocabulary to make your explanations even stronger! 🎤 +${POINTS.CHALLENGE_TEACH_COMPLETE} points!`;
+      ? `Amazing! You explained ${sessionTopic} really well. You used these great words: ${usedWords.join(", ")}! 🎤🌟 +${pts.CHALLENGE_TEACH_COMPLETE} points!`
+      : `Great job explaining ${sessionTopic}! Keep using topic vocabulary to make your explanations even stronger! 🎤 +${pts.CHALLENGE_TEACH_COMPLETE} points!`;
     setPart3Feedback(feedback);
     setPart3Submitted(true);
     setChallengeCompleted("Teach It Back");
@@ -1491,7 +1510,7 @@ const StudentSession = () => {
 
   const finishSession = async () => {
     sounds.playSessionComplete();
-    gamification.addPoints(POINTS.SESSION_COMPLETE, effectiveGradeBand);
+    gamification.addPoints(pts.SESSION_COMPLETE, effectiveGradeBand);
     gamification.completeSession({
       gradeBand: effectiveGradeBand,
       part2Score: part2Score,
@@ -1499,9 +1518,13 @@ const StudentSession = () => {
       domainScores: domainScores || undefined,
     });
     if (domainScores) {
-      for (const [, pct] of Object.entries(domainScores)) {
+      for (const [domain, pct] of Object.entries(domainScores)) {
         if (pct >= 80) {
-          gamification.addPoints(POINTS.DOMAIN_80_BONUS, effectiveGradeBand);
+          gamification.addPoints(pts.DOMAIN_80_BONUS, effectiveGradeBand);
+          // Award domain_ace badge for 3-5 students
+          if (effectiveGradeBand === "3-5") {
+            gamification.awardBadge("domain_ace");
+          }
           break;
         }
       }
@@ -1546,8 +1569,8 @@ const StudentSession = () => {
   // ─── Session ended — FULL CELEBRATION SCREEN (2 phases) ───
 
   if (sessionEnded) {
-    const animalLevel = getAnimalLevel(gamification.totalPoints);
-    const nextLevel = getNextLevel(gamification.totalPoints);
+    const animalLevel = effectiveGradeBand === "3-5" ? getAnimalLevel35(gamification.totalPoints) : getAnimalLevel(gamification.totalPoints);
+    const nextLevel = effectiveGradeBand === "3-5" ? getNextLevel35(gamification.totalPoints) : getNextLevel(gamification.totalPoints);
     const totalActivities = 5 + part2Count + 1; // Part1(5) + Part2 + Part3(1)
 
     if (!showResults) {

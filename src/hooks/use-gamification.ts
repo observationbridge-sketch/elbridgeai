@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { POINTS, getAnimalLevel, BADGES } from "@/components/gamification/constants";
+import { POINTS, getAnimalLevel, getAnimalLevel35, BADGES } from "@/components/gamification/constants";
 
 interface PendingBadge {
   icon: string;
@@ -13,11 +13,6 @@ interface FailedBadge {
   badgeIcon: string;
 }
 
-// Grade band point multipliers
-const GRADE_MULTIPLIERS: Record<string, number> = {
-  "K-2": 1.0,
-  "3-5": 1.5,
-};
 
 export function useGamification(studentName: string, teacherId: string) {
   const [totalPoints, setTotalPoints] = useState(0);
@@ -90,22 +85,19 @@ export function useGamification(studentName: string, teacherId: string) {
   const addPoints = useCallback((points: number, gradeBand?: string) => {
     if (!studentName || !teacherId || points <= 0) return;
 
-    // Apply grade band multiplier
-    const multiplier = GRADE_MULTIPLIERS[gradeBand || "K-2"] ?? 1.0;
-    const adjustedPoints = Math.round(points * multiplier);
-
-    // Use ref for immediate calculation to avoid stale state
-    totalPointsRef.current += adjustedPoints;
-    pendingPointsRef.current += adjustedPoints;
+    // Points already come from the correct POINTS/POINTS_35 table — no multiplier needed
+    totalPointsRef.current += points;
+    pendingPointsRef.current += points;
     const newTotal = totalPointsRef.current;
 
     setTotalPoints(newTotal);
-    setSessionPoints((s) => s + adjustedPoints);
-    setLastPointsEarned(adjustedPoints);
+    setSessionPoints((s) => s + points);
+    setLastPointsEarned(points);
     setShowPointsAnim(true);
 
-    // Check evolution — only fire once per level per session
-    const newLevel = getAnimalLevel(newTotal);
+    // Check evolution with grade-band-aware thresholds
+    const levelFn = gradeBand === "3-5" ? getAnimalLevel35 : getAnimalLevel;
+    const newLevel = levelFn(newTotal);
     if (
       newLevel.name !== prevLevelRef.current &&
       !evolutionFiredRef.current.has(newLevel.name)
