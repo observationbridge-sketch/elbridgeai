@@ -2346,82 +2346,10 @@ function Part1View({
             )}
           </>
         )}
-              </p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {jumble.jumbled.map((word, i) => {
-                  const isUsed = isK2 && usedJumbleIndices.has(i);
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => !isUsed && !jumbleSubmitted && (isK2 ? handleChipTap(word, i) : undefined)}
-                      disabled={isUsed || jumbleSubmitted}
-                      className={`px-4 py-2 rounded-full font-medium border-2 transition-all duration-200 select-none
-                        ${isK2 ? "text-lg min-h-[48px]" : "text-sm"}
-                        ${isUsed ? "bg-muted text-muted-foreground/30 border-muted opacity-40" : "bg-primary/10 text-primary border-primary/20 hover:scale-105 active:scale-95 cursor-pointer"}
-                      `}
-                    >
-                      {word}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* K-2: Building area showing tapped words */}
-            {isK2 ? (
-              <div className="bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px]">
-                <p className="text-xs text-muted-foreground mb-2">Your sentence:</p>
-                <div className="flex flex-wrap gap-2">
-                  {jumbleTappedWords.length > 0 ? jumbleTappedWords.map((word, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-primary/15 text-primary border border-primary/30 rounded-full text-lg font-medium">
-                      {word}
-                    </span>
-                  )) : (
-                    <p className="text-muted-foreground/50 text-lg">Tap words above...</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Input
-                value={jumbleAnswer}
-                onChange={(e) => setJumbleAnswer(e.target.value)}
-                placeholder="Type the sentence in correct order..."
-                className="h-12"
-                disabled={jumbleSubmitted}
-              />
-            )}
-
-            {/* K-2 start over button */}
-            {isK2 && jumbleTappedWords.length > 0 && !jumbleSubmitted && (
-              <Button variant="outline" size="sm" onClick={() => { setJumbleTappedWords([]); setJumbleAnswer(""); setUsedJumbleIndices(new Set()); }}>Start over 🔄</Button>
-            )}
-
-            {!jumbleSubmitted ? (
-              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={isK2 ? jumbleTappedWords.length !== jumble.jumbled.length : !jumbleAnswer.trim()}>
-                {isK2 ? "Check! ✅" : "Check My Sentence"}
-              </Button>
-            ) : (
-              <>
-                {jumbleIsCorrect ? (
-                  <FeedbackBanner feedback="Nice work! 🧩🌟" positive={true} />
-                ) : (
-                  <div className="bg-warning/10 rounded-lg p-3 border border-warning/20 space-y-1">
-                    <p className="text-lg font-bold text-warning">Good try! Here's the correct sentence:</p>
-                    <p className="text-lg font-bold text-warning">{jumble.original}</p>
-                  </div>
-                )}
-                <Button
-                  variant="success"
-                  className={`w-full rounded-xl shadow-lg ${isK2 ? "text-2xl py-8 min-h-[70px] animate-soft-pulse" : "text-lg py-5 animate-soft-pulse-fast"}`}
-                  size="lg"
-                  onClick={onNext}
-                >
-                  {isK2 ? "Keep Going! 🚀" : "Next Step →"}
-                </Button>
-              </>
-            )}
-          </>
-        )}
+      </CardContent>
+    </Card>
+  );
+}
       </CardContent>
     </Card>
   );
