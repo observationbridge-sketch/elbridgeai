@@ -2244,7 +2244,7 @@ function Part1View({
 
             {/* K-2: Building area showing tapped words */}
             {isK2 ? (
-              <div className={`bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px] ${jumbleShake ? "animate-[shake_0.4s_ease-in-out]" : ""}`}>
+              <div className="bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px]">
                 <p className="text-xs text-muted-foreground mb-2">Your sentence:</p>
                 <div className="flex flex-wrap gap-2">
                   {jumbleTappedWords.length > 0 ? jumbleTappedWords.map((word, i) => (
