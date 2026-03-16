@@ -50,13 +50,48 @@ export function isMultiWord(text: string): boolean {
   return text.trim().split(/\s+/).length > 1;
 }
 
-/** Extract the first/single word from a potentially multi-word tile */
-export function extractSingleWord(text: string): string {
+/** Extract a single word from a potentially multi-word tile.
+ *  If multi-word, returns the first word NOT already in the blank sentence.
+ *  If single word, returns as-is. Never concatenates words. */
+export function extractSingleWord(text: string, blankSentence?: string): string {
   // Strip A/B/C/D prefixes
   const stripped = text.replace(/^[A-Da-d][\).:\-]\s*/i, "").trim();
-  // If multi-word, take just the first word
   const words = stripped.split(/\s+/).filter(Boolean);
-  return words[0] || stripped;
+
+  // Single word — return as-is
+  if (words.length <= 1) return words[0] || stripped;
+
+  // Multi-word: find first word NOT already in the blank sentence
+  if (blankSentence) {
+    const sentenceWords = new Set(
+      blankSentence.toLowerCase().replace(/[^a-z0-9' ]/g, "").split(/\s+/)
+    );
+    for (const w of words) {
+      if (!sentenceWords.has(w.toLowerCase())) return w;
+    }
+  }
+
+  // Fallback: return first word
+  return words[0];
+}
+
+/** Validate a tile string. Rejects non-space strings longer than 12 chars. */
+export function validateTile(tile: string): string | null {
+  const trimmed = tile.trim();
+  if (!trimmed) return null;
+  // If single token (no spaces) but suspiciously long, reject it
+  if (!trimmed.includes(" ") && trimmed.length > 12) return null;
+  return trimmed;
+}
+
+const SHORT_FALLBACKS = ["jump", "swim", "run", "big", "red", "fast"];
+
+/** Get a fallback distractor not already in the used set */
+export function getFallbackDistractor(usedWords: Set<string>): string {
+  for (const fb of SHORT_FALLBACKS) {
+    if (!usedWords.has(fb)) return fb;
+  }
+  return SHORT_FALLBACKS[0];
 }
 
 // ════════════════════════════════════════════════
@@ -123,14 +158,17 @@ export function isSentenceFrameCorrect(
 export function buildSentenceFrameTiles(
   rawTiles: string[],
   correctAnswer: string,
-  tier: number
+  tier: number,
+  blankSentence?: string
 ): string[] {
   const targetCount = TIER_TILE_COUNTS[tier] || TIER_TILE_COUNTS[1];
   const correctNorm = normalizeWord(correctAnswer);
 
-  // 1. Clean all tiles: extract single words, normalize
+  // 1. Clean all tiles: extract single words, validate, normalize
   const cleanedTiles = rawTiles
-    .map(extractSingleWord)
+    .map((t) => extractSingleWord(t, blankSentence))
+    .map((t) => validateTile(t))
+    .filter((t): t is string => t !== null)
     .map(normalizeWord)
     .filter(Boolean);
 
