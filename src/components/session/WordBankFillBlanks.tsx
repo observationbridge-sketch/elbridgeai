@@ -26,10 +26,13 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
-function isAnswerCorrect(student: string, correct: string): boolean {
+function isAnswerCorrect(student: string, correct: string, isK2?: boolean): boolean {
   const s = student.toLowerCase().trim();
   const c = correct.toLowerCase().trim();
   if (s.length <= 1) return false;
+  // K-2: exact match only per k2-rules.md
+  if (isK2) return s === c;
+  // 3-5: fuzzy matching allowed
   return s === c || levenshtein(s, c) <= 2;
 }
 
@@ -66,6 +69,24 @@ export function WordBankFillBlanks({
   const [lockedBlanks, setLockedBlanks] = useState<Set<number>>(new Set());
   const blankRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // ─── Empty state protection: if no blanks found, show fallback and auto-advance ───
+  const hasBlanks = blankedSentence.includes("___") && missingWords.length > 0;
+
+  useEffect(() => {
+    if (!hasBlanks) {
+      const timer = setTimeout(() => onNext(), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasBlanks, onNext]);
+
+  if (!hasBlanks) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px] rounded-xl bg-muted/50 border border-border">
+        <p className="text-2xl text-muted-foreground animate-pulse">One moment... 🐣</p>
+      </div>
+    );
+  }
+
   // Determine which blanks still need answers
   const activeBlanks = new Set(
     Array.from({ length: blankCount }, (_, i) => i).filter(i => !lockedBlanks.has(i))
@@ -74,24 +95,17 @@ export function WordBankFillBlanks({
   // Words currently placed in blanks
   const usedWords = new Set(answers.filter(a => a));
 
-  // Compute longest word length for consistent blank sizing
-  const longestWord = Math.max(...wordBank.map(w => w.length), ...missingWords.map(w => w.length));
-  const blankMinWidth = Math.max(60, longestWord * 12 + 24);
-
   // Sentence parts split by ___
   const sentenceParts = blankedSentence.split("___");
 
   // ─── Tap-to-place logic ───
-  const handleBlankTap = useCallback((blankIndex: number) => {
+  const handleBlankTap = (blankIndex: number) => {
     if (phase !== "filling" || lockedBlanks.has(blankIndex)) return;
 
     if (selectedTile) {
       // Place selected tile in this blank
       const newAnswers = [...answers];
       // If blank already has a word, free it
-      if (newAnswers[blankIndex]) {
-        // word goes back to bank
-      }
       newAnswers[blankIndex] = selectedTile;
       setAnswers(newAnswers);
       setBlankStates(prev => {
@@ -111,17 +125,21 @@ export function WordBankFillBlanks({
         return n;
       });
     }
-  }, [selectedTile, answers, phase, lockedBlanks]);
+  };
 
-  const handleTileTap = useCallback((word: string) => {
+  const handleTileTap = (word: string) => {
     if (phase !== "filling") return;
-    if (usedWords.has(word)) return;
+    // Only block tap if word is in a LOCKED blank
+    const placedIndex = answers.indexOf(word);
+    if (placedIndex !== -1 && lockedBlanks.has(placedIndex)) return;
     setSelectedTile(prev => prev === word ? null : word);
-  }, [phase, usedWords]);
+  };
 
   // ─── Drag and drop ───
   const handleDragStart = (e: React.DragEvent, word: string) => {
-    if (phase !== "filling" || usedWords.has(word)) return;
+    if (phase !== "filling") return;
+    const placedIndex = answers.indexOf(word);
+    if (placedIndex !== -1 && lockedBlanks.has(placedIndex)) return;
     setDragTile(word);
     e.dataTransfer.setData("text/plain", word);
     e.dataTransfer.effectAllowed = "move";
@@ -173,7 +191,7 @@ export function WordBankFillBlanks({
     let correctCount = lockedBlanks.size; // already locked = already correct
 
     for (const i of activeBlanks) {
-      if (isAnswerCorrect(answers[i], missingWords[i])) {
+      if (isAnswerCorrect(answers[i], missingWords[i], isK2)) {
         newStates[i] = "correct";
         newLocked.add(i);
         correctCount++;
@@ -188,7 +206,7 @@ export function WordBankFillBlanks({
     setAttempts(currentAttempt);
 
     const allCorrect = correctCount === blankCount;
-    const wrongBlanks = [...activeBlanks].filter(i => !isAnswerCorrect(answers[i], missingWords[i]));
+    const wrongBlanks = [...activeBlanks].filter(i => !isAnswerCorrect(answers[i], missingWords[i], isK2));
 
     if (allCorrect) {
       // Full success
@@ -207,11 +225,11 @@ export function WordBankFillBlanks({
       setBlankStates(finalStates);
       setScore({ correct: correctCount, total: blankCount });
       setPhase("done");
-      if (correctCount > 0) sounds.playPartiallyCorrect(); else sounds.playWrong();
+      if (correctCount > 0) sounds.playWrong(); else sounds.playWrong();
       onComplete({ correct: correctCount, total: blankCount });
     } else {
       // Bounce wrong answers back to bank
-      if (correctCount > 0) sounds.playPartiallyCorrect(); else sounds.playWrong();
+      sounds.playWrong();
       setPhase("feedback");
       setTimeout(() => {
         const resetAnswers = [...answers];
@@ -268,12 +286,14 @@ export function WordBankFillBlanks({
                   onDragOver={(e) => handleDragOver(e, i)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, i)}
-                  style={{ minWidth: blankMinWidth }}
                   disabled={lockedBlanks.has(i) || phase === "feedback"}
                   className={`
                     inline-flex items-center justify-center mx-1 px-3 py-1.5 rounded-lg
                     border-2 transition-all duration-300 align-middle
-                    ${isK2 ? "min-h-[48px] text-xl" : "min-h-[40px] text-base"}
+                    ${isK2
+                      ? "min-h-[48px] text-xl min-w-[80px] max-w-[140px]"
+                      : "min-h-[40px] text-base min-w-[60px] max-w-[120px]"
+                    }
                     ${blankStates[i] === "correct"
                       ? "border-success bg-success/15 text-success font-bold scale-105"
                       : blankStates[i] === "wrong"
@@ -312,8 +332,9 @@ export function WordBankFillBlanks({
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {wordBank.map((word, i) => {
-              const isUsed = answers.includes(word) && lockedBlanks.has(answers.indexOf(word));
-              const isPlaced = answers.includes(word);
+              // Only grey out if placed in a LOCKED correct blank
+              const placedIndex = answers.indexOf(word);
+              const isLockedPlaced = placedIndex !== -1 && lockedBlanks.has(placedIndex);
               const isSelected = selectedTile === word;
               const isDragging = dragTile === word;
               const colorClass = TILE_COLORS[i % TILE_COLORS.length];
@@ -321,23 +342,21 @@ export function WordBankFillBlanks({
               return (
                 <button
                   key={`${word}-${i}`}
-                  draggable={!isPlaced && phase === "filling"}
+                  draggable={!isLockedPlaced && phase === "filling"}
                   onDragStart={(e) => handleDragStart(e, word)}
                   onDragEnd={handleDragEnd}
                   onClick={() => handleTileTap(word)}
-                  disabled={isUsed || phase === "feedback"}
+                  disabled={isLockedPlaced || phase === "feedback"}
                   className={`
                     px-5 py-2.5 rounded-xl font-bold border-2 transition-all duration-200 select-none
                     ${isK2 ? "text-lg min-h-[52px] min-w-[80px]" : "text-sm min-h-[44px] min-w-[64px]"}
-                    ${isUsed
+                    ${isLockedPlaced
                       ? "bg-muted text-muted-foreground/30 border-muted cursor-not-allowed opacity-40"
-                      : isPlaced && !isUsed
-                        ? "bg-muted/50 text-muted-foreground/50 border-muted/50 border-dashed"
-                        : isDragging
-                          ? "opacity-50 scale-95 " + colorClass
-                          : isSelected
-                            ? "ring-4 ring-primary/40 shadow-lg scale-110 bg-primary text-primary-foreground border-primary"
-                            : `${colorClass} hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md`
+                      : isDragging
+                        ? "opacity-50 scale-95 " + colorClass
+                        : isSelected
+                          ? "ring-4 ring-primary/40 shadow-lg scale-110 bg-primary text-primary-foreground border-primary"
+                          : `${colorClass} hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md`
                     }
                   `}
                 >
