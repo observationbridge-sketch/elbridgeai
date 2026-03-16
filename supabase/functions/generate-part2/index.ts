@@ -98,58 +98,37 @@ function generateFallbackActivity(position: number, theme: string, topic: string
   };
 }
 
-function selectStrategy(domainScores: Record<string, number> | null): { strategy: Strategy; weakestDomain: string; reason: string } {
-  if (!domainScores || Object.keys(domainScores).length === 0) {
-    return {
-      strategy: "sentence_frames",
-      weakestDomain: "none",
-      reason: "First session — starting with Sentence Frames to build foundational skills.",
-    };
-  }
-
-  const domains = ["reading", "listening", "speaking", "writing"];
-  let weakest = domains[0];
-  let weakestScore = domainScores[domains[0]] ?? 100;
-
-  for (const d of domains) {
-    const score = domainScores[d] ?? 100;
-    if (score < weakestScore) {
-      weakestScore = score;
-      weakest = d;
+function selectStrategy(domainScores: Record<string, number> | null, questionIndex: number): { strategy: Strategy; weakestDomain: string; reason: string } {
+  // Rotation pattern: 1-2 sentence_frames, 3-4 weakest domain, 5 sentence_expansion, 6 sentence_frames
+  const getWeakestStrategy = (): { strategy: Strategy; weakest: string } => {
+    if (!domainScores || Object.keys(domainScores).length === 0) {
+      return { strategy: "sentence_frames", weakest: "none" };
     }
-  }
-
-  const allEqual = domains.every((d) => (domainScores[d] ?? 0) === weakestScore);
-
-  if (allEqual) {
-    const strategies: Strategy[] = ["sentence_frames", "sentence_expansion", "quick_writes"];
-    const idx = Math.floor(Date.now() / 86400000) % 3;
-    return {
-      strategy: strategies[idx],
-      weakestDomain: "balanced",
-      reason: "All domains are balanced — rotating strategies for variety.",
-    };
-  }
-
-  if (weakest === "reading" || weakest === "listening") {
-    return {
-      strategy: "sentence_frames",
-      weakestDomain: weakest,
-      reason: `${weakest.charAt(0).toUpperCase() + weakest.slice(1)} was this student's weakest area so today's session focused on Sentence Frames.`,
-    };
-  }
-  if (weakest === "speaking") {
-    return {
-      strategy: "sentence_expansion",
-      weakestDomain: weakest,
-      reason: "Speaking was this student's weakest area so today's session focused on Sentence Expansion.",
-    };
-  }
-  return {
-    strategy: "quick_writes",
-    weakestDomain: weakest,
-    reason: "Writing was this student's weakest area so today's session focused on Quick Writes.",
+    const domains = ["reading", "listening", "speaking", "writing"];
+    let weakest = domains[0];
+    let weakestScore = domainScores[domains[0]] ?? 100;
+    for (const d of domains) {
+      const score = domainScores[d] ?? 100;
+      if (score < weakestScore) { weakestScore = score; weakest = d; }
+    }
+    if (weakest === "reading" || weakest === "listening") return { strategy: "sentence_frames", weakest };
+    if (weakest === "speaking") return { strategy: "sentence_expansion", weakest };
+    return { strategy: "quick_writes", weakest };
   };
+
+  const weak = getWeakestStrategy();
+
+  if (questionIndex <= 1) {
+    return { strategy: "sentence_frames", weakestDomain: weak.weakest, reason: `Activities 1-2: Sentence Frames to build foundational skills.` };
+  }
+  if (questionIndex <= 3) {
+    return { strategy: weak.strategy, weakestDomain: weak.weakest, reason: `Activities 3-4: Targeting weakest domain (${weak.weakest}) with ${weak.strategy}.` };
+  }
+  if (questionIndex === 4) {
+    return { strategy: "sentence_expansion", weakestDomain: weak.weakest, reason: `Activity 5: Sentence Expansion for speaking practice.` };
+  }
+  // questionIndex === 5
+  return { strategy: "sentence_frames", weakestDomain: weak.weakest, reason: `Activity 6: Sentence Frames for a light, confident finish.` };
 }
 
 function getInputTypeFields(inputType: string, topic: string): string {
@@ -380,7 +359,7 @@ FILL-IN-THE-BLANK QUALITY RULES (MANDATORY):
 - The sentence MUST have clear context clues so the student can reasonably guess the answer
 - NEVER remove so many words that the sentence loses all meaning
 - Maximum ${isK2 ? "blanks per tier (Tier 1=1, Tier 2=2, Tier 3=3)" : "3"} blanks per sentence
-- ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer words only (no distractors)" : "4-6 word choices including 1-2 distractor words"}
+- ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer word(s) PLUS exactly 1-2 distractor single words. All words must be single words only, max 2 syllables. Example: wordBank: ['fly', 'swim', 'jump'] where 'fly' is correct and 'swim'/'jump' are distractors. NEVER include phrases or full sentences in wordBank" : "4-6 word choices including 1-2 distractor words"}
 - Good example: "The frog ___ on a green leaf in the jungle." (wordBank: ["sits", "runs", "jumped"])
 - Bad example: "A green ___ ___ on a ___" — too many blanks, no context, nonsensical
 - Before outputting, verify: "Does this sentence make sense with blanks? Can a student figure out the answers from context?" If not, rewrite.
@@ -415,8 +394,7 @@ ${isK2 ? `1. Do NOT include a reading passage — omit the "passage" field entir
 2. Show ONLY the fill-in-the-blank sentence directly
 3. The sentenceFrame field IS the activity — show it large and clear
 4. ALL words in the sentence and word bank must be max 2 syllables
-5. ALWAYS include a "wordBank" array with correct answer words only (no distractors) — these become tappable tiles
-6. Return distractors as SINGLE WORDS ONLY. Never return a phrase, sentence, or multiple words as a distractor. Example correct format: {"correct": "fly", "distractors": ["swim", "jump"]}. Example WRONG format: {"correct": "fly", "distractors": ["The red dragon can fly"]}` : `1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
+5. ALWAYS include a "wordBank" array with the correct answer word(s) PLUS 1-2 distractor single words — these become tappable tiles` : `1. Include a short 3-5 sentence passage (field: "passage") specifically about "${topic}"
 2. Present a sentence frame for the student to complete (unless this is a free production or light/fun activity)
 3. The question should clearly show the frame with blanks marked as ___
 4. ALWAYS include a "wordBank" array with answer choices as tappable options`}
@@ -533,7 +511,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { strategy, weakestDomain, reason } = selectStrategy(domainScores);
+    const { strategy, weakestDomain, reason } = selectStrategy(domainScores, questionIndex || 0);
     const prompt = buildPrompt(
       strategy,
       theme || "Nature & animals",
