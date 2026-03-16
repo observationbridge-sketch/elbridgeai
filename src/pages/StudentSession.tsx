@@ -986,7 +986,7 @@ const StudentSession = () => {
 
   const handleStep1Done = () => {
     setPart1Scores((s) => ({ ...s, listen: true }));
-    gamification.addPoints(POINTS.STEP1_LISTEN);
+    gamification.addPoints(POINTS.STEP1_LISTEN, effectiveGradeBand);
     saveResponse("listening", "Listened to anchor passage", "heard", anchor?.sentence || "", true, "Entering", "part1");
     handlePart1Next();
   };
@@ -999,7 +999,7 @@ const StudentSession = () => {
     setPart1Feedback("Great job! 🌟");
     setPart1Submitted(true);
     sounds.playCorrect();
-    gamification.addPoints(POINTS.STEP2_SAY_IT);
+    gamification.addPoints(POINTS.STEP2_SAY_IT, effectiveGradeBand);
     sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
@@ -1012,14 +1012,14 @@ const StudentSession = () => {
 
   const handleStep3Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, dragDrop: score.correct, dragDropTotal: score.total }));
-    gamification.addPoints(POINTS.STEP3_DRAG_DROP);
+    gamification.addPoints(POINTS.STEP3_DRAG_DROP, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Drag & Drop fill-in-the-blank", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
 
   const handleStep4Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, memoryMatch: score.correct, memoryMatchTotal: score.total }));
-    gamification.addPoints(POINTS.STEP4_MEMORY_MATCH);
+    gamification.addPoints(POINTS.STEP4_MEMORY_MATCH, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Memory Match", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
@@ -1027,7 +1027,7 @@ const StudentSession = () => {
   const handleStep5Complete = (correct: boolean) => {
     setPart1Scores((s) => ({ ...s, jumbled: correct ? 1 : 0, jumbledTotal: 1 }));
     if (correct) {
-      gamification.addPoints(POINTS.STEP5_JUMBLED);
+      gamification.addPoints(POINTS.STEP5_JUMBLED, effectiveGradeBand);
       sounds.playPoints();
     }
     if (!hasWritten) {
@@ -1280,7 +1280,7 @@ const StudentSession = () => {
     }
 
     if (correct) {
-      gamification.addPoints(POINTS.PART2_ACTIVITY);
+      gamification.addPoints(POINTS.PART2_ACTIVITY, effectiveGradeBand);
       sounds.playPoints();
     }
 
@@ -1415,13 +1415,13 @@ const StudentSession = () => {
 
     if (hasEnoughSentences && hasSequence) {
       // Full points
-      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS);
+      gamification.addPoints(POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
       const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${POINTS.CHALLENGE_STORY_COMPLETE + POINTS.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
       setPart3Feedback(feedback);
     } else {
       // Half points + encouraging feedback
       const halfPoints = Math.round(POINTS.CHALLENGE_STORY_COMPLETE / 2);
-      gamification.addPoints(halfPoints);
+      gamification.addPoints(halfPoints, effectiveGradeBand);
       const tips: string[] = [];
       if (!hasEnoughSentences) tips.push("try writing at least 3 sentences");
       if (!hasSequence) tips.push('use sequence words like "first, then, next, finally"');
@@ -1439,7 +1439,7 @@ const StudentSession = () => {
     const isCorrect = selectedOption === q.correctAnswer;
     if (isCorrect) {
       setPart3SpeedScore((s) => s + 1);
-      gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT);
+      gamification.addPoints(POINTS.CHALLENGE_SPEED_CORRECT, effectiveGradeBand);
       sounds.playCorrect();
       sounds.playPoints();
       setShowConfetti(true);
@@ -1476,7 +1476,7 @@ const StudentSession = () => {
         return;
       }
     }
-    gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE);
+    gamification.addPoints(POINTS.CHALLENGE_TEACH_COMPLETE, effectiveGradeBand);
     const keywords = part3Challenge?.acceptableKeywords || [];
     const norm = part3Answer.toLowerCase();
     const usedWords = keywords.filter((kw) => norm.includes(kw.toLowerCase())).slice(0, 3);
@@ -1491,12 +1491,12 @@ const StudentSession = () => {
 
   const finishSession = async () => {
     sounds.playSessionComplete();
-    gamification.addPoints(POINTS.SESSION_COMPLETE);
-    gamification.completeSession();
+    gamification.addPoints(POINTS.SESSION_COMPLETE, effectiveGradeBand);
+    gamification.completeSession(undefined, effectiveGradeBand);
     if (domainScores) {
       for (const [, pct] of Object.entries(domainScores)) {
         if (pct >= 80) {
-          gamification.addPoints(POINTS.DOMAIN_80_BONUS);
+          gamification.addPoints(POINTS.DOMAIN_80_BONUS, effectiveGradeBand);
           break;
         }
       }

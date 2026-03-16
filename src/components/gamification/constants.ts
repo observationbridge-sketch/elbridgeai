@@ -63,6 +63,11 @@ export const BADGES: BadgeDef[] = [
   { id: "story_reader", name: "Story Reader", icon: "📖", description: "Score 80%+ on Reading 5 times", category: "skill" },
   { id: "word_weaver", name: "Word Weaver", icon: "🖊️", description: "Score 80%+ on Writing 5 times", category: "skill" },
   { id: "super_listener", name: "Super Listener", icon: "👂", description: "Score 80%+ on Listening 5 times", category: "skill" },
+  // 3-5 Specific
+  { id: "quick_writer", name: "Quick Writer", icon: "⚡✏️", description: "Complete a Quick Write activity", category: "skill" },
+  { id: "sequence_master", name: "Sequence Master", icon: "🔗", description: "Use 3+ sequence words in Story Builder", category: "skill" },
+  { id: "streak_correct_3", name: "Hot Streak", icon: "🎯", description: "Get 3 consecutive correct answers in one session", category: "skill" },
+  { id: "domain_ace", name: "Domain Ace", icon: "🏅", description: "Score 80%+ in any single domain", category: "skill" },
   // Champion
   { id: "language_champion", name: "Language Champion", icon: "🏆", description: "Earn all 4 skill badges", category: "champion" },
   { id: "full_evolution", name: "Full Evolution", icon: "🦋", description: "Reach Language Butterfly level", category: "champion" },
