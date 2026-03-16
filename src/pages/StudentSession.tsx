@@ -2505,7 +2505,7 @@ function Part2StrategyView({
     setSfWrongMessage(null);
     setSfRevealed(false);
     setSfSelectedWord(null);
-    setSfForceNextVisible(false);
+    
   }, [activity.question]);
 
   // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
