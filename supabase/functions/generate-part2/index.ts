@@ -414,10 +414,10 @@ Return ONLY valid JSON (no markdown):
 {
   "type": "sentence_frame",
   "inputType": "${inputType}",${extraFields}
-  ${isK2 ? '"passage": null,' : `"passage": "<3-5 sentence passage about ${topic}>",`}
+  ${isK2 ? '"passage": null,' : `"passage": "<3-5 sentence passage about ${topic}, MAXIMUM 60 words>",`}
   "question": "${isK2 ? "Tap a word to finish the sentence." : "<instruction + the sentence frame with ___ blanks>"}",
   "sentenceFrame": "<just the frame itself with ___ blanks>",
-  "wordBank": ["<${isK2 ? "correct answer words only, max 2 syllables each" : "4-6 words including correct answers and 1-2 distractors"}>"],
+  "wordBank": ["<${isK2 ? "correct answer words plus 1-2 distractors, max 2 syllables each" : "4-6 key vocabulary words from passage as reading support hints"}>"],
   "fillInBlank": {
     "sentence": "<sentence with ___ placeholders>",
     "blanks": ["<blank metadata or indices>"],
