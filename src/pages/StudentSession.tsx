@@ -1293,6 +1293,14 @@ const StudentSession = () => {
     };
     const domain = domainMap[part2Activity.strategy] || "reading";
 
+    // Track quick_writes completions for badge
+    if (part2Activity.strategy === "quick_writes" && effectiveGradeBand === "3-5") {
+      quickWriteCountRef.current += 1;
+      if (quickWriteCountRef.current >= 3) {
+        gamification.awardBadge("quick_writer");
+      }
+    }
+
     saveResponse(
       domain,
       part2Activity.question,
