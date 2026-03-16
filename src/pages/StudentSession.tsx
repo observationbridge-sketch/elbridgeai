@@ -1282,7 +1282,7 @@ const StudentSession = () => {
     }
 
     if (correct) {
-      gamification.addPoints(POINTS.PART2_ACTIVITY, effectiveGradeBand);
+      gamification.addPoints(pts.PART2_ACTIVITY, effectiveGradeBand);
       sounds.playPoints();
     }
 
