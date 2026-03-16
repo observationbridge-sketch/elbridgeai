@@ -2621,8 +2621,7 @@ function Part2StrategyView({
                             if (newAttempts >= 2) {
                               setSfRevealed(true);
                               setSfWrongMessage(null);
-                              setAnswer(word);
-                              setTimeout(() => onSubmit(), 400);
+                              // Don't call onSubmit — the "Next Activity" button handles it
                             } else {
                               setSfWrongMessage("Try again! 🌟");
                               setTimeout(() => {
