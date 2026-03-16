@@ -2216,12 +2216,6 @@ function Part1View({
         {/* Step 5: Jumbled Sentence */}
         {step === 5 && jumble && (
           <>
-            {/* Try again message */}
-            {jumbleTryAgainMsg && !jumbleSubmitted && (
-              <div className="rounded-xl p-4 bg-warning/10 border border-warning/20 text-center animate-fade-in">
-                <p className="text-lg font-medium text-warning">{jumbleTryAgainMsg}</p>
-              </div>
-            )}
 
             {/* Word chips */}
             <div className="bg-muted/50 rounded-lg p-4 border border-border">
