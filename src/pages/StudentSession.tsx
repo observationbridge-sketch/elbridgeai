@@ -1001,7 +1001,7 @@ const StudentSession = () => {
     setPart1Feedback("Great job! 🌟");
     setPart1Submitted(true);
     sounds.playCorrect();
-    gamification.addPoints(POINTS.STEP2_SAY_IT, effectiveGradeBand);
+    gamification.addPoints(pts.STEP2_SAY_IT, effectiveGradeBand);
     sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
