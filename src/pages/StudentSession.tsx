@@ -1823,7 +1823,7 @@ const StudentSession = () => {
   // ─── Main render ───
   return (
     <ThemePageWrapper theme={sessionTheme}>
-    <div className={`min-h-screen ${isK2 ? "text-[22px] leading-relaxed" : ""}`}>
+    <div className={`min-h-screen ${isK2 ? "text-2xl leading-relaxed" : ""}`}>
       {/* Top bar */}
       <div className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
