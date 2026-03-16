@@ -158,14 +158,17 @@ export function isSentenceFrameCorrect(
 export function buildSentenceFrameTiles(
   rawTiles: string[],
   correctAnswer: string,
-  tier: number
+  tier: number,
+  blankSentence?: string
 ): string[] {
   const targetCount = TIER_TILE_COUNTS[tier] || TIER_TILE_COUNTS[1];
   const correctNorm = normalizeWord(correctAnswer);
 
-  // 1. Clean all tiles: extract single words, normalize
+  // 1. Clean all tiles: extract single words, validate, normalize
   const cleanedTiles = rawTiles
-    .map(extractSingleWord)
+    .map((t) => extractSingleWord(t, blankSentence))
+    .map((t) => validateTile(t))
+    .filter((t): t is string => t !== null)
     .map(normalizeWord)
     .filter(Boolean);
 
