@@ -1602,7 +1602,7 @@ const StudentSession = () => {
     if (!showResults) {
       // ─── Phase 1: Full-screen celebration ───
       return (
-        <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0a0f1a, #1a1040)" }}>
+        <div className="min-h-screen relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
           {/* Confetti background */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {["🌟", "⭐", "🎉", "✨", "💫", "🏆", "🎊", "💪", "🌈", "🎶", "🔥", "💎"].map((emoji, i) => (
