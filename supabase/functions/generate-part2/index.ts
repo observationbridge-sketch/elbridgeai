@@ -343,11 +343,11 @@ function buildPrompt(strategy: Strategy, theme: string, topic: string, questionI
   const k2Override = isK2 ? `
 K-2 CONTENT RULES (MANDATORY):
 - Maximum 8 words per sentence, simple subject-verb-object structure ONLY
-- NO subordinate clauses, NO "but", "however", "which", "although", "features"
+- NO subordinate clauses, NO "but", "however", "which", "although", "when", "because", "features"
+- NEVER use "because", "although", "when", or any subordinate clause connector — BANNED in K-2
 - Topics must be CONCRETE and VISUAL — things kids can see, touch, or imagine
 - ALL vocabulary words must have a MAXIMUM of 2 syllables — NO exceptions
 - Maximum 3 new vocabulary words per session
-- Maximum 1 blank per sentence
 - Multiple choice must have only 2-3 options (short, 1-3 words each)
 - Use only Tier 1 (common everyday) vocabulary
 - Keep all sentences under 8 words
@@ -358,8 +358,9 @@ K-2 CONTENT RULES (MANDATORY):
 - For sentence_frames: Do NOT include a reading passage. Show ONLY the fill-in-the-blank sentence and word bank tiles.
 
 ADAPTIVE DIFFICULTY TIER (current: Tier ${tier}):
-${tier === 1 ? `- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly 2 word choices in wordBank` : ""}${tier === 2 ? `- Tier 2: Maximum 6 words per sentence, exactly 1 blank, exactly 3 word choices in wordBank` : ""}${tier === 3 ? `- Tier 3: Maximum 8 words per sentence, exactly 2 blanks, exactly 4 word choices in wordBank` : ""}
-- You MUST follow the tier constraints exactly. Do not exceed the word/blank/choice limits.` : "";
+${tier === 1 ? `- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly 2 word choices in wordBank` : ""}${tier === 2 ? `- Tier 2: Maximum 6 words per sentence, exactly 2 blanks, exactly 3 word choices in wordBank` : ""}${tier === 3 ? `- Tier 3: Maximum 8 words per sentence, exactly 3 blanks, exactly 4 word choices in wordBank` : ""}
+- You MUST follow the tier constraints exactly. Do not exceed the word/blank/choice limits.
+- NEVER use "because", "although", "when", or any subordinate clause connector in K-2 sentences. Only simple subject-verb-object structures.` : "";
   const themeDirective = `CRITICAL THEME RULE: This activity is part of a session about "${topic}" (theme: "${theme}"). ALL content MUST relate directly to "${topic}" only. Before outputting, verify: "Does this activity relate to ${topic}?" — if not, regenerate.`;
 
   const positionConstraint = getPositionConstraint(questionIndex, grade, theme);
@@ -378,7 +379,7 @@ FILL-IN-THE-BLANK QUALITY RULES (MANDATORY):
 - The sentence MUST make complete grammatical sense when the correct words are inserted
 - The sentence MUST have clear context clues so the student can reasonably guess the answer
 - NEVER remove so many words that the sentence loses all meaning
-- Maximum ${isK2 ? "2" : "3"} blanks per sentence
+- Maximum ${isK2 ? "blanks per tier (Tier 1=1, Tier 2=2, Tier 3=3)" : "3"} blanks per sentence
 - ALWAYS include a "wordBank" array with ${isK2 ? "the correct answer words only (no distractors)" : "4-6 word choices including 1-2 distractor words"}
 - Good example: "The frog ___ on a green leaf in the jungle." (wordBank: ["sits", "runs", "jumped"])
 - Bad example: "A green ___ ___ on a ___" — too many blanks, no context, nonsensical

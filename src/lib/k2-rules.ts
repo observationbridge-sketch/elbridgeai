@@ -17,9 +17,16 @@ export const FALLBACK_DISTRACTORS = [
 
 /** Required tile count per sentence frame tier */
 export const TIER_TILE_COUNTS: Record<number, number> = {
-  1: 2, // 1 correct + 1 distractor
-  2: 3, // 1 correct + 2 distractors
-  3: 4, // 1 correct + 3 distractors
+  1: 2, // 1 blank → 1 correct + 1 distractor
+  2: 4, // 2 blanks → 2 correct + 2 distractors
+  3: 6, // 3 blanks → 3 correct + 3 distractors
+};
+
+/** Required blank count per tier */
+export const TIER_BLANK_COUNTS: Record<number, number> = {
+  1: 1,
+  2: 2,
+  3: 3,
 };
 
 /** Max wrong attempts before revealing the answer */

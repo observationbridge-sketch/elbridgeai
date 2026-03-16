@@ -14,7 +14,7 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 ## Architecture
 - Teachers: auth via Supabase (Google OAuth + email), dashboard with session codes
 - Students: anon access, join via 6-char code + first name → theme picker → session
-- AI: Lovable AI (gemini-3-flash-preview) generates activities per domain
+- AI: Lovable AI (openai/gpt-5) generates activities per domain
 - Domains: Reading, Writing, Speaking, Listening
 - WIDA levels: Entering, Emerging, Developing, Expanding, Bridging
 
@@ -26,14 +26,17 @@ ElbridgeAI - K-12 English Language Learning platform for teachers and students
 - K-2 positions 5-6: Speaking only (recording), must involve animal companion
 - Session difficulty curve: Easy→Medium→Hard→PEAK→Wind-down→Fun-finish
 - K-2 sentence_frames: No passage, tap-only word bank, max 2-syllable words
+- K-2 sentence_frames: NO "Sentence frame" box, NO text input, NO Submit button
+- K-2 sentence_frames: ONLY blank sentence (large) + tappable word tiles
 
 ## Adaptive Difficulty (K-2 Sentence Frames)
-- 3 Tiers: T1 (4-word/1blank/2choices), T2 (6-word/1blank/3choices), T3 (8-word/2blanks/4choices)
+- 3 Tiers: T1 (4-word/1blank/2choices), T2 (6-word/2blanks/3choices), T3 (8-word/3blanks/4choices)
 - Advance: 3 consecutive correct → tier up. Drop: 2 consecutive wrong → tier down
 - Tier persisted in student_points.sentence_frame_tier
 - Tier history in student_tier_history table
 - consecutive_tier_drops tracked for "Needs Support" flagging (≥2 drops)
 - Labels: Beginning 🌱, Developing 🌿, Expanding 🌳
+- BANNED connectors in K-2: "because", "although", "when", all subordinate clause connectors
 
 ## Edge Functions
 - generate-anchor-sentence: AI anchor (verify_jwt=false)
