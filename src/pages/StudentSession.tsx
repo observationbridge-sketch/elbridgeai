@@ -2532,14 +2532,13 @@ function Part2StrategyView({
     return "___";
   }, [isK2SF, k2SfData]);
 
-  // Reset retry state when activity changes
+  // Reset retry state when activity changes — use index as primary trigger
   useEffect(() => {
     setSfAttempts(0);
     setSfWrongMessage(null);
     setSfRevealed(false);
     setSfSelectedWord(null);
-    
-  }, [activity.question]);
+  }, [index]);
 
   // Safety catch: after 2+ attempts, force reveal + Next Activity no matter what
   useEffect(() => {
@@ -2717,7 +2716,7 @@ function Part2StrategyView({
                   <p className="text-lg font-medium text-warning">{sfWrongMessage}</p>
                 </div>
               )}
-              <div className="bg-muted/50 rounded-lg p-3 border border-border">
+              <div className="bg-muted/50 rounded-lg p-3 border border-border" key={`sf-tiles-${index}`}>
                 <div className="flex flex-wrap gap-3 justify-center">
                   {sfTiles.map((word, i) => {
                     const isWrongBounce = sfSelectedWord === word && !!sfWrongMessage;
