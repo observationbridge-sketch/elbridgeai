@@ -1421,7 +1421,7 @@ const StudentSession = () => {
     } else {
       // Half points + encouraging feedback
       const halfPoints = Math.round(POINTS.CHALLENGE_STORY_COMPLETE / 2);
-      gamification.addPoints(halfPoints);
+      gamification.addPoints(halfPoints, effectiveGradeBand);
       const tips: string[] = [];
       if (!hasEnoughSentences) tips.push("try writing at least 3 sentences");
       if (!hasSequence) tips.push('use sequence words like "first, then, next, finally"');
