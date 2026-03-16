@@ -1576,13 +1576,16 @@ const StudentSession = () => {
   // ─── Session ended — FULL CELEBRATION SCREEN (2 phases) ───
 
   if (sessionEnded) {
+    // Force dark background on body to prevent ThemePageWrapper bleed-through
+    document.body.style.background = '#0f0f1a';
+
     const animalLevel = effectiveGradeBand === "3-5" ? getAnimalLevel35(gamification.totalPoints) : getAnimalLevel(gamification.totalPoints);
     const nextLevel = effectiveGradeBand === "3-5" ? getNextLevel35(gamification.totalPoints) : getNextLevel(gamification.totalPoints);
 
     // Safety: if animalLevel is undefined, show a simple completion screen instead of white screen
     if (!animalLevel) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6" style={{ background: "linear-gradient(135deg, #0a0f1a, #1a1040)" }}>
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
           <div className="text-[100px] leading-none">🎉</div>
           <h1 className="text-4xl font-bold text-white">Great job! You finished!</h1>
           <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
