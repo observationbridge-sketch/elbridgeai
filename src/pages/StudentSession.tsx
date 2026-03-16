@@ -1460,12 +1460,17 @@ const StudentSession = () => {
     if (part3SpeedIndex < 4) {
       setPart3SpeedIndex((i) => i + 1);
     } else {
+      const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
       const elapsed = Math.round((Date.now() - part3StartTime) / 1000);
       const mins = Math.floor(elapsed / 60);
       const secs = elapsed % 60;
-      setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${part3SpeedScore + (isCorrect ? 1 : 0)}/5 🏎️`);
+      setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
       setPart3Submitted(true);
       setChallengeCompleted("Speed Round");
+      // Award speed_demon badge for perfect 5/5
+      if (finalScore === 5 && effectiveGradeBand === "3-5") {
+        gamification.awardBadge("speed_demon");
+      }
     }
   };
 
