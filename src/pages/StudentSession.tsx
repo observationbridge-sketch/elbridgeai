@@ -30,7 +30,7 @@ import { MemoryMatch } from "@/components/session/MemoryMatch";
 import {
   normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
   isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
-  extractSingleWord, MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS, shouldForceRevealAfterAttempts,
+  MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS, shouldForceRevealAfterAttempts,
 } from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
