@@ -2716,7 +2716,7 @@ function Part2StrategyView({
                   <p className="text-lg font-medium text-warning">{sfWrongMessage}</p>
                 </div>
               )}
-              <div className="bg-muted/50 rounded-lg p-3 border border-border">
+              <div className="bg-muted/50 rounded-lg p-3 border border-border" key={`sf-tiles-${index}`}>
                 <div className="flex flex-wrap gap-3 justify-center">
                   {sfTiles.map((word, i) => {
                     const isWrongBounce = sfSelectedWord === word && !!sfWrongMessage;
