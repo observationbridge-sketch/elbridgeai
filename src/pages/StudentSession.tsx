@@ -2119,6 +2119,40 @@ function generateMemoryPairs(anchor: AnchorSentence, isK2?: boolean): { words: s
   return { words: selected, matches: selected.map(w => `means "${w}"`) };
 }
 
+function WordTTSChips({ sentence, tts, isK2 }: { sentence: string; tts: ReturnType<typeof useTTS>; isK2: boolean }) {
+  const [speakingWord, setSpeakingWord] = useState<number | null>(null);
+  const words = sentence.split(/\s+/).filter(Boolean);
+
+  const handleTap = (word: string, index: number) => {
+    const clean = word.replace(/[.,!?;:"""''()]/g, "");
+    if (!clean) return;
+    setSpeakingWord(index);
+    tts.speak(clean);
+    setTimeout(() => setSpeakingWord(null), 800);
+  };
+
+  return (
+    <div className="space-y-1">
+      <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground font-medium`}>
+        {isK2 ? "Tap a word to hear it! 👆" : "Tap any word to hear it again:"}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {words.map((word, i) => (
+          <button
+            key={i}
+            onClick={() => handleTap(word, i)}
+            className={`rounded-full bg-primary/10 text-primary border border-primary/20 font-medium transition-all cursor-pointer hover:bg-primary/20 ${
+              isK2 ? "text-lg min-h-[48px] px-4" : "text-sm px-3 py-1.5"
+            } ${speakingWord === i ? "animate-pulse ring-2 ring-primary/40" : ""}`}
+          >
+            {word}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
   part1Submitted, part1Feedback, onStep1Done, onStep2Submit,
@@ -2367,6 +2401,10 @@ function Part1View({
             <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border ${isK2 ? "text-center" : ""}`}>
               <p className={`${isK2 ? "text-2xl" : "text-lg"} text-foreground font-medium leading-relaxed`}>{anchor.sentence}</p>
             </div>
+
+            {/* Word-level TTS chips */}
+            <WordTTSChips sentence={anchor.sentence} tts={tts} isK2={isK2} />
+
             {!part1Submitted ? (
               <>
                 <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} nudgeMessage={speakingNudgeMsg} />
