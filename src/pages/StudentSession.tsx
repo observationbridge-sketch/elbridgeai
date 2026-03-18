@@ -1287,7 +1287,7 @@ const StudentSession = () => {
     if (overrideAnswer) setPart2Answer(overrideAnswer);
 
     // Quick writes: require at least 2 sentences before accepting
-    if (part2Activity.strategy === "quick_writes") {
+    if (part2Activity.strategy === "quick_writes" || part2Activity.type === "quick_write") {
       const qwSentences = answerText.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
       if (qwSentences.length < 2) {
         toast("Great start! Can you add one more sentence? ✍️");
