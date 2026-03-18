@@ -283,3 +283,13 @@
 .animate-theme-leaf-fall {
   animation: theme-leaf-fall 12s linear infinite;
 }
+
+/* Waveform bars for microphone recording */
+@keyframes waveform-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.animate-waveform-bar {
+  animation: waveform-bar 0.6s ease-in-out infinite;
+}

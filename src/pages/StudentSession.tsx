@@ -3088,12 +3088,31 @@ function Part3ChallengeView({
 // ═══════════════════════════════════════════════
 // Shared Components
 // ═══════════════════════════════════════════════
-function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
+
+function WaveformBars({ isK2 }: { isK2?: boolean }) {
+  const barCount = isK2 ? 5 : 4;
+  const barHeight = isK2 ? "h-10" : "h-6";
+  const barWidth = isK2 ? "w-2" : "w-1.5";
+  return (
+    <div className="flex items-center justify-center gap-1">
+      {Array.from({ length: barCount }, (_, i) => (
+        <div
+          key={i}
+          className={`${barWidth} ${barHeight} rounded-full bg-destructive animate-waveform-bar`}
+          style={{ animationDelay: `${i * 0.12}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2, nudgeMessage }: {
   speech: ReturnType<typeof useSpeechRecognition>;
   answer: string;
   setAnswer: (v: string) => void;
   disabled?: boolean;
   isK2?: boolean;
+  nudgeMessage?: string | null;
 }) {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastTranscriptRef = useRef(answer);
@@ -3104,7 +3123,6 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       return;
     }
-    // Reset timer whenever transcript changes
     if (answer !== lastTranscriptRef.current) {
       lastTranscriptRef.current = answer;
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
@@ -3114,12 +3132,11 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
         }
       }, 3000);
     } else if (!silenceTimerRef.current) {
-      // Start initial silence timer when recording starts
       silenceTimerRef.current = setTimeout(() => {
         if (speech.isListening) {
           speech.stopListening();
         }
-      }, 5000); // 5s for initial silence (student may need time)
+      }, 5000);
     }
     return () => {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
@@ -3131,7 +3148,7 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
       <div className="flex flex-col items-center gap-4">
         {speech.isSupported ? (
           <>
-            {!disabled && !answer && (
+            {!disabled && !answer && !speech.isListening && (
               <p className="text-2xl font-bold text-foreground text-center">
                 Tap 🎤 to talk!
               </p>
@@ -3149,11 +3166,19 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
               {speech.isListening ? <MicOff className="h-14 w-14" /> : <Mic className="h-14 w-14" />}
             </button>
             {speech.isListening && (
-              <p className="text-lg text-destructive font-medium animate-pulse">
-                🔴 Listening...
-              </p>
+              <div className="flex flex-col items-center gap-2">
+                <WaveformBars isK2={true} />
+                <p className="text-lg text-destructive font-medium">
+                  🔴 Listening...
+                </p>
+              </div>
             )}
-            {answer && !speech.isListening && (
+            {nudgeMessage && !speech.isListening && (
+              <div className="w-full bg-warning/15 border-2 border-warning/30 rounded-xl p-4 text-center animate-fade-in">
+                <p className="text-xl font-bold text-warning">{nudgeMessage}</p>
+              </div>
+            )}
+            {answer && !speech.isListening && !nudgeMessage && (
               <div className="w-full bg-muted/50 rounded-lg p-4 border border-border">
                 <p className="text-sm text-muted-foreground mb-1">What I heard:</p>
                 <p className="text-lg text-foreground font-medium">{answer}</p>
@@ -3199,10 +3224,20 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2 }: {
           >
             {speech.isListening ? <MicOff className="h-10 w-10" /> : <Mic className="h-10 w-10" />}
           </button>
-          <p className="text-xs text-muted-foreground">
-            {speech.isListening ? "🔴 Recording... tap the mic to stop" : "Ready to listen"}
-          </p>
-          {answer && (
+          {speech.isListening && (
+            <div className="flex flex-col items-center gap-2">
+              <WaveformBars isK2={false} />
+              <p className="text-xs text-destructive font-medium">
+                🔴 Recording... tap the mic to stop
+              </p>
+            </div>
+          )}
+          {nudgeMessage && !speech.isListening && (
+            <div className="w-full bg-warning/10 border border-warning/20 rounded-lg p-3 text-center animate-fade-in">
+              <p className="text-sm font-medium text-warning">{nudgeMessage}</p>
+            </div>
+          )}
+          {answer && !speech.isListening && !nudgeMessage && (
             <div className="w-full bg-muted/50 rounded-lg p-3 border border-border">
               <p className="text-xs text-muted-foreground mb-1">What I heard:</p>
               <p className="text-foreground">{answer}</p>
