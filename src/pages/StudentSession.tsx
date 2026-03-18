@@ -2553,6 +2553,10 @@ function Part2StrategyView({
   const [sfRevealed, setSfRevealed] = useState(false);
   const [sfSelectedWord, setSfSelectedWord] = useState<string | null>(null);
 
+  // Speaking nudge state for recording activities
+  const [speakNudgeMsg, setSpeakNudgeMsg] = useState<string | null>(null);
+  const [speakAttemptCount, setSpeakAttemptCount] = useState(0);
+
   // Deterministic K-2 sentence frame — replaces Gemini-generated blank/tiles
   const k2SfData = useMemo(() => {
     if (!isK2SF || !anchor) return null;
