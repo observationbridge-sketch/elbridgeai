@@ -120,12 +120,56 @@ const TOTAL_STEPS_K2 = 10;  // 5 + 4 + 1
 
 type GradeBand = "K-2" | "3-5";
 
+// ─── Error Boundary for activity rendering ───
+import React from "react";
+class ActivityErrorBoundary extends React.Component<
+  { children: React.ReactNode; onSkip: () => void; isK2?: boolean },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[ActivityErrorBoundary] Caught render error:", error, info.componentStack);
+  }
+  componentDidUpdate(prevProps: any) {
+    // Reset error state when activity changes
+    if (prevProps.children !== this.props.children && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card className="card-shadow border-border">
+          <CardContent className="py-12 text-center space-y-4">
+            <p className="text-3xl">😅</p>
+            <p className={`font-medium ${this.props.isK2 ? "text-xl" : "text-lg"} text-foreground`}>
+              Something went wrong with this activity.
+            </p>
+            <p className="text-sm text-muted-foreground">Error: {this.state.error?.message}</p>
+            <Button variant="hero" size="lg" onClick={this.props.onSkip}>
+              Skip to Next Activity →
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ─── Content validation ───
 function validatePart2Activity(data: any): data is Part2Activity {
   if (!data) return false;
   if (!data.question || typeof data.question !== "string") return false;
   if (!data.modelAnswer || typeof data.modelAnswer !== "string") return false;
-  if (!data.strategy || typeof data.strategy !== "string") return false;
+  // strategy may come as activity.type from edge function — accept either
+  if (!data.strategy && !data.type) return false;
   if (!Array.isArray(data.acceptableKeywords)) return false;
   return true;
 }
