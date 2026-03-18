@@ -91,10 +91,15 @@ const StudentThemePicker = () => {
   const handleGo = async () => {
     if (!selectedTheme) return;
     setSaving(true);
-    await supabase
+    const { error: themeError } = await supabase
       .from("session_students")
-      .update({ theme: selectedTheme } as any)
+      .update({ theme: selectedTheme })
       .eq("id", studentId);
+    if (themeError) {
+      console.error("[ThemePicker] Failed to save theme:", themeError);
+    } else {
+      console.log("[ThemePicker] Theme saved successfully:", selectedTheme);
+    }
     navigate(`/student/session/${sessionId}/${studentId}`);
   };
 
