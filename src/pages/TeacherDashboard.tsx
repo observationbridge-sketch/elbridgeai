@@ -479,6 +479,14 @@ const TeacherDashboard = () => {
                         </div>
                       )}
 
+                      {/* Microphone tip */}
+                      <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 flex items-start gap-2">
+                        <span className="text-base shrink-0">💡</span>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          <span className="font-medium text-foreground">Tip:</span> Before students start, open a session on each device and click "Allow" when the browser asks to use the microphone. The browser will remember this and students won't be interrupted.
+                        </p>
+                      </div>
+
                       {/* Generate button */}
                       <Button
                         variant="hero"

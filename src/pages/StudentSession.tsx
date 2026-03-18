@@ -931,7 +931,8 @@ const StudentSession = () => {
   const saveResponse = async (
     domain: string, question: string, studentAnswer: string,
     correctAnswer: string, isCorrect: boolean, widaLevel: string,
-    sessionPart: string, strategy?: string
+    sessionPart: string, strategy?: string,
+    speakingMeta?: { speaking_duration_seconds: number; speaking_full_attempt: boolean }
   ) => {
     try {
       await supabase.from("student_responses").insert({
@@ -946,6 +947,7 @@ const StudentSession = () => {
         session_part: sessionPart,
         strategy: strategy || null,
         grade_band: effectiveGradeBand,
+        ...(speakingMeta ? speakingMeta : {}),
       } as any);
     } catch { /* non-blocking */ }
   };
@@ -1016,7 +1018,11 @@ const StudentSession = () => {
       setHasSpoken(true);
       gamification.awardBadge("first_voice");
     }
-    saveResponse("speaking", `Say It: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
+    const speakingMeta = {
+      speaking_duration_seconds: speech.lastDurationSeconds,
+      speaking_full_attempt: speech.lastDurationSeconds >= (isK2 ? 2 : 4) && (anchor.keyWords || []).some(kw => part1Answer.toLowerCase().includes(kw.toLowerCase())),
+    };
+    saveResponse("speaking", `Say It: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1", undefined, speakingMeta);
     // Auto-advance after 3 seconds
     setTimeout(() => handlePart1Next(), 3000);
   };
@@ -1310,6 +1316,12 @@ const StudentSession = () => {
       }
     }
 
+    const isRecordingActivity = part2Activity.inputType === "recording" || part2Activity.inputType === "record_then_type";
+    const speakingMeta = isRecordingActivity && speech.lastDurationSeconds > 0 ? {
+      speaking_duration_seconds: speech.lastDurationSeconds,
+      speaking_full_attempt: speech.lastDurationSeconds >= (isK2 ? 2 : 4) && (part2Activity.acceptableKeywords || []).some(kw => answerText.toLowerCase().includes(kw.toLowerCase())),
+    } : undefined;
+
     saveResponse(
       domain,
       part2Activity.question,
@@ -1318,7 +1330,8 @@ const StudentSession = () => {
       correct,
       part2Activity.difficulty <= 2 ? "Entering" : part2Activity.difficulty <= 4 ? "Developing" : "Expanding",
       "part2",
-      part2Activity.strategy
+      part2Activity.strategy,
+      speakingMeta
     );
   };
 
@@ -3179,6 +3192,39 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2, nudgeMessa
 }) {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastTranscriptRef = useRef(answer);
+  const [micPermission, setMicPermission] = useState<"prompt" | "granted" | "denied" | "unknown">("unknown");
+  const [showCoaching, setShowCoaching] = useState(false);
+
+  // Check mic permission on mount for K-2
+  useEffect(() => {
+    if (!isK2 || !speech.isSupported) return;
+    if (typeof navigator === "undefined" || !navigator.permissions) {
+      setMicPermission("unknown");
+      return;
+    }
+    navigator.permissions.query({ name: "microphone" as PermissionName }).then((result) => {
+      setMicPermission(result.state as any);
+      if (result.state === "prompt") {
+        setShowCoaching(true);
+      }
+      result.onchange = () => {
+        setMicPermission(result.state as any);
+        if (result.state === "granted") setShowCoaching(false);
+      };
+    }).catch(() => setMicPermission("unknown"));
+  }, [isK2, speech.isSupported]);
+
+  const handleCoachingReady = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      setMicPermission("granted");
+      setShowCoaching(false);
+    } catch {
+      setMicPermission("denied");
+      setShowCoaching(false);
+    }
+  };
 
   // K-2 auto-stop after 3s of silence
   useEffect(() => {
@@ -3205,6 +3251,25 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2, nudgeMessa
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
   }, [isK2, speech.isListening, answer]);
+
+  // K-2 coaching overlay
+  if (isK2 && showCoaching && micPermission === "prompt") {
+    return (
+      <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center gap-6 p-8">
+        <span className="text-8xl">🎤</span>
+        <h2 className="text-3xl font-bold text-foreground text-center">Time to use your voice!</h2>
+        <p className="text-xl text-muted-foreground text-center max-w-sm">
+          Wait for your teacher to help you press <span className="font-bold text-foreground">Allow</span> 👆
+        </p>
+        <button
+          onClick={handleCoachingReady}
+          className="mt-4 px-10 py-5 text-2xl font-bold rounded-2xl bg-success text-success-foreground shadow-xl hover:scale-105 active:scale-95 transition-transform"
+        >
+          Ready! 🎤
+        </button>
+      </div>
+    );
+  }
 
   if (isK2) {
     return (
