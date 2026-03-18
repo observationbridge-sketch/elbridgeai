@@ -91,8 +91,10 @@ const StudentThemePicker = () => {
   };
 
   const handleGo = async () => {
+    console.log("[ThemePicker] handleGo called with selectedTheme:", selectedTheme, "studentId:", studentId);
     if (!selectedTheme) return;
     setSaving(true);
+    console.log("[ThemePicker] About to update Supabase - studentId:", studentId, "theme:", selectedTheme);
     const { error: themeError } = await supabase
       .from("session_students")
       .update({ theme: selectedTheme })
