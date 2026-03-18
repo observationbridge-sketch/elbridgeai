@@ -2007,69 +2007,52 @@ const StudentSession = () => {
                   isK2={isK2}
                 />
                ) : inPart2 && part2Activity ? (
-                (() => {
-                  try {
-                    return (
-                      <>
-                        <Part2StrategyView
-                          activity={part2Activity}
-                          index={part2Index}
-                          totalActivities={part2Count}
-                          answer={part2Answer}
-                          setAnswer={setPart2Answer}
-                          submitted={part2Submitted}
-                          feedback={part2Feedback}
-                          isCorrect={part2IsCorrect}
-                          speech={speech}
-                          tts={tts}
-                          onSubmit={(overrideAnswer?: string) => submitPart2(overrideAnswer)}
-                          onSubmitMC={(option: string) => submitPart2(option)}
-                          onNext={nextPart2}
-                          isK2={isK2}
-                          sentenceFrameTier={sentenceFrameTier}
-                          sounds={sounds}
-                          anchor={anchor}
-                          gradeBand={effectiveGradeBand}
-                        />
-                        {/* K-2 Feeling Rating */}
-                        {isK2 && part2Submitted && !showFeelingRating && (
-                          <div className="mt-6 text-center">
-                            <p className="text-lg font-medium text-white/80 mb-3">How did that feel?</p>
-                            <div className="flex justify-center gap-6">
-                              {[
-                                { emoji: "😕", label: "Hard", value: 1 },
-                                { emoji: "😐", label: "Okay", value: 2 },
-                                { emoji: "😊", label: "Easy!", value: 3 },
-                              ].map(({ emoji, label, value }) => (
-                                <button
-                                  key={value}
-                                  onClick={() => handleFeelingSelect(value)}
-                                  className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
-                                >
-                                  <span className="text-5xl">{emoji}</span>
-                                  <span className="text-sm text-white/60">{label}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  } catch (renderError) {
-                    console.error("[Part2] Render crash caught:", renderError, { activity: part2Activity, index: part2Index });
-                    return (
-                      <Card className="card-shadow border-border">
-                        <CardContent className="py-12 text-center space-y-4">
-                          <p className="text-3xl">😅</p>
-                          <p className="font-medium text-lg text-foreground">Something went wrong with this activity.</p>
-                          <Button variant="hero" size="lg" onClick={nextPart2}>
-                            Skip to Next Activity →
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  }
-                })()
+                <ActivityErrorBoundary onSkip={nextPart2} isK2={isK2} key={`part2-eb-${part2Index}`}>
+                  <>
+                    <Part2StrategyView
+                      activity={part2Activity}
+                      index={part2Index}
+                      totalActivities={part2Count}
+                      answer={part2Answer}
+                      setAnswer={setPart2Answer}
+                      submitted={part2Submitted}
+                      feedback={part2Feedback}
+                      isCorrect={part2IsCorrect}
+                      speech={speech}
+                      tts={tts}
+                      onSubmit={(overrideAnswer?: string) => submitPart2(overrideAnswer)}
+                      onSubmitMC={(option: string) => submitPart2(option)}
+                      onNext={nextPart2}
+                      isK2={isK2}
+                      sentenceFrameTier={sentenceFrameTier}
+                      sounds={sounds}
+                      anchor={anchor}
+                      gradeBand={effectiveGradeBand}
+                    />
+                    {/* K-2 Feeling Rating */}
+                    {isK2 && part2Submitted && !showFeelingRating && (
+                      <div className="mt-6 text-center">
+                        <p className="text-lg font-medium text-white/80 mb-3">How did that feel?</p>
+                        <div className="flex justify-center gap-6">
+                          {[
+                            { emoji: "😕", label: "Hard", value: 1 },
+                            { emoji: "😐", label: "Okay", value: 2 },
+                            { emoji: "😊", label: "Easy!", value: 3 },
+                          ].map(({ emoji, label, value }) => (
+                            <button
+                              key={value}
+                              onClick={() => handleFeelingSelect(value)}
+                              className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
+                            >
+                              <span className="text-5xl">{emoji}</span>
+                              <span className="text-sm text-white/60">{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                </ActivityErrorBoundary>
               ) : inPart2 && !part2Activity ? (
                 <Card className="card-shadow border-border">
                   <CardContent className="py-12 text-center space-y-4">
