@@ -101,11 +101,18 @@ interface Part3Challenge {
   topic: string;
 }
 
-const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: string; targetDomain: string }> = {
+const STRATEGY_LABELS: Record<string, { label: string; icon: any; color: string; targetDomain: string }> = {
   sentence_frames: { label: "Sentence Frames", icon: BookOpen, color: "text-primary", targetDomain: "Reading & Listening" },
+  sentence_frame: { label: "Sentence Frames", icon: BookOpen, color: "text-primary", targetDomain: "Reading & Listening" },
   sentence_expansion: { label: "Sentence Expansion", icon: Mic, color: "text-success", targetDomain: "Speaking" },
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
+  quick_write: { label: "Quick Write", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
+  say_and_expand: { label: "Say & Expand", icon: Mic, color: "text-success", targetDomain: "Speaking" },
+  multiple_choice: { label: "Multiple Choice", icon: Brain, color: "text-primary", targetDomain: "Reading & Listening" },
+  talk_to_companion: { label: "Talk to Companion", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
 };
+
+const DEFAULT_STRATEGY_META = { label: "Practice", icon: Star, color: "text-primary", targetDomain: "Language" };
 
 // Part 1 = 5 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
 const TOTAL_STEPS_3_5 = 12; // 5 + 6 + 1
