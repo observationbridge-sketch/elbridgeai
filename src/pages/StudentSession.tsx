@@ -2023,9 +2023,84 @@ const StudentSession = () => {
                       </Button>
                     </CardContent>
                   </Card>
-                ) : part3Submitted && part3Feedback ? (
-                  // Auto-trigger finishSession once Part 3 is done
-                  <Part3CompletionTrigger finishSession={finishSession} />
+                ) : part3Submitted && part3Feedback && !showConclusion ? (
+                  // Part 3 done → show conclusion section
+                  (() => {
+                    // Trigger conclusion on first render
+                    if (!showConclusion) {
+                      setTimeout(() => setShowConclusion(true), 600);
+                    }
+                    return (
+                      <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-fade-in">
+                        <Trophy className="h-16 w-16 text-warning animate-bounce" />
+                        <h2 className="text-2xl font-bold text-foreground">Challenge Complete! 🎉</h2>
+                        <p className="text-muted-foreground">One more thing...</p>
+                      </div>
+                    );
+                  })()
+                ) : showConclusion ? (
+                  <ConclusionView
+                    step={conclusionStep}
+                    answer={conclusionAnswer}
+                    setAnswer={setConclusionAnswer}
+                    submitted={conclusionSubmitted}
+                    nudgeShown={conclusionNudgeShown}
+                    reaction={conclusionReaction}
+                    sessionTopic={sessionTopic}
+                    anchor={anchor}
+                    speech={speech}
+                    tts={tts}
+                    isK2={isK2}
+                    pts={pts}
+                    gamification={gamification}
+                    sounds={sounds}
+                    onSubmit={(stepNum) => {
+                      const minDuration = isK2 ? 2 : 4;
+                      const keywords = anchor?.keyWords || [];
+                      const transcript = conclusionAnswer.toLowerCase();
+                      const hasKeyword = keywords.some(kw => transcript.includes(kw.toLowerCase()));
+                      const hasDuration = speech.lastDurationSeconds >= minDuration;
+
+                      if (!hasDuration && !hasKeyword && !conclusionNudgeShown) {
+                        setConclusionNudgeShown(true);
+                        speech.resetTranscript();
+                        setConclusionAnswer("");
+                        return;
+                      }
+
+                      setConclusionSubmitted(true);
+                      const strategy = stepNum === 1 ? "conclusion_express" : "conclusion_level_up";
+                      const points = stepNum === 1 ? pts.CONCLUSION_EXPRESS : pts.CONCLUSION_LEVEL_UP;
+                      gamification.addPoints(points, effectiveGradeBand);
+                      sounds.playCorrect();
+                      sounds.playPoints();
+
+                      const speakingMeta = {
+                        speaking_duration_seconds: speech.lastDurationSeconds,
+                        speaking_full_attempt: hasDuration && hasKeyword,
+                      };
+                      saveResponse("speaking", `Conclusion Step ${stepNum}: ${sessionTopic}`, conclusionAnswer, sessionTopic, true, "Developing", "conclusion", strategy, speakingMeta);
+
+                      const reactionMsg = stepNum === 1
+                        ? (isK2 ? "WOW! You're amazing! 🐣⭐" : "Incredible! You just taught ME something! 🌟")
+                        : (isK2 ? "YOU DID IT! I'm so proud of you! 🎉🐣" : "That was your best sentence yet! You're a language superstar! 🏆");
+                      setConclusionReaction(reactionMsg);
+
+                      const advanceDelay = stepNum === 1 ? 1500 : 2000;
+                      setTimeout(() => {
+                        if (stepNum === 1) {
+                          setConclusionStep(2);
+                          setConclusionAnswer("");
+                          setConclusionSubmitted(false);
+                          setConclusionNudgeShown(false);
+                          setConclusionReaction(null);
+                          speech.resetTranscript();
+                        } else {
+                          finishSession();
+                        }
+                      }, advanceDelay);
+                    }}
+                  />
                 ) : part3Challenge ? (
                   <Part3ChallengeView
                     challenge={part3Challenge}
