@@ -2153,7 +2153,7 @@ function WordTTSChips({ sentence, tts, isK2 }: { sentence: string; tts: ReturnTy
   );
 }
 
-
+function Part1View({
   step, anchor, tts, speech, part1Answer, setPart1Answer,
   part1Submitted, part1Feedback, onStep1Done, onStep2Submit,
   onStep3Complete, onStep4Complete, onStep5Complete, onNext, onRetryFillBlanks, isK2,
