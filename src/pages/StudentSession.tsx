@@ -3099,7 +3099,7 @@ function Part2StrategyView({
         {/* Input area based on inputType — skip entirely for K-2 sentence_frames */}
         {!submitted && !isK2SF && (
           <>
-            {inputType === "multiple_choice" && activity.options ? (
+            {(inputType === "multiple_choice" || inputType === "tap") && activity.options ? (
               <div className="grid grid-cols-1 gap-3">
                 {activity.options.map((option, i) => (
                   <Button
