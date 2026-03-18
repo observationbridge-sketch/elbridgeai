@@ -67,6 +67,7 @@ const StudentThemePicker = () => {
   }, [sessionId, studentId]);
 
   const selectTheme = async (theme: string) => {
+    console.log("[ThemePicker] selectTheme called with:", theme, "studentId:", studentId);
     if (saving) return;
     setSelectedTheme(theme);
 
@@ -75,6 +76,7 @@ const StudentThemePicker = () => {
       setTappedTheme(theme);
       setSaving(true);
       await new Promise(r => setTimeout(r, 500)); // let animation play
+      console.log("[ThemePicker] About to update Supabase - studentId:", studentId, "theme:", theme);
       const { error: themeError } = await supabase
         .from("session_students")
         .update({ theme })
