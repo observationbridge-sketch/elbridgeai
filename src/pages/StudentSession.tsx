@@ -931,7 +931,8 @@ const StudentSession = () => {
   const saveResponse = async (
     domain: string, question: string, studentAnswer: string,
     correctAnswer: string, isCorrect: boolean, widaLevel: string,
-    sessionPart: string, strategy?: string
+    sessionPart: string, strategy?: string,
+    speakingMeta?: { speaking_duration_seconds: number; speaking_full_attempt: boolean }
   ) => {
     try {
       await supabase.from("student_responses").insert({
@@ -946,6 +947,7 @@ const StudentSession = () => {
         session_part: sessionPart,
         strategy: strategy || null,
         grade_band: effectiveGradeBand,
+        ...(speakingMeta ? speakingMeta : {}),
       } as any);
     } catch { /* non-blocking */ }
   };
