@@ -2356,9 +2356,9 @@ function Part1View({
             </div>
             {!part1Submitted ? (
               <>
-                <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} />
+                <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} nudgeMessage={speakingNudgeMsg} />
                 {part1Answer.trim() && (
-                  <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={onStep2Submit}>
+                  <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleStep2WithNudge}>
                     {isK2 ? "Done! ✅" : "Submit"}
                   </Button>
                 )}
