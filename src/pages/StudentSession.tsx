@@ -787,10 +787,10 @@ const StudentSession = () => {
         }
 
         setAnchor(anchorData);
-        setSessionTheme(anchorData.theme);
-        setSessionTopic(anchorData.topic);
-        resolvedTheme = anchorData.theme;
+        resolvedTheme = sessionForcedTheme || anchorData.theme;
         resolvedTopic = anchorData.topic;
+        setSessionTheme(resolvedTheme);
+        setSessionTopic(resolvedTopic);
         setTtsPreloaded(true);
       } catch {
         const fallback: AnchorSentence = sessionGradeBand === "K-2"
