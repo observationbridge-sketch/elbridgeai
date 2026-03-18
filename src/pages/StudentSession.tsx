@@ -2873,11 +2873,11 @@ function Part2StrategyView({
                 ))}
               </div>
             ) : inputType === "recording" ? (
-              <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} />
+              <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} nudgeMessage={speakNudgeMsg} />
             ) : inputType === "record_then_type" ? (
               <div className="space-y-4">
                 <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer here..." className="min-h-[100px]" disabled={submitted} />
-                <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} />
+                <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} nudgeMessage={speakNudgeMsg} />
                 <p className="text-xs text-muted-foreground">✍️ Type your answer, then 🎤 record yourself saying it!</p>
               </div>
             ) : inputType === "listen_then_type" ? (
@@ -2892,7 +2892,7 @@ function Part2StrategyView({
             )}
 
             {inputType !== "multiple_choice" && (
-              <Button variant="hero" className="w-full" size="lg" onClick={() => onSubmit()} disabled={!answer.trim()}>
+              <Button variant="hero" className="w-full" size="lg" onClick={() => handlePart2SubmitWithNudge()} disabled={!answer.trim()}>
                 Submit Answer
               </Button>
             )}
