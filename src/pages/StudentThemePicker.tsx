@@ -77,12 +77,12 @@ const StudentThemePicker = () => {
       await new Promise(r => setTimeout(r, 500)); // let animation play
       const { error: themeError } = await supabase
         .from("session_students")
-        .update({ theme: selectedTheme })
+        .update({ theme })
         .eq("id", studentId);
       if (themeError) {
         console.error("[ThemePicker] Failed to save theme:", themeError);
       } else {
-        console.log("[ThemePicker] Theme saved successfully:", selectedTheme);
+        console.log("[ThemePicker] Theme saved successfully:", theme);
       }
       navigate(`/student/session/${sessionId}/${studentId}`);
     }
