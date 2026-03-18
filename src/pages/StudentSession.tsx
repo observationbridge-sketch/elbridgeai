@@ -1385,10 +1385,15 @@ const StudentSession = () => {
 
     const domainMap: Record<string, string> = {
       sentence_frames: "reading",
+      sentence_frame: "reading",
       sentence_expansion: "speaking",
+      say_and_expand: "speaking",
+      talk_to_companion: "speaking",
       quick_writes: "writing",
+      quick_write: "writing",
+      multiple_choice: "reading",
     };
-    const domain = domainMap[part2Activity.strategy] || "reading";
+    const domain = domainMap[part2Activity.strategy] || domainMap[part2Activity.type] || "reading";
 
     // Track quick_writes completions for badge
     if (part2Activity.strategy === "quick_writes" && effectiveGradeBand === "3-5") {
