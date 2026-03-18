@@ -2367,6 +2367,10 @@ function Part1View({
             <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-border ${isK2 ? "text-center" : ""}`}>
               <p className={`${isK2 ? "text-2xl" : "text-lg"} text-foreground font-medium leading-relaxed`}>{anchor.sentence}</p>
             </div>
+
+            {/* Word-level TTS chips */}
+            <WordTTSChips sentence={anchor.sentence} tts={tts} isK2={isK2} />
+
             {!part1Submitted ? (
               <>
                 <MicrophoneInput speech={speech} answer={part1Answer} setAnswer={setPart1Answer} disabled={part1Submitted} isK2={isK2} nudgeMessage={speakingNudgeMsg} />
