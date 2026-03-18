@@ -721,8 +721,19 @@ const StudentSession = () => {
           currentStudentName = studentData.student_name;
           setStudentName(studentData.student_name);
           console.log("[init] student theme from DB:", studentData.theme);
-          if (studentData.theme) {
-            sessionForcedTheme = studentData.theme;
+          let studentTheme = studentData.theme;
+          if (!studentTheme) {
+            // Wait 1 second and retry once — theme may not have committed yet
+            await new Promise(r => setTimeout(r, 1000));
+            const { data: retryData } = await supabase
+              .from("session_students")
+              .select("theme")
+              .eq("id", studentId)
+              .single();
+            studentTheme = retryData?.theme;
+          }
+          if (studentTheme) {
+            sessionForcedTheme = studentTheme;
           }
           const { data: sessionData } = await supabase
             .from("sessions")
