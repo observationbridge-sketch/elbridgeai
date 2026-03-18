@@ -266,6 +266,8 @@ export type Database = {
           question: string
           session_id: string
           session_part: string
+          speaking_duration_seconds: number | null
+          speaking_full_attempt: boolean | null
           strategy: string | null
           student_answer: string
           student_id: string
@@ -281,6 +283,8 @@ export type Database = {
           question: string
           session_id: string
           session_part?: string
+          speaking_duration_seconds?: number | null
+          speaking_full_attempt?: boolean | null
           strategy?: string | null
           student_answer: string
           student_id: string
@@ -296,6 +300,8 @@ export type Database = {
           question?: string
           session_id?: string
           session_part?: string
+          speaking_duration_seconds?: number | null
+          speaking_full_attempt?: boolean | null
           strategy?: string | null
           student_answer?: string
           student_id?: string
