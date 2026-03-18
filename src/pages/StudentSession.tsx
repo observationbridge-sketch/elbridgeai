@@ -2705,11 +2705,14 @@ function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
   speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds, anchor, gradeBand,
 }: Part2Props) {
-  const strategyMeta = STRATEGY_LABELS[activity.strategy];
+  const strategyMeta = STRATEGY_LABELS[activity.strategy] || STRATEGY_LABELS[activity.type] || DEFAULT_STRATEGY_META;
   const StrategyIcon = strategyMeta.icon;
-  const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames";
+  const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames" || activity.type === "sentence_frame";
   const isK2SF = Boolean(isK2 && isSentenceFramesActivity);
   const inputType = isK2SF ? "k2_word_tiles" : (activity.inputType || "typing");
+
+  // Log activity details for debugging
+  console.log(`[Part2] Rendering activity ${index + 1}:`, { type: activity.type, strategy: activity.strategy, inputType: activity.inputType });
 
   // K-2 Sentence Frame retry logic
   const [sfAttempts, setSfAttempts] = useState(0);
