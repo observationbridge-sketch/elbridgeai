@@ -58,6 +58,8 @@ export const POINTS = {
   CHALLENGE_STORY_SEQUENCE_BONUS: 10,
   CHALLENGE_SPEED_CORRECT: 8,
   CHALLENGE_TEACH_COMPLETE: 25,
+  CONCLUSION_EXPRESS: 15,
+  CONCLUSION_LEVEL_UP: 15,
 };
 
 // Points values — 3-5 (higher values for harder content)
