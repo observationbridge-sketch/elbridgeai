@@ -2579,6 +2579,8 @@ function Part2StrategyView({
     setSfRevealed(false);
     setSfSelectedWord(null);
     setK2Countdown(null);
+    setSpeakNudgeMsg(null);
+    setSpeakAttemptCount(0);
     if (countdownRef.current) clearTimeout(countdownRef.current);
   }, [index]);
 
