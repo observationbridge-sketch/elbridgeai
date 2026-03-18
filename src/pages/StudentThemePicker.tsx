@@ -75,10 +75,15 @@ const StudentThemePicker = () => {
       setTappedTheme(theme);
       setSaving(true);
       await new Promise(r => setTimeout(r, 500)); // let animation play
-      await supabase
+      const { error: themeError } = await supabase
         .from("session_students")
-        .update({ theme } as any)
+        .update({ theme })
         .eq("id", studentId);
+      if (themeError) {
+        console.error("[ThemePicker] Failed to save theme:", themeError);
+      } else {
+        console.log("[ThemePicker] Theme saved successfully:", theme);
+      }
       navigate(`/student/session/${sessionId}/${studentId}`);
     }
   };
@@ -86,10 +91,15 @@ const StudentThemePicker = () => {
   const handleGo = async () => {
     if (!selectedTheme) return;
     setSaving(true);
-    await supabase
+    const { error: themeError } = await supabase
       .from("session_students")
-      .update({ theme: selectedTheme } as any)
+      .update({ theme: selectedTheme })
       .eq("id", studentId);
+    if (themeError) {
+      console.error("[ThemePicker] Failed to save theme:", themeError);
+    } else {
+      console.log("[ThemePicker] Theme saved successfully:", selectedTheme);
+    }
     navigate(`/student/session/${sessionId}/${studentId}`);
   };
 
