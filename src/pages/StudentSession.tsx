@@ -2595,6 +2595,29 @@ function Part2StrategyView({
   }, [isK2SF, sfAttempts, sfRevealed]);
 
 
+  // Speaking nudge gate for recording activities
+  const handlePart2SubmitWithNudge = useCallback(() => {
+    const isRecording = inputType === "recording" || inputType === "record_then_type";
+    if (isRecording && speech.isSupported && speech.lastDurationSeconds > 0) {
+      const minDuration = isK2 ? 2 : 4;
+      const keywords = activity.acceptableKeywords || [];
+      const transcript = answer.toLowerCase();
+      const hasKeyword = keywords.some(kw => transcript.includes(kw.toLowerCase()));
+      const hasMinDuration = speech.lastDurationSeconds >= minDuration;
+
+      if (!hasMinDuration && !hasKeyword && speakAttemptCount === 0) {
+        setSpeakAttemptCount(1);
+        setSpeakNudgeMsg(
+          isK2 ? "Try again — say the whole sentence! 🎤" : "Give it another try — say the full sentence! 🎤"
+        );
+        speech.resetTranscript();
+        setAnswer("");
+        return;
+      }
+    }
+    setSpeakNudgeMsg(null);
+    onSubmit();
+  }, [inputType, speech, isK2, activity, answer, speakAttemptCount, onSubmit, setAnswer]);
 
   const [k2Countdown, setK2Countdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
