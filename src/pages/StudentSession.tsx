@@ -735,6 +735,7 @@ const StudentSession = () => {
           if (studentTheme) {
             sessionForcedTheme = studentTheme;
           }
+          console.log("[init] sessionForcedTheme after retry:", sessionForcedTheme);
           const { data: sessionData } = await supabase
             .from("sessions")
             .select("teacher_id, grade_band")
