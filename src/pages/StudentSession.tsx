@@ -1307,7 +1307,7 @@ const StudentSession = () => {
     setPart2IsCorrect(correct);
 
     // K-2 Sentence Frame tier tracking
-    if (effectiveGradeBand === "K-2" && part2Activity.strategy === "sentence_frames") {
+    if (effectiveGradeBand === "K-2" && (part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame")) {
       if (correct) {
         const newCorrect = tierConsecutiveCorrect + 1;
         setTierConsecutiveCorrect(newCorrect);
