@@ -3304,6 +3304,107 @@ function WaveformBars({ isK2 }: { isK2?: boolean }) {
   );
 }
 
+// ═══════════════════════════════════════════════
+// Conclusion Section — between Part 3 and celebration
+// ═══════════════════════════════════════════════
+function ConclusionView({
+  step, answer, setAnswer, submitted, nudgeShown, reaction,
+  sessionTopic, anchor, speech, tts, isK2, pts, gamification, sounds,
+  onSubmit,
+}: {
+  step: 1 | 2;
+  answer: string;
+  setAnswer: (v: string) => void;
+  submitted: boolean;
+  nudgeShown: boolean;
+  reaction: string | null;
+  sessionTopic: string;
+  anchor: AnchorSentence | null;
+  speech: ReturnType<typeof useSpeechRecognition>;
+  tts: ReturnType<typeof useTTS>;
+  isK2: boolean;
+  pts: any;
+  gamification: any;
+  sounds: any;
+  onSubmit: (step: 1 | 2) => void;
+}) {
+  const powerWords = (anchor?.keyWords || []).slice(0, 3);
+  const [speakingWord, setSpeakingWord] = useState<number | null>(null);
+
+  const handleWordTap = (word: string, index: number) => {
+    setSpeakingWord(index);
+    tts.speak(word);
+    setTimeout(() => setSpeakingWord(null), 800);
+  };
+
+  const prompt = step === 1
+    ? (isK2 ? `Say something about ${sessionTopic}! 🎤` : `Say something interesting about ${sessionTopic}!`)
+    : (isK2 ? "Say it again — make it even bigger! 💪" : "Now level it up — add one more detail!");
+
+  const nudgeMsg = nudgeShown
+    ? (isK2 ? "Try again — say more! 🎤" : "Give it another try — say more! 🎤")
+    : null;
+
+  return (
+    <Card className="card-shadow border-border">
+      <div className="px-6 pt-6">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">Your Turn ✨</span>
+          <span className="text-xs font-medium text-muted-foreground">{step} of 2</span>
+        </div>
+      </div>
+      <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
+        {/* Prompt */}
+        <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6 text-center" : "p-4"} border border-border`}>
+          <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{prompt}</p>
+        </div>
+
+        {/* Power Word chips */}
+        <div className="space-y-1">
+          <p className={`${isK2 ? "text-base" : "text-xs"} text-muted-foreground font-medium`}>
+            {isK2 ? "Try using one of these words! 👆" : "Try using one of these words:"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {powerWords.map((word, i) => (
+              <button
+                key={i}
+                onClick={() => handleWordTap(word, i)}
+                className={`rounded-full bg-primary/10 text-primary border border-primary/20 font-medium transition-all cursor-pointer hover:bg-primary/20 ${
+                  isK2 ? "text-lg min-h-[48px] px-4" : "text-sm px-3 py-1.5"
+                } ${speakingWord === i ? "animate-pulse ring-2 ring-primary/40" : ""}`}
+              >
+                {word}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Companion reaction */}
+        {reaction && (
+          <div className="flex flex-col items-center gap-2 animate-fade-in">
+            <div className="text-6xl animate-bounce">{isK2 ? "🐣" : "🌟"}</div>
+            <div className="bg-primary/10 rounded-2xl px-6 py-3 border border-primary/20 max-w-xs">
+              <p className={`${isK2 ? "text-xl" : "text-base"} font-bold text-primary text-center`}>{reaction}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Microphone input */}
+        {!submitted && !reaction && (
+          <>
+            <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={submitted} isK2={isK2} nudgeMessage={nudgeMsg} />
+            {answer.trim() && (
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={() => onSubmit(step)}>
+                {isK2 ? "Done! ✅" : "Submit"}
+              </Button>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2, nudgeMessage }: {
   speech: ReturnType<typeof useSpeechRecognition>;
   answer: string;
