@@ -1018,7 +1018,11 @@ const StudentSession = () => {
       setHasSpoken(true);
       gamification.awardBadge("first_voice");
     }
-    saveResponse("speaking", `Say It: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1");
+    const speakingMeta = {
+      speaking_duration_seconds: speech.lastDurationSeconds,
+      speaking_full_attempt: speech.lastDurationSeconds >= (isK2 ? 2 : 4) && (anchor.keyWords || []).some(kw => part1Answer.toLowerCase().includes(kw.toLowerCase())),
+    };
+    saveResponse("speaking", `Say It: ${anchor.sentence}`, part1Answer, anchor.sentence, pct >= 0.5, "Entering", "part1", undefined, speakingMeta);
     // Auto-advance after 3 seconds
     setTimeout(() => handlePart1Next(), 3000);
   };
