@@ -1316,6 +1316,12 @@ const StudentSession = () => {
       }
     }
 
+    const isRecordingActivity = part2Activity.inputType === "recording" || part2Activity.inputType === "record_then_type";
+    const speakingMeta = isRecordingActivity && speech.lastDurationSeconds > 0 ? {
+      speaking_duration_seconds: speech.lastDurationSeconds,
+      speaking_full_attempt: speech.lastDurationSeconds >= (isK2 ? 2 : 4) && (part2Activity.acceptableKeywords || []).some(kw => answerText.toLowerCase().includes(kw.toLowerCase())),
+    } : undefined;
+
     saveResponse(
       domain,
       part2Activity.question,
@@ -1324,7 +1330,8 @@ const StudentSession = () => {
       correct,
       part2Activity.difficulty <= 2 ? "Entering" : part2Activity.difficulty <= 4 ? "Developing" : "Expanding",
       "part2",
-      part2Activity.strategy
+      part2Activity.strategy,
+      speakingMeta
     );
   };
 
