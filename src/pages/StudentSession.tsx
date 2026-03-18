@@ -3123,7 +3123,7 @@ function Part2StrategyView({
               </div>
             ) : inputType === "listen_then_type" ? (
               <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer..." className="h-12" disabled={submitted} />
-            ) : activity.strategy === "quick_writes" ? (
+            ) : (activity.strategy === "quick_writes" || activity.type === "quick_write") ? (
               <div>
                 <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Write your answer here..." className="min-h-[120px]" disabled={submitted} />
                 <p className="text-xs text-muted-foreground mt-2">⏱️ Most students finish in about 2 minutes! Write at least 2-3 sentences.</p>
