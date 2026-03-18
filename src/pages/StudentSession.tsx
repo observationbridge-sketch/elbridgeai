@@ -101,11 +101,18 @@ interface Part3Challenge {
   topic: string;
 }
 
-const STRATEGY_LABELS: Record<Strategy, { label: string; icon: any; color: string; targetDomain: string }> = {
+const STRATEGY_LABELS: Record<string, { label: string; icon: any; color: string; targetDomain: string }> = {
   sentence_frames: { label: "Sentence Frames", icon: BookOpen, color: "text-primary", targetDomain: "Reading & Listening" },
+  sentence_frame: { label: "Sentence Frames", icon: BookOpen, color: "text-primary", targetDomain: "Reading & Listening" },
   sentence_expansion: { label: "Sentence Expansion", icon: Mic, color: "text-success", targetDomain: "Speaking" },
   quick_writes: { label: "Quick Writes", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
+  quick_write: { label: "Quick Write", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
+  say_and_expand: { label: "Say & Expand", icon: Mic, color: "text-success", targetDomain: "Speaking" },
+  multiple_choice: { label: "Multiple Choice", icon: Brain, color: "text-primary", targetDomain: "Reading & Listening" },
+  talk_to_companion: { label: "Talk to Companion", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
 };
+
+const DEFAULT_STRATEGY_META = { label: "Practice", icon: Star, color: "text-primary", targetDomain: "Language" };
 
 // Part 1 = 5 steps, Part 2 = 6 activities (4 for K-2), Part 3 = 1 challenge
 const TOTAL_STEPS_3_5 = 12; // 5 + 6 + 1
@@ -113,12 +120,56 @@ const TOTAL_STEPS_K2 = 10;  // 5 + 4 + 1
 
 type GradeBand = "K-2" | "3-5";
 
+// ─── Error Boundary for activity rendering ───
+import React from "react";
+class ActivityErrorBoundary extends React.Component<
+  { children: React.ReactNode; onSkip: () => void; isK2?: boolean },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[ActivityErrorBoundary] Caught render error:", error, info.componentStack);
+  }
+  componentDidUpdate(prevProps: any) {
+    // Reset error state when activity changes
+    if (prevProps.children !== this.props.children && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card className="card-shadow border-border">
+          <CardContent className="py-12 text-center space-y-4">
+            <p className="text-3xl">😅</p>
+            <p className={`font-medium ${this.props.isK2 ? "text-xl" : "text-lg"} text-foreground`}>
+              Something went wrong with this activity.
+            </p>
+            <p className="text-sm text-muted-foreground">Error: {this.state.error?.message}</p>
+            <Button variant="hero" size="lg" onClick={this.props.onSkip}>
+              Skip to Next Activity →
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ─── Content validation ───
 function validatePart2Activity(data: any): data is Part2Activity {
   if (!data) return false;
   if (!data.question || typeof data.question !== "string") return false;
   if (!data.modelAnswer || typeof data.modelAnswer !== "string") return false;
-  if (!data.strategy || typeof data.strategy !== "string") return false;
+  // strategy may come as activity.type from edge function — accept either
+  if (!data.strategy && !data.type) return false;
   if (!Array.isArray(data.acceptableKeywords)) return false;
   return true;
 }
@@ -1236,7 +1287,7 @@ const StudentSession = () => {
     if (overrideAnswer) setPart2Answer(overrideAnswer);
 
     // Quick writes: require at least 2 sentences before accepting
-    if (part2Activity.strategy === "quick_writes") {
+    if (part2Activity.strategy === "quick_writes" || part2Activity.type === "quick_write") {
       const qwSentences = answerText.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
       if (qwSentences.length < 2) {
         toast("Great start! Can you add one more sentence? ✍️");
@@ -1245,7 +1296,7 @@ const StudentSession = () => {
     }
 
     let correct: boolean;
-    if (part2Activity.inputType === "multiple_choice") {
+    if (part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice") {
       // Normalize both sides for comparison
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       const normModel = (part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
@@ -1256,7 +1307,7 @@ const StudentSession = () => {
     setPart2IsCorrect(correct);
 
     // K-2 Sentence Frame tier tracking
-    if (effectiveGradeBand === "K-2" && part2Activity.strategy === "sentence_frames") {
+    if (effectiveGradeBand === "K-2" && (part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame")) {
       if (correct) {
         const newCorrect = tierConsecutiveCorrect + 1;
         setTierConsecutiveCorrect(newCorrect);
@@ -1334,13 +1385,18 @@ const StudentSession = () => {
 
     const domainMap: Record<string, string> = {
       sentence_frames: "reading",
+      sentence_frame: "reading",
       sentence_expansion: "speaking",
+      say_and_expand: "speaking",
+      talk_to_companion: "speaking",
       quick_writes: "writing",
+      quick_write: "writing",
+      multiple_choice: "reading",
     };
-    const domain = domainMap[part2Activity.strategy] || "reading";
+    const domain = domainMap[part2Activity.strategy] || domainMap[part2Activity.type] || "reading";
 
     // Track quick_writes completions for badge
-    if (part2Activity.strategy === "quick_writes" && effectiveGradeBand === "3-5") {
+    if ((part2Activity.strategy === "quick_writes" || part2Activity.type === "quick_write") && effectiveGradeBand === "3-5") {
       quickWriteCountRef.current += 1;
       if (quickWriteCountRef.current >= 3) {
         gamification.awardBadge("quick_writer");
@@ -1956,50 +2012,52 @@ const StudentSession = () => {
                   isK2={isK2}
                 />
                ) : inPart2 && part2Activity ? (
-                <>
-                  <Part2StrategyView
-                    activity={part2Activity}
-                    index={part2Index}
-                    totalActivities={part2Count}
-                    answer={part2Answer}
-                    setAnswer={setPart2Answer}
-                    submitted={part2Submitted}
-                    feedback={part2Feedback}
-                    isCorrect={part2IsCorrect}
-                    speech={speech}
-                    tts={tts}
-                    onSubmit={(overrideAnswer?: string) => submitPart2(overrideAnswer)}
-                    onSubmitMC={(option: string) => submitPart2(option)}
-                    onNext={nextPart2}
-                    isK2={isK2}
-                    sentenceFrameTier={sentenceFrameTier}
-                    sounds={sounds}
-                    anchor={anchor}
-                    gradeBand={effectiveGradeBand}
-                  />
-                  {/* K-2 Feeling Rating */}
-                  {isK2 && part2Submitted && !showFeelingRating && (
-                    <div className="mt-6 text-center">
-                      <p className="text-lg font-medium text-white/80 mb-3">How did that feel?</p>
-                      <div className="flex justify-center gap-6">
-                        {[
-                          { emoji: "😕", label: "Hard", value: 1 },
-                          { emoji: "😐", label: "Okay", value: 2 },
-                          { emoji: "😊", label: "Easy!", value: 3 },
-                        ].map(({ emoji, label, value }) => (
-                          <button
-                            key={value}
-                            onClick={() => handleFeelingSelect(value)}
-                            className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
-                          >
-                            <span className="text-5xl">{emoji}</span>
-                            <span className="text-sm text-white/60">{label}</span>
-                          </button>
-                        ))}
+                <ActivityErrorBoundary onSkip={nextPart2} isK2={isK2} key={`part2-eb-${part2Index}`}>
+                  <>
+                    <Part2StrategyView
+                      activity={part2Activity}
+                      index={part2Index}
+                      totalActivities={part2Count}
+                      answer={part2Answer}
+                      setAnswer={setPart2Answer}
+                      submitted={part2Submitted}
+                      feedback={part2Feedback}
+                      isCorrect={part2IsCorrect}
+                      speech={speech}
+                      tts={tts}
+                      onSubmit={(overrideAnswer?: string) => submitPart2(overrideAnswer)}
+                      onSubmitMC={(option: string) => submitPart2(option)}
+                      onNext={nextPart2}
+                      isK2={isK2}
+                      sentenceFrameTier={sentenceFrameTier}
+                      sounds={sounds}
+                      anchor={anchor}
+                      gradeBand={effectiveGradeBand}
+                    />
+                    {/* K-2 Feeling Rating */}
+                    {isK2 && part2Submitted && !showFeelingRating && (
+                      <div className="mt-6 text-center">
+                        <p className="text-lg font-medium text-white/80 mb-3">How did that feel?</p>
+                        <div className="flex justify-center gap-6">
+                          {[
+                            { emoji: "😕", label: "Hard", value: 1 },
+                            { emoji: "😐", label: "Okay", value: 2 },
+                            { emoji: "😊", label: "Easy!", value: 3 },
+                          ].map(({ emoji, label, value }) => (
+                            <button
+                              key={value}
+                              onClick={() => handleFeelingSelect(value)}
+                              className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
+                            >
+                              <span className="text-5xl">{emoji}</span>
+                              <span className="text-sm text-white/60">{label}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </>
+                    )}
+                  </>
+                </ActivityErrorBoundary>
               ) : inPart2 && !part2Activity ? (
                 <Card className="card-shadow border-border">
                   <CardContent className="py-12 text-center space-y-4">
@@ -2698,11 +2756,14 @@ function Part2StrategyView({
   activity, index, totalActivities, answer, setAnswer, submitted, feedback, isCorrect,
   speech, tts, onSubmit, onSubmitMC, onNext, isK2, sentenceFrameTier, sounds, anchor, gradeBand,
 }: Part2Props) {
-  const strategyMeta = STRATEGY_LABELS[activity.strategy];
+  const strategyMeta = STRATEGY_LABELS[activity.strategy] || STRATEGY_LABELS[activity.type] || DEFAULT_STRATEGY_META;
   const StrategyIcon = strategyMeta.icon;
-  const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames";
+  const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames" || activity.type === "sentence_frame";
   const isK2SF = Boolean(isK2 && isSentenceFramesActivity);
   const inputType = isK2SF ? "k2_word_tiles" : (activity.inputType || "typing");
+
+  // Log activity details for debugging
+  console.log(`[Part2] Rendering activity ${index + 1}:`, { type: activity.type, strategy: activity.strategy, inputType: activity.inputType });
 
   // K-2 Sentence Frame retry logic
   const [sfAttempts, setSfAttempts] = useState(0);
@@ -3038,7 +3099,7 @@ function Part2StrategyView({
         {/* Input area based on inputType — skip entirely for K-2 sentence_frames */}
         {!submitted && !isK2SF && (
           <>
-            {inputType === "multiple_choice" && activity.options ? (
+            {(inputType === "multiple_choice" || inputType === "tap") && activity.options ? (
               <div className="grid grid-cols-1 gap-3">
                 {activity.options.map((option, i) => (
                   <Button
@@ -3062,7 +3123,7 @@ function Part2StrategyView({
               </div>
             ) : inputType === "listen_then_type" ? (
               <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer..." className="h-12" disabled={submitted} />
-            ) : activity.strategy === "quick_writes" ? (
+            ) : (activity.strategy === "quick_writes" || activity.type === "quick_write") ? (
               <div>
                 <Textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Write your answer here..." className="min-h-[120px]" disabled={submitted} />
                 <p className="text-xs text-muted-foreground mt-2">⏱️ Most students finish in about 2 minutes! Write at least 2-3 sentences.</p>
@@ -3071,7 +3132,7 @@ function Part2StrategyView({
               <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer..." className="h-12" disabled={submitted} />
             )}
 
-            {inputType !== "multiple_choice" && (
+            {inputType !== "multiple_choice" && inputType !== "tap" && (
               <Button variant="hero" className="w-full" size="lg" onClick={() => handlePart2SubmitWithNudge()} disabled={!answer.trim()}>
                 Submit Answer
               </Button>
