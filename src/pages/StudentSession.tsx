@@ -2126,6 +2126,40 @@ function Part1View({
   const [jumbleTryAgainMsg, setJumbleTryAgainMsg] = useState<string | null>(null);
   const [usedJumbleIndices, setUsedJumbleIndices] = useState<Set<number>>(new Set());
 
+  // Speaking nudge state for Step 2 (Say It)
+  const [speakingNudgeMsg, setSpeakingNudgeMsg] = useState<string | null>(null);
+  const [speakingAttemptCount, setSpeakingAttemptCount] = useState(0);
+
+  // Reset nudge on step change
+  useEffect(() => {
+    setSpeakingNudgeMsg(null);
+    setSpeakingAttemptCount(0);
+  }, [step]);
+
+  const handleStep2WithNudge = useCallback(() => {
+    // Only gate if speech recognition was used (not typed)
+    if (speech.isSupported && speech.lastDurationSeconds > 0) {
+      const minDuration = isK2 ? 2 : 4;
+      const keywords = anchor.keyWords || [];
+      const transcript = part1Answer.toLowerCase();
+      const hasKeyword = keywords.some(kw => transcript.includes(kw.toLowerCase()));
+      const hasMinDuration = speech.lastDurationSeconds >= minDuration;
+
+      if (!hasMinDuration && !hasKeyword && speakingAttemptCount === 0) {
+        setSpeakingAttemptCount(1);
+        setSpeakingNudgeMsg(
+          isK2 ? "Try again — say the whole sentence! 🎤" : "Give it another try — say the full sentence! 🎤"
+        );
+        // Reset transcript so they can try again
+        speech.resetTranscript();
+        setPart1Answer("");
+        return;
+      }
+    }
+    setSpeakingNudgeMsg(null);
+    onStep2Submit();
+  }, [speech, isK2, anchor, part1Answer, speakingAttemptCount, onStep2Submit, setPart1Answer]);
+
   const prepareStep3Content = useCallback(async (attempt = 0, sourceAnchor?: AnchorSentence) => {
     const anchorToUse = sourceAnchor || anchor;
     setStep3Status("loading");
