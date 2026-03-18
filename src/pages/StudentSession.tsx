@@ -3132,7 +3132,7 @@ function Part2StrategyView({
               <Input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer..." className="h-12" disabled={submitted} />
             )}
 
-            {inputType !== "multiple_choice" && (
+            {inputType !== "multiple_choice" && inputType !== "tap" && (
               <Button variant="hero" className="w-full" size="lg" onClick={() => handlePart2SubmitWithNudge()} disabled={!answer.trim()}>
                 Submit Answer
               </Button>
