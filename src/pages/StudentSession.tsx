@@ -547,6 +547,14 @@ const StudentSession = () => {
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
 
+  // Conclusion state
+  const [showConclusion, setShowConclusion] = useState(false);
+  const [conclusionStep, setConclusionStep] = useState<1 | 2>(1);
+  const [conclusionAnswer, setConclusionAnswer] = useState("");
+  const [conclusionSubmitted, setConclusionSubmitted] = useState(false);
+  const [conclusionNudgeShown, setConclusionNudgeShown] = useState(false);
+  const [conclusionReaction, setConclusionReaction] = useState<string | null>(null);
+
   // Theme visual state
   const [showConfetti, setShowConfetti] = useState(false);
   const [showMotivational, setShowMotivational] = useState(false);
