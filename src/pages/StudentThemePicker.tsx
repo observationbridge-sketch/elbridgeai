@@ -86,7 +86,7 @@ const StudentThemePicker = () => {
       } else {
         console.log("[ThemePicker] Theme saved successfully:", theme);
       }
-      navigate(`/student/session/${sessionId}/${studentId}`);
+      navigate(`/student/session/${sessionId}/${studentId}?theme=${encodeURIComponent(theme)}`);
     }
   };
 
@@ -104,7 +104,7 @@ const StudentThemePicker = () => {
     } else {
       console.log("[ThemePicker] Theme saved successfully:", selectedTheme);
     }
-    navigate(`/student/session/${sessionId}/${studentId}`);
+    navigate(`/student/session/${sessionId}/${studentId}?theme=${encodeURIComponent(selectedTheme)}`);
   };
 
   if (loading) {
