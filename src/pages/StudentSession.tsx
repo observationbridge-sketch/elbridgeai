@@ -1296,7 +1296,7 @@ const StudentSession = () => {
     }
 
     let correct: boolean;
-    if (part2Activity.inputType === "multiple_choice") {
+    if (part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice") {
       // Normalize both sides for comparison
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       const normModel = (part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
