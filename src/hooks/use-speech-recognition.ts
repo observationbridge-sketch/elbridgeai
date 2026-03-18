@@ -10,10 +10,12 @@ const isMobileDevice = () => {
 export function useSpeechRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [lastDurationSeconds, setLastDurationSeconds] = useState(0);
   const recognitionRef = useRef<any>(null);
   const accumulatedRef = useRef("");
   const sessionFinalsRef = useRef("");
   const shouldListenRef = useRef(false);
+  const recordingStartRef = useRef<number>(0);
 
   const isSupported =
     typeof window !== "undefined" &&
@@ -29,7 +31,6 @@ export function useSpeechRecognition() {
     recognition.lang = "en-US";
 
     if (mobile) {
-      // Mobile: single-shot sessions, auto-restart loop
       recognition.continuous = false;
       recognition.interimResults = false;
 
@@ -47,7 +48,6 @@ export function useSpeechRecognition() {
       };
 
       recognition.onend = () => {
-        // Auto-restart if still supposed to be listening
         if (shouldListenRef.current) {
           try {
             const newRec = createRecognition();
@@ -60,7 +60,6 @@ export function useSpeechRecognition() {
         }
       };
     } else {
-      // Desktop: continuous mode with interim results
       recognition.continuous = true;
       recognition.interimResults = true;
 
@@ -106,6 +105,7 @@ export function useSpeechRecognition() {
 
     sessionFinalsRef.current = "";
     shouldListenRef.current = true;
+    recordingStartRef.current = Date.now();
 
     const recognition = createRecognition();
     recognitionRef.current = recognition;
@@ -117,12 +117,19 @@ export function useSpeechRecognition() {
     shouldListenRef.current = false;
     const recognition = recognitionRef.current;
     recognitionRef.current = null;
+
+    // Calculate duration
+    const duration = recordingStartRef.current > 0
+      ? (Date.now() - recordingStartRef.current) / 1000
+      : 0;
+    setLastDurationSeconds(Math.round(duration * 10) / 10);
+    recordingStartRef.current = 0;
+
     if (recognition) {
       try { recognition.abort(); } catch {}
       try { recognition.stop(); } catch {}
     }
     setIsListening(false);
-    // Finalize desktop session finals
     accumulatedRef.current += sessionFinalsRef.current;
     sessionFinalsRef.current = "";
     setTranscript(accumulatedRef.current);
@@ -132,11 +139,13 @@ export function useSpeechRecognition() {
     accumulatedRef.current = "";
     sessionFinalsRef.current = "";
     setTranscript("");
+    setLastDurationSeconds(0);
   }, []);
 
   return {
     isListening,
     transcript,
+    lastDurationSeconds,
     startListening,
     stopListening,
     resetTranscript,
