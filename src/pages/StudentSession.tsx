@@ -1306,12 +1306,6 @@ const StudentSession = () => {
     if (part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice" || part2Activity.type === "tap") {
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       const normModel = (part2Activity.modelAnswer ?? part2Activity.correctAnswer ?? "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
-      console.log('[MC-GRADE]', {
-        studentAnswer: normAnswer,
-        modelAnswer: normModel,
-        options: part2Activity.options,
-        keywords: part2Activity.acceptableKeywords,
-      });
       // 1) Exact match against modelAnswer or correctAnswer
       correct = normAnswer === normModel;
       // 2) Model/correct answer contains the tapped word (or vice versa)
@@ -1343,6 +1337,9 @@ const StudentSession = () => {
       if (!correct) {
         correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
       }
+    } else if (part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame") {
+      // K-2 word tile: correctness already validated client-side before onSubmit is called
+      correct = true;
     } else {
       // For quick writes and free response, grade on length if no keywords
       const wordCount = answerText.trim().split(/\s+/).filter(Boolean).length;
@@ -2822,8 +2819,6 @@ function Part2StrategyView({
   const isK2SF = Boolean(isK2 && isSentenceFramesActivity);
   const inputType = isK2SF ? "k2_word_tiles" : (activity.inputType || "typing");
 
-  // Log activity details for debugging
-  console.log(`[Part2] Rendering activity ${index + 1}:`, { type: activity.type, strategy: activity.strategy, inputType: activity.inputType });
 
   // K-2 Sentence Frame retry logic
   const [sfAttempts, setSfAttempts] = useState(0);
