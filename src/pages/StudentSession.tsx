@@ -2475,9 +2475,7 @@ function Part1View({
   const handleJumbleSubmit = () => {
     if (!jumble) return;
 
-    const studentWords = isK2
-      ? jumbleTappedWords.map(normalizeWord).filter(Boolean)
-      : sentenceToWords(jumbleAnswer);
+    const studentWords = jumbleTappedWords.map(normalizeWord).filter(Boolean);
 
     const isCorrect = isExactWordOrderMatch(studentWords, jumble.correctWords);
 
