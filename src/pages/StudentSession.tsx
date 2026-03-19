@@ -2689,8 +2689,8 @@ function Part1View({
               </div>
             </div>
 
-            {/* K-2 start over button */}
-            {isK2 && jumbleTappedWords.length > 0 && !jumbleSubmitted && (
+            {/* Start over button */}
+            {jumbleTappedWords.length > 0 && !jumbleSubmitted && (
               <Button variant="outline" size="sm" onClick={() => { setJumbleTappedWords([]); setJumbleAnswer(""); setUsedJumbleIndices(new Set()); }}>Start over 🔄</Button>
             )}
 
