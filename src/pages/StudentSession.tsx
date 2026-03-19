@@ -388,7 +388,7 @@ function jumbleSentence(passage: string): { original: string; correctWords: stri
   // Only use the first sentence — full passages are too long to reconstruct
   const firstSentence = passage.split(/(?<=[.!?])\s+/)[0] || passage;
   const clean = firstSentence.replace(/[.!?]$/, "").trim();
-  const words = deduplicateChips(clean.split(/\s+/));
+  const words = clean.split(/\s+/);
 
   // Cap at 10 words maximum for manageability
   const capped = words.slice(0, 10);
