@@ -3009,11 +3009,11 @@ function Part2StrategyView({
 
         {/* Sentence frame box removed — sentence is shown inline via WordBankFillBlanks or k2BlankSentence */}
 
-        {/* Sentence starter — hide for K-2 recording */}
-        {activity.sentenceStarter && !(isK2 && inputType === "recording") && (
-          <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
-            <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
-            <p className="text-foreground font-medium italic">{activity.sentenceStarter}</p>
+        {/* Sentence starter — shown for all grades including K-2 speaking */}
+        {activity.sentenceStarter && (
+          <div className={`rounded-lg p-3 border ${isK2 ? "bg-accent/10 border-accent/25" : "bg-accent/5 border-accent/20"}`}>
+            <p className={`${isK2 ? "text-lg" : "text-sm"} text-muted-foreground mb-1`}>💬 {isK2 ? "You can say:" : "You can start with:"}</p>
+            <p className={`text-foreground font-medium italic ${isK2 ? "text-xl" : ""}`}>{activity.sentenceStarter}</p>
           </div>
         )}
 
