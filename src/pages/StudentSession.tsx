@@ -2887,7 +2887,20 @@ function Part2StrategyView({
     }
   }, [isK2, inputType, activity.audioClip, submitted]);
 
-  return (
+  // Share Your Thoughts: trigger companion reaction after submit
+  useEffect(() => {
+    if (!isShareYourThoughts || !submitted) return;
+    const randomReaction = COMPANION_REACTIONS[Math.floor(Math.random() * COMPANION_REACTIONS.length)];
+    const reactionTimer = setTimeout(() => {
+      setCompanionReaction(randomReaction);
+    }, 500);
+    const nextTimer = setTimeout(() => {
+      setShowNextAfterReaction(true);
+    }, 3000);
+    return () => { clearTimeout(reactionTimer); clearTimeout(nextTimer); };
+  }, [isShareYourThoughts, submitted]);
+
+
     <Card className="card-shadow border-border">
       <div className="px-6 pt-6">
         <div className="flex items-center gap-2 mb-1">
