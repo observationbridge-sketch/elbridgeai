@@ -450,7 +450,7 @@ const TeacherDashboard = () => {
                           <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
                             🎨 Theme Options for Students
                           </label>
-                          <p className="text-xs text-muted-foreground mb-2">K-2 students will pick from these (select up to 3)</p>
+                          <p className="text-xs text-muted-foreground mb-2">1-2 students will pick from these (select up to 3)</p>
                           <div className="grid grid-cols-2 gap-2">
                             {ALL_THEMES.map((theme) => {
                               const checked = themeOptions.includes(theme.label);
