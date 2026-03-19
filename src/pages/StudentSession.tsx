@@ -1306,12 +1306,6 @@ const StudentSession = () => {
     if (part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice" || part2Activity.type === "tap") {
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       const normModel = (part2Activity.modelAnswer ?? part2Activity.correctAnswer ?? "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
-      console.log('[MC-GRADE]', {
-        studentAnswer: normAnswer,
-        modelAnswer: normModel,
-        options: part2Activity.options,
-        keywords: part2Activity.acceptableKeywords,
-      });
       // 1) Exact match against modelAnswer or correctAnswer
       correct = normAnswer === normModel;
       // 2) Model/correct answer contains the tapped word (or vice versa)
