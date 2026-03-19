@@ -3353,17 +3353,26 @@ function Part3ChallengeView({
           )}
           <h3 className="text-lg font-medium text-foreground">{q.question}</h3>
           <div className="grid grid-cols-1 gap-3">
-            {q.options.map((option, i) => (
-              <Button
-                key={i}
-                variant="outline"
-                className="justify-start text-left h-auto py-3 px-4 text-foreground hover:bg-primary/10 hover:border-primary/30"
-                onClick={() => onSubmitSpeedAnswer(option)}
-              >
-                <span className="font-bold text-primary mr-2">{String.fromCharCode(65 + i)}.</span>
-                {option}
-              </Button>
-            ))}
+            {(() => {
+              // Seeded shuffle so correct answer position varies per question
+              const seed = (q.question || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0) + speedIndex;
+              const shuffled = [...q.options];
+              for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = ((seed * (i + 1) * 9301 + 49297) % 233280) % (i + 1);
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+              }
+              return shuffled.map((option, i) => (
+                <Button
+                  key={option}
+                  variant="outline"
+                  className="justify-start text-left h-auto py-3 px-4 text-foreground hover:bg-primary/10 hover:border-primary/30"
+                  onClick={() => onSubmitSpeedAnswer(option)}
+                >
+                  <span className="font-bold text-primary mr-2">{String.fromCharCode(65 + i)}.</span>
+                  {option}
+                </Button>
+              ));
+            })()}
           </div>
         </CardContent>
       </Card>

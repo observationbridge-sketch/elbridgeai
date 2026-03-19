@@ -195,6 +195,8 @@ Each question must have exactly ${optionCount} options with one clearly correct 
 Do NOT reference any images, pictures, or visuals.
 Each question MUST include a "domain" field with one of: "reading", "listening", "speaking", "writing".
 
+CRITICAL: The correct answer must NOT always be the first option. Randomly vary which position (A, B, C, or D) contains the correct answer across all ${questionCount} questions. Never put the correct answer in position A more than twice out of ${questionCount} questions.
+
 Return ONLY valid JSON (no markdown):
 {
   "challengeType": "speed_round",
