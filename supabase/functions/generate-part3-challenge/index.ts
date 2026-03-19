@@ -143,7 +143,7 @@ Return ONLY valid JSON (no markdown):
 {
   "challengeType": "story_builder",
   "title": "Story Builder",
-  "instruction": "Write a ${sceneCount === 3 ? "3-4" : "4-6"} sentence mini story connecting all ${sceneCount} scenes in order!",
+  "instruction": "Look at these ${sceneCount} scenes. Record yourself telling the story in 2-3 sentences! Use words like: first, then, finally.",
   "sceneCount": ${sceneCount},
   "scenes": [
 ${sceneTemplates}
