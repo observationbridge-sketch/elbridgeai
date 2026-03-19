@@ -2000,7 +2000,7 @@ const StudentSession = () => {
         {sessionTopic && (
           <div className="px-4 py-1 border-b border-white/5" style={{ background: getThemeStyles(sessionTheme).topicBannerBg }}>
             <p className={`text-center font-medium ${isK2 ? "text-base" : "text-xs"}`} style={{ color: getThemeStyles(sessionTheme).topicBannerText }}>
-              📚 Today's Topic: <span className="font-bold">{sessionTopic}</span>
+              📚 Today's Topic: <span className="font-bold">{sessionTheme || sessionTopic}</span>
             </p>
           </div>
         )}
