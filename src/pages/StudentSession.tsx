@@ -1444,7 +1444,7 @@ const StudentSession = () => {
   const makeFallbackChallenge = useCallback((): Part3Challenge => ({
     challengeType: "story_builder",
     title: "Story Builder",
-    instruction: `Write a 4-6 sentence mini story about ${sessionTopic}!`,
+    instruction: `Look at these 4 scenes. Record yourself telling the story in 2-3 sentences! Use words like: first, then, finally.`,
     scenes: [
       `A bright morning in a place connected to ${sessionTopic}.`,
       `Something surprising happens related to ${sessionTopic}.`,
