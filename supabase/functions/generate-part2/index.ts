@@ -79,11 +79,12 @@ function generateFallbackActivity(position: number, theme: string, topic: string
       };
     }
     return {
-      type: "talk_to_companion",
+      type: "share_your_thoughts",
       inputType: "recording",
-      question: `🎉 Tell your animal companion one thing you learned about ${topic} today! Record yourself speaking.`,
-      modelAnswer: `I learned that ${topic} is really interesting because there's so much to explore!`,
-      acceptableKeywords: ["learned", "about", topic.split(" ")[0]?.toLowerCase() || "fun"],
+      question: `What do YOU think about ${topic}? Share your thoughts! 🎤\n\nTry using: ${topic.split(" ")[0]?.toLowerCase() || "interesting"}, learned, amazing`,
+      helpWords: [topic.split(" ")[0]?.toLowerCase() || "interesting", "learned", "amazing"],
+      modelAnswer: `I think ${topic} is really interesting because there's so much to explore!`,
+      acceptableKeywords: ["think", "about", topic.split(" ")[0]?.toLowerCase() || "interesting"],
       difficulty: 6,
       theme,
     };
