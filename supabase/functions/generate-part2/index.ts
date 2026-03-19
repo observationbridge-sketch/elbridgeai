@@ -351,6 +351,9 @@ Generate a SENTENCE EXPANSION activity about "${topic}".
 This is PEAK difficulty — the hardest activity in the session.
 Give the student a base sentence and ask them to record an expanded version that adds multiple details (where + when, or how + why). The expansion should require critical thinking.
 
+IMPORTANT: Do NOT use any of these base sentences that were already used earlier in this session: the student has already worked with a simple subject-verb sentence about ${topic}. Your baseSentence MUST start with a different subject or use a different action — for example, if earlier used a dog running, now use a dog jumping, barking, or playing instead.
+Vary the verb and context — do not repeat the same subject+verb combination.
+
 Return ONLY valid JSON:
 {
   "type": "sentence_expansion",
