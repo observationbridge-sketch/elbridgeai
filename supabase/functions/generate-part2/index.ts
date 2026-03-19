@@ -26,14 +26,14 @@ Students MUST always finish a session feeling successful, not stuck.
 // Position 3: multiple_choice, tap
 // Position 4: sentence_expansion, recording
 // Position 5: quick_write (1-2 sentences max), typing
-// Position 6: talk_to_companion, recording
+// Position 6: share_your_thoughts, recording
 const GRADES_3_5_SEQUENCE = [
   { type: "sentence_frame", inputType: "typing" },
   { type: "say_and_expand", inputType: "recording" },
   { type: "multiple_choice", inputType: "tap" },
   { type: "sentence_expansion", inputType: "recording" },
   { type: "quick_write", inputType: "typing" },
-  { type: "talk_to_companion", inputType: "recording" },
+  { type: "share_your_thoughts", inputType: "recording" },
 ];
 
 // K-2 sequence: keep existing strategy-based approach but enforce at least 2 recordings
