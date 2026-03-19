@@ -367,6 +367,8 @@ This is the wind-down — medium-easy. The student writes only 1-2 sentences MAX
 Give a fun, low-pressure prompt. No multi-paragraph writing. Keep it light.
 
 HARD RULE: Maximum 1-2 sentences expected. Do NOT ask for 3+ sentences.
+IMPORTANT: This must be a PERSONAL OPINION or PREFERENCE question — ask the student what they would choose, prefer, or like about ${topic}. Example: "If you could have one power from ${topic}, what would it be?"
+Do NOT ask about real life connections — that comes next.
 
 Return ONLY valid JSON:
 {
