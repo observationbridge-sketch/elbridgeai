@@ -2811,6 +2811,8 @@ function Part2StrategyView({
     setK2Countdown(null);
     setSpeakNudgeMsg(null);
     setSpeakAttemptCount(0);
+    setCompanionReaction(null);
+    setShowNextAfterReaction(false);
     if (countdownRef.current) clearTimeout(countdownRef.current);
   }, [index]);
 
