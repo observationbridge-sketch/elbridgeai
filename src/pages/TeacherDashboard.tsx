@@ -625,7 +625,7 @@ const TeacherDashboard = () => {
                             {new Date(session.created_at).toLocaleDateString()}
                           </span>
                           {(session as any).grade_band && (
-                            <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{(session as any).grade_band}</span>
+                            <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{displayGradeBand((session as any).grade_band)}</span>
                           )}
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
