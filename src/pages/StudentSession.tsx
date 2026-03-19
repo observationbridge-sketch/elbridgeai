@@ -1346,7 +1346,7 @@ const StudentSession = () => {
     } else {
       // For quick writes and free response, grade on length if no keywords
       const wordCount = answerText.trim().split(/\s+/).filter(Boolean).length;
-      if (part2Activity.type === 'quick_write' || part2Activity.inputType === 'quick_write' || part2Activity.strategy === 'quick_write') {
+      if (part2Activity.type === 'quick_write' || part2Activity.inputType === 'quick_write' || (part2Activity.strategy as string) === 'quick_write') {
         correct = wordCount >= 10;
       } else if (!part2Activity.acceptableKeywords || part2Activity.acceptableKeywords.length === 0) {
         correct = wordCount >= 10;
