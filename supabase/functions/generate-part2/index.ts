@@ -521,7 +521,8 @@ ${k2Rules}
 ${histCtx}
 
 DIFFICULTY ARC: ${arcLabel}
-INPUT FORMAT: "typing" — ${inputDesc}
+INPUT FORMAT: "tap" — The student will TAP word tiles to fill in blanks. They do NOT type.
+CRITICAL: inputType MUST be "tap" for all K-2 sentence frame activities. Never use "typing".
 
 Generate a SENTENCE FRAME activity about "${topic}" for K-2 students.
 Do NOT include a reading passage — omit the "passage" field entirely or set it to null.
