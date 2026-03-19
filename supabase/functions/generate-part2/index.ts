@@ -408,7 +408,7 @@ The student must end the session feeling successful and happy.
 
 Use this prompt frame as inspiration (adapt it naturally): ${selectedFrame}
 
-IMPORTANT:
+IMPORTANT: This must be a REAL LIFE CONNECTION question — ask the student where they have seen something like this in their own life, or when they have felt or done something similar. Do NOT repeat preference or opinion questions — that was already covered in position 5. Example: "Have you ever seen something like this in real life? Tell us about it."
 - Do NOT mention any animal companion, pet, or mascot
 - Frame it as the student sharing their own thoughts
 - Always include a "helpWords" array with 2-3 vocabulary words from the lesson (e.g., ["brave", "strong", "protect"])
