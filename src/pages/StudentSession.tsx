@@ -2802,11 +2802,19 @@ function Part2StrategyView({
 
   const k2BlankSentence = useMemo(() => {
     if (!isK2SF) return "";
-    // Use deterministic generator output
     if (k2SfData) return k2SfData.blankSentence;
-    // Fallback (shouldn't happen)
     return "___";
   }, [isK2SF, k2SfData]);
+
+  // Filled sentence for feedback: replace blanks with correct words
+  const k2FilledSentence = useMemo(() => {
+    if (!isK2SF || !k2SfData) return activity.modelAnswer || "";
+    let filled = k2SfData.blankSentence;
+    for (const word of k2SfData.correctWords) {
+      filled = filled.replace("___", word);
+    }
+    return filled;
+  }, [isK2SF, k2SfData, activity.modelAnswer]);
 
   // Reset retry state when activity changes — use index as primary trigger
   useEffect(() => {
@@ -3218,7 +3226,9 @@ function Part2StrategyView({
               </p>
               {!isCorrect && (
                 <p className={`text-lg mt-2 ${sfRevealed ? "font-bold text-warning" : "text-muted-foreground text-sm"}`}>
-                  {sfRevealed ? activity.modelAnswer : <>The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span></>}
+                  {sfRevealed
+                    ? (isK2SF ? k2FilledSentence : activity.modelAnswer)
+                    : <>The answer was: <span className="font-medium text-foreground">{isK2SF ? k2FilledSentence : activity.modelAnswer}</span></>}
                 </p>
               )}
             </div>
