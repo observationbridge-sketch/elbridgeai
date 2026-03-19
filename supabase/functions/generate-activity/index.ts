@@ -31,8 +31,8 @@ serve(async (req) => {
 
   try {
     const { domain, grade, activityIndex, theme: sessionTheme } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const actualDomain = DOMAIN_ROTATION_8[activityIndex] || domain;
     const proficiencyLevel = PROFICIENCY_PROGRESSION_8[activityIndex] || "Developing";
