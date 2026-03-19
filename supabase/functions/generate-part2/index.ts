@@ -217,7 +217,8 @@ const ARC_LABELS = [
   "Activity 6 of 6 — EASY & FUN (lightest, creative, end on a win!)",
 ];
 
-function buildPrompt35(questionIndex: number, theme: string, topic: string, contentHistory?: any): string {
+function buildPrompt35(questionIndex: number, theme: string, topic: string, contentHistory?: any, qIdx?: number): string {
+  const effectiveQIdx = qIdx ?? questionIndex;
   const pos = GRADES_3_5_SEQUENCE[questionIndex];
   const arcLabel = ARC_LABELS[questionIndex];
   const histCtx = buildHistoryContext(contentHistory);
@@ -403,7 +404,7 @@ Return ONLY valid JSON:
     `"Have you ever seen something like this in real life?"`,
     `"Tell a friend something interesting about ${topic}"`,
   ];
-  const selectedFrame = promptFrames[qIdx % promptFrames.length];
+  const selectedFrame = promptFrames[effectiveQIdx % promptFrames.length];
 
   return `You are an expert ELD activity generator for grades 3-5 ELL students.
 
@@ -556,7 +557,7 @@ serve(async (req) => {
     // Build prompt based on grade band
     const prompt = isK2
       ? buildPromptK2(qIdx, effectiveTheme, effectiveTopic, contentHistory, sentenceFrameTier)
-      : buildPrompt35(qIdx, effectiveTheme, effectiveTopic, contentHistory);
+      : buildPrompt35(qIdx, effectiveTheme, effectiveTopic, contentHistory, qIdx);
 
     const userMessage = `${prompt}\n\nGenerate activity ${qIdx + 1} of 6 about "${effectiveTopic}". Make it engaging and grade-appropriate.`;
 
