@@ -1909,7 +1909,7 @@ const StudentSession = () => {
                 <p className="text-2xl mb-2">🏠</p>
                 <p className="text-lg font-bold text-white">Tell someone at home:</p>
                 <p className="text-base text-white/90 mt-2 leading-relaxed italic">
-                  "Today I learned about {sessionTopic ? sessionTopic.charAt(0).toUpperCase() + sessionTopic.slice(1) : 'something new'}. I can say: {anchor.sentence}"
+                  "Today I learned about {sessionTheme ? sessionTheme.charAt(0).toUpperCase() + sessionTheme.slice(1) : 'something new'}. I can say: {anchor.sentence}"
                 </p>
               </div>
             )}
@@ -2000,7 +2000,7 @@ const StudentSession = () => {
         {sessionTopic && (
           <div className="px-4 py-1 border-b border-white/5" style={{ background: getThemeStyles(sessionTheme).topicBannerBg }}>
             <p className={`text-center font-medium ${isK2 ? "text-base" : "text-xs"}`} style={{ color: getThemeStyles(sessionTheme).topicBannerText }}>
-              📚 Today's Topic: <span className="font-bold">{sessionTopic}</span>
+              📚 Today's Topic: <span className="font-bold">{sessionTheme || sessionTopic}</span>
             </p>
           </div>
         )}
