@@ -535,7 +535,7 @@ Include a fillInBlank object: { "sentence": string, "blanks": array, "answers": 
 Return ONLY valid JSON:
 {
   "type": "sentence_frame",
-  "inputType": "typing",
+  "inputType": "tap",
   "passage": null,
   "question": "Tap a word to finish the sentence.",
   "sentenceFrame": "<sentence with ___ blanks>",
