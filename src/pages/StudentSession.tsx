@@ -3110,7 +3110,13 @@ function Part2StrategyView({
           )
         )}
 
-        {/* Input area based on inputType — skip entirely for K-2 sentence_frames */}
+        {/* Help words for share_your_thoughts */}
+        {isShareYourThoughts && (activity as any).helpWords?.length > 0 && !submitted && (
+          <div className="bg-warning/5 rounded-lg p-3 border border-warning/20">
+            <p className="text-sm font-medium text-warning">💡 Try using: {(activity as any).helpWords.join(", ")}</p>
+          </div>
+        )}
+
         {!submitted && !isK2SF && (
           <>
             {(inputType === "multiple_choice" || inputType === "tap") && activity.options ? (
