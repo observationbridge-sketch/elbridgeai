@@ -366,7 +366,7 @@ const TeacherDashboard = () => {
                                   } ${sessionStarted ? "cursor-not-allowed" : "cursor-pointer"}`}
                                 >
                                   {sessionStarted && isSelected && <Lock className="h-3 w-3" />}
-                                  {band}
+                                  {displayGradeBand(band)}
                                 </button>
                               );
                             })}
