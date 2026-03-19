@@ -384,20 +384,21 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
 }
 
 function jumbleSentence(passage: string): { original: string; correctWords: string[]; jumbled: string[] } {
-  const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
-  const target = sentences[0] || passage;
-  const clean = target.replace(/[.!?]$/, "").trim();
-  // Normalize all chips to lowercase — prevents "a" vs "A" duplicates
+  // Only use the first sentence — full passages are too long to reconstruct
+  const firstSentence = passage.split(/(?<=[.!?])\s+/)[0] || passage;
+  const clean = firstSentence.replace(/[.!?]$/, "").trim();
   const words = deduplicateChips(clean.split(/\s+/));
 
-  let shuffled = [...words].sort(() => Math.random() - 0.5);
+  // Cap at 10 words maximum for manageability
+  const capped = words.slice(0, 10);
+
+  let shuffled = [...capped].sort(() => Math.random() - 0.5);
   let attempts = 0;
-  while (isExactWordOrderMatch(shuffled, words) && attempts < 10) {
-    shuffled = [...words].sort(() => Math.random() - 0.5);
+  while (isExactWordOrderMatch(shuffled, capped) && attempts < 10) {
+    shuffled = [...capped].sort(() => Math.random() - 0.5);
     attempts++;
   }
-
-  return { original: target.trim(), correctWords: words, jumbled: shuffled };
+  return { original: firstSentence.trim(), correctWords: capped, jumbled: shuffled };
 }
 
 // ═══════════════════════════════════════════════
