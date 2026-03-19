@@ -110,6 +110,7 @@ const STRATEGY_LABELS: Record<string, { label: string; icon: any; color: string;
   say_and_expand: { label: "Say & Expand", icon: Mic, color: "text-success", targetDomain: "Speaking" },
   multiple_choice: { label: "Multiple Choice", icon: Brain, color: "text-primary", targetDomain: "Reading & Listening" },
   talk_to_companion: { label: "Talk to Companion", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
+  share_your_thoughts: { label: "Share Your Thoughts 🎤", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
 };
 
 const DEFAULT_STRATEGY_META = { label: "Practice", icon: Star, color: "text-primary", targetDomain: "Language" };
@@ -1389,6 +1390,7 @@ const StudentSession = () => {
       sentence_expansion: "speaking",
       say_and_expand: "speaking",
       talk_to_companion: "speaking",
+      share_your_thoughts: "speaking",
       quick_writes: "writing",
       quick_write: "writing",
       multiple_choice: "reading",
@@ -1872,6 +1874,12 @@ const StudentSession = () => {
             <Button variant="hero" onClick={() => navigate("/student/join")} className="w-full text-lg py-6">
               Done ✅
             </Button>
+            {/* Home learning prompt */}
+            {sessionTopic && (
+              <p className="text-center text-sm text-gray-400 mt-3 px-2">
+                💬 Tell someone at home one thing you learned today about {sessionTopic}.
+              </p>
+            )}
           </div>
         </div>
 
@@ -2759,6 +2767,7 @@ function Part2StrategyView({
   const strategyMeta = STRATEGY_LABELS[activity.strategy] || STRATEGY_LABELS[activity.type] || DEFAULT_STRATEGY_META;
   const StrategyIcon = strategyMeta.icon;
   const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames" || activity.type === "sentence_frame";
+  const isShareYourThoughts = activity.type === "share_your_thoughts" || (activity as any).strategy === "share_your_thoughts";
   const isK2SF = Boolean(isK2 && isSentenceFramesActivity);
   const inputType = isK2SF ? "k2_word_tiles" : (activity.inputType || "typing");
 
@@ -2774,6 +2783,15 @@ function Part2StrategyView({
   // Speaking nudge state for recording activities
   const [speakNudgeMsg, setSpeakNudgeMsg] = useState<string | null>(null);
   const [speakAttemptCount, setSpeakAttemptCount] = useState(0);
+
+  // Share Your Thoughts companion reaction state
+  const COMPANION_REACTIONS = [
+    "That's so interesting! I didn't know that!",
+    "Wow, you explained that really well!",
+    "I love how you connected that to real life!",
+  ];
+  const [companionReaction, setCompanionReaction] = useState<string | null>(null);
+  const [showNextAfterReaction, setShowNextAfterReaction] = useState(false);
 
   // Deterministic K-2 sentence frame — replaces Gemini-generated blank/tiles
   const k2SfData = useMemo(() => {
@@ -2799,6 +2817,8 @@ function Part2StrategyView({
     setK2Countdown(null);
     setSpeakNudgeMsg(null);
     setSpeakAttemptCount(0);
+    setCompanionReaction(null);
+    setShowNextAfterReaction(false);
     if (countdownRef.current) clearTimeout(countdownRef.current);
   }, [index]);
 
@@ -2872,6 +2892,20 @@ function Part2StrategyView({
       return () => clearTimeout(timer);
     }
   }, [isK2, inputType, activity.audioClip, submitted]);
+
+  // Share Your Thoughts: trigger companion reaction after submit
+  useEffect(() => {
+    if (!isShareYourThoughts || !submitted) return;
+    const randomReaction = COMPANION_REACTIONS[Math.floor(Math.random() * COMPANION_REACTIONS.length)];
+    const reactionTimer = setTimeout(() => {
+      setCompanionReaction(randomReaction);
+    }, 500);
+    const nextTimer = setTimeout(() => {
+      setShowNextAfterReaction(true);
+    }, 3000);
+    return () => { clearTimeout(reactionTimer); clearTimeout(nextTimer); };
+  }, [isShareYourThoughts, submitted]);
+
 
   return (
     <Card className="card-shadow border-border">
@@ -3096,7 +3130,13 @@ function Part2StrategyView({
           )
         )}
 
-        {/* Input area based on inputType — skip entirely for K-2 sentence_frames */}
+        {/* Help words for share_your_thoughts */}
+        {isShareYourThoughts && (activity as any).helpWords?.length > 0 && !submitted && (
+          <div className="bg-warning/5 rounded-lg p-3 border border-warning/20">
+            <p className="text-sm font-medium text-warning">💡 Try using: {(activity as any).helpWords.join(", ")}</p>
+          </div>
+        )}
+
         {!submitted && !isK2SF && (
           <>
             {(inputType === "multiple_choice" || inputType === "tap") && activity.options ? (
@@ -3141,7 +3181,30 @@ function Part2StrategyView({
         )}
 
         {/* Feedback */}
-        {submitted && isK2 ? (
+        {submitted && isShareYourThoughts ? (
+          // Share Your Thoughts: companion reaction flow
+          <div className="space-y-4">
+            {companionReaction ? (
+              <>
+                <div className="flex flex-col items-center gap-2 animate-fade-in">
+                  <div className="text-6xl animate-bounce">{isK2 ? "🐣" : "🌟"}</div>
+                  <div className="bg-primary/10 rounded-2xl px-6 py-3 border border-primary/20 max-w-xs">
+                    <p className={`${isK2 ? "text-xl" : "text-base"} font-bold text-primary text-center`}>{companionReaction}</p>
+                  </div>
+                </div>
+                {showNextAfterReaction && (
+                  <Button variant="hero" className="w-full animate-fade-in" size="lg" onClick={onNext}>
+                    {index < totalActivities - 1 ? "Next Activity" : "Continue to Challenge! 🎉"} <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        ) : submitted && isK2 ? (
           <div className="space-y-4">
             {/* Simplified K-2 feedback */}
             <div className={`rounded-xl p-6 text-center ${
