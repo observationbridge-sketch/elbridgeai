@@ -3280,9 +3280,20 @@ function Part2StrategyView({
                 </div>
               </div>
             </div>
-            <Button variant="hero" className="w-full" size="lg" onClick={onNext}>
+            {isCorrect && k2Countdown !== null && k2Countdown > 0 && (
+              <p className="text-xs text-muted-foreground text-center">Moving on in {k2Countdown}...</p>
+            )}
+            <Button variant="hero" className="w-full" size="lg" onClick={() => { cancelCountdown(); onNext(); }}>
               {index < totalActivities - 1 ? "Next Activity" : "Continue to Challenge! 🎉"} <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
+            {isCorrect && k2Countdown !== null && k2Countdown > 0 && (
+              <button
+                onClick={cancelCountdown}
+                className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Wait, I'm still reading ✋
+              </button>
+            )}
           </div>
         )}
 
