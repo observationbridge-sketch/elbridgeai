@@ -404,7 +404,7 @@ Return ONLY valid JSON:
     `"Have you ever seen something like this in real life?"`,
     `"Tell a friend something interesting about ${topic}"`,
   ];
-  const selectedFrame = promptFrames[qIdx % promptFrames.length];
+  const selectedFrame = promptFrames[effectiveQIdx % promptFrames.length];
 
   return `You are an expert ELD activity generator for grades 3-5 ELL students.
 
