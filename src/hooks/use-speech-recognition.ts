@@ -118,7 +118,6 @@ export function useSpeechRecognition() {
     const recognition = recognitionRef.current;
     recognitionRef.current = null;
 
-    // Calculate duration
     const duration = recordingStartRef.current > 0
       ? (Date.now() - recordingStartRef.current) / 1000
       : 0;
@@ -126,13 +125,18 @@ export function useSpeechRecognition() {
     recordingStartRef.current = 0;
 
     if (recognition) {
-      try { recognition.abort(); } catch {}
-      try { recognition.stop(); } catch {}
+      try { recognition.stop(); } catch {
+        try { recognition.abort(); } catch {}
+      }
     }
-    setIsListening(false);
-    accumulatedRef.current += sessionFinalsRef.current;
-    sessionFinalsRef.current = "";
-    setTranscript(accumulatedRef.current);
+
+    // Give browser 300ms to finish processing final speech segment before committing
+    setTimeout(() => {
+      accumulatedRef.current += sessionFinalsRef.current;
+      sessionFinalsRef.current = "";
+      setTranscript(accumulatedRef.current);
+      setIsListening(false);
+    }, 300);
   }, []);
 
   const resetTranscript = useCallback(() => {
