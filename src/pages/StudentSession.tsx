@@ -399,7 +399,9 @@ function jumbleSentence(passage: string): { original: string; correctWords: stri
     shuffled = [...capped].sort(() => Math.random() - 0.5);
     attempts++;
   }
-  return { original: firstSentence.trim(), correctWords: capped, jumbled: shuffled };
+  const correctLower = capped.map(w => w.toLowerCase());
+  const jumbledLower = shuffled.map(w => w.toLowerCase());
+  return { original: firstSentence.trim(), correctWords: correctLower, jumbled: jumbledLower };
 }
 
 // ═══════════════════════════════════════════════
