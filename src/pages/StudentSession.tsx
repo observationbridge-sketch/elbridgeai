@@ -1337,6 +1337,9 @@ const StudentSession = () => {
       if (!correct) {
         correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
       }
+    } else if (part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame") {
+      // K-2 word tile: correctness already validated client-side before onSubmit is called
+      correct = true;
     } else {
       // For quick writes and free response, grade on length if no keywords
       const wordCount = answerText.trim().split(/\s+/).filter(Boolean).length;
