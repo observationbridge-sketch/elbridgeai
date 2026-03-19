@@ -252,9 +252,9 @@ function getBadge(scores: Part1Scores): { icon: any; label: string; color: strin
 
 function flexibleGrade(input: string, keywords: string[]): boolean {
   const norm = input.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
-  if (keywords.length === 0) return false;
+  if (keywords.length === 0) return norm.split(/\s+/).length >= 3;
   const matchCount = keywords.filter((kw) => norm.includes(kw.toLowerCase())).length;
-  return matchCount >= Math.max(2, Math.ceil(keywords.length * 0.3));
+  return matchCount >= Math.max(1, Math.ceil(keywords.length * 0.25));
 }
 
 function sentenceCount(text: string): number {
