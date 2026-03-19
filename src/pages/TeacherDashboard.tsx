@@ -357,7 +357,7 @@ const TeacherDashboard = () => {
                                     if (sessionCode && user) {
                                       await supabase.from("sessions").update({ grade_band: band } as any).eq("code", sessionCode).eq("teacher_id", user.id);
                                     }
-                                    toast.success(`Grade band set to ${band} ✓`);
+                                    toast.success(`Grade band set to ${displayGradeBand(band)} ✓`);
                                   }}
                                   className={`text-xs font-medium px-3 py-1 transition-all flex items-center gap-1 ${
                                     isSelected
