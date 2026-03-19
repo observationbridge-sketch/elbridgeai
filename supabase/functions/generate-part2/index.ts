@@ -557,7 +557,7 @@ serve(async (req) => {
     // Build prompt based on grade band
     const prompt = isK2
       ? buildPromptK2(qIdx, effectiveTheme, effectiveTopic, contentHistory, sentenceFrameTier)
-      : buildPrompt35(qIdx, effectiveTheme, effectiveTopic, contentHistory);
+      : buildPrompt35(qIdx, effectiveTheme, effectiveTopic, contentHistory, qIdx);
 
     const userMessage = `${prompt}\n\nGenerate activity ${qIdx + 1} of 6 about "${effectiveTopic}". Make it engaging and grade-appropriate.`;
 
