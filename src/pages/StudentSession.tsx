@@ -2785,8 +2785,14 @@ function Part2StrategyView({
   const [speakNudgeMsg, setSpeakNudgeMsg] = useState<string | null>(null);
   const [speakAttemptCount, setSpeakAttemptCount] = useState(0);
 
-  // Share Your Thoughts companion reaction state
-  const COMPANION_REACTIONS = [
+  // Companion reaction state — companion reacts AFTER student speaks, never as audience
+  const COMPANION_REACTIONS = isK2 ? [
+    "Peep! That was good! 🐣",
+    "I like that! 🐣",
+    "You said a lot! 🐣",
+    "Peep peep! Amazing! 🐣",
+    "Wow, great job! 🐣",
+  ] : [
     "That's so interesting! I didn't know that!",
     "Wow, you explained that really well!",
     "I love how you connected that to real life!",
