@@ -1524,7 +1524,7 @@ const StudentSession = () => {
 
   const submitPart3StoryBuilder = () => {
     if (!part3Challenge || !part3Answer.trim()) {
-      toast.error("Please write your story!");
+      toast.error("Please record your story!");
       return;
     }
     const norm = part3Answer.toLowerCase();
@@ -1532,12 +1532,12 @@ const StudentSession = () => {
     const seqWords = part3Challenge.sequenceWords || ["first", "then", "next", "finally"];
     const usedSeqWords = seqWords.filter((w) => norm.includes(w));
     const hasSequence = usedSeqWords.length >= 2;
-    const hasEnoughSentences = sentences.length >= 3;
+    const hasEnoughSentences = sentences.length >= 2;
 
     if (hasEnoughSentences && hasSequence) {
       // Full points
       gamification.addPoints(pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
-      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's advanced writing! 🌟 +${pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
+      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's great storytelling! 🌟 +${pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
       setPart3Feedback(feedback);
       // Award sequence_master badge if 3+ sequence words used
       if (usedSeqWords.length >= 3 && effectiveGradeBand === "3-5") {
@@ -1548,14 +1548,14 @@ const StudentSession = () => {
       const halfPoints = Math.round(pts.CHALLENGE_STORY_COMPLETE / 2);
       gamification.addPoints(halfPoints, effectiveGradeBand);
       const tips: string[] = [];
-      if (!hasEnoughSentences) tips.push("try writing at least 3 sentences");
-      if (!hasSequence) tips.push('use sequence words like "first, then, next, finally"');
-      const feedback = `Good effort! Next time, ${tips.join(" and ")} to earn full points! 📝 +${halfPoints} points!`;
+      if (!hasEnoughSentences) tips.push("try saying at least 2 sentences");
+      if (!hasSequence) tips.push('use sequence words like "first, then, finally"');
+      const feedback = `Good effort! Next time, ${tips.join(" and ")} to earn full points! 🎤 +${halfPoints} points!`;
       setPart3Feedback(feedback);
     }
     setPart3Submitted(true);
     setChallengeCompleted("Story Builder");
-    saveResponse("writing", "Part 3: Story Builder", part3Answer, part3Challenge.instruction, true, "Developing", "part3", "story_builder");
+    saveResponse("speaking", "Part 3: Story Builder", part3Answer, part3Challenge.instruction, true, "Developing", "part3", "story_builder");
   };
 
   const submitPart3SpeedAnswer = (selectedOption: string) => {
