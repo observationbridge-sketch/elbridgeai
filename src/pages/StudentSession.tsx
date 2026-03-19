@@ -1876,9 +1876,11 @@ const StudentSession = () => {
             </Button>
             {/* Home learning prompt */}
             {sessionTopic && (
-              <p className="text-center text-sm text-gray-400 mt-3 px-2">
-                💬 Tell someone at home one thing you learned today about {sessionTopic}.
-              </p>
+              <div className="rounded-xl p-4 text-center border mt-4" style={{ background: "rgba(99,102,241,0.15)", borderColor: "rgba(99,102,241,0.35)" }}>
+                <p className="text-2xl mb-1">💬</p>
+                <p className="text-base font-semibold text-white">Tell someone at home:</p>
+                <p className="text-sm text-gray-300 mt-1">"One thing I learned today about {sessionTopic}"</p>
+              </div>
             )}
           </div>
         </div>
