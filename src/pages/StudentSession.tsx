@@ -110,7 +110,7 @@ const STRATEGY_LABELS: Record<string, { label: string; icon: any; color: string;
   quick_write: { label: "Quick Write", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
   say_and_expand: { label: "Say & Expand", icon: Mic, color: "text-success", targetDomain: "Speaking" },
   multiple_choice: { label: "Multiple Choice", icon: Brain, color: "text-primary", targetDomain: "Reading & Listening" },
-  talk_to_companion: { label: "Talk to Companion", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
+  talk_to_companion: { label: "Share Your Voice 🎤", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
   share_your_thoughts: { label: "Share Your Thoughts 🎤", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
 };
 
@@ -1221,8 +1221,9 @@ const StudentSession = () => {
               type: "sentence_completion",
               inputType: isK2 ? "recording" : "typing",
               question: isK2 
-                ? `Tell your animal companion: "My favorite thing about ${sessionTopic} is ___!" Say it out loud! 🎤`
+                ? `Do you like ${sessionTopic}? Say it out loud! 🎤`
                 : `Complete this sentence about ${sessionTopic}: "The most interesting thing I learned is _____."`,
+              sentenceStarter: isK2 ? `You can say: I like ${sessionTopic} because…` : undefined,
               modelAnswer: `The most interesting thing I learned about ${sessionTopic} is how amazing it is!`,
               acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "learned", "interesting", "because"],
               difficulty: 6,
@@ -2784,8 +2785,14 @@ function Part2StrategyView({
   const [speakNudgeMsg, setSpeakNudgeMsg] = useState<string | null>(null);
   const [speakAttemptCount, setSpeakAttemptCount] = useState(0);
 
-  // Share Your Thoughts companion reaction state
-  const COMPANION_REACTIONS = [
+  // Companion reaction state — companion reacts AFTER student speaks, never as audience
+  const COMPANION_REACTIONS = isK2 ? [
+    "Peep! That was good! 🐣",
+    "I like that! 🐣",
+    "You said a lot! 🐣",
+    "Peep peep! Amazing! 🐣",
+    "Wow, great job! 🐣",
+  ] : [
     "That's so interesting! I didn't know that!",
     "Wow, you explained that really well!",
     "I love how you connected that to real life!",
@@ -3002,11 +3009,11 @@ function Part2StrategyView({
 
         {/* Sentence frame box removed — sentence is shown inline via WordBankFillBlanks or k2BlankSentence */}
 
-        {/* Sentence starter — hide for K-2 recording */}
-        {activity.sentenceStarter && !(isK2 && inputType === "recording") && (
-          <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
-            <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
-            <p className="text-foreground font-medium italic">{activity.sentenceStarter}</p>
+        {/* Sentence starter — shown for all grades including K-2 speaking */}
+        {activity.sentenceStarter && (
+          <div className={`rounded-lg p-3 border ${isK2 ? "bg-accent/10 border-accent/25" : "bg-accent/5 border-accent/20"}`}>
+            <p className={`${isK2 ? "text-lg" : "text-sm"} text-muted-foreground mb-1`}>💬 {isK2 ? "You can say:" : "You can start with:"}</p>
+            <p className={`text-foreground font-medium italic ${isK2 ? "text-xl" : ""}`}>{activity.sentenceStarter}</p>
           </div>
         )}
 

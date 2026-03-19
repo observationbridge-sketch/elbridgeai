@@ -71,9 +71,10 @@ function generateFallbackActivity(position: number, theme: string, topic: string
       return {
         type: "talk_to_companion",
         inputType: "recording",
-        question: `Tell your animal companion: "My favorite thing about ${topic} is ___!" Say it out loud! 🎤`,
-        modelAnswer: `My favorite thing about ${topic} is how fun it is!`,
-        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "favorite"],
+        question: `Do you like ${topic}? Say it out loud! 🎤`,
+        sentenceStarter: `You can say: I like ${topic} because…`,
+        modelAnswer: `I like ${topic} because it is fun!`,
+        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "like", "because"],
         difficulty: 6,
         theme,
       };
@@ -484,14 +485,22 @@ DIFFICULTY ARC: ${arcLabel}
 INPUT FORMAT: "recording" — ${inputDesc}
 
 Generate a SPEAKING activity about "${topic}" for K-2 students.
-The student records themselves saying one sentence. Must involve their animal companion (Baby Chick).
+The student records themselves saying one sentence. Use personal, open-ended prompts that connect to the student's life.
+NEVER address the companion (Baby Chick) as the audience. NEVER use "Tell Baby Chick" or "Explain to your companion".
+Use one of these prompt patterns:
+- Default: "[Anchor sentence]. What about you?"
+- Opinion: "Do you like [topic]?" followed by "Say it out loud!"
+- Knowledge: "What do you know about [topic]?"
+- Experience: "Have you ever [verb from anchor]?"
+Include a "sentenceStarter" field with a helpful starter like "I like ${topic} because…" or "I think ${topic} is…"
 ${isLastTwo ? "This must be LIGHT and FUN. No wrong answers. End on a win!" : ""}
 
 Return ONLY valid JSON:
 {
   "type": "${isLastTwo ? "talk_to_companion" : "say_and_expand"}",
   "inputType": "recording",
-  "question": "<simple instruction involving Baby Chick and ${topic}>",
+  "question": "<personal, open-ended prompt about ${topic} — NEVER mention companion>",
+  "sentenceStarter": "<starter like: I like ${topic} because…>",
   ${!isLastTwo ? '"baseSentence": "<simple 4-6 word sentence to repeat/expand>",' : ""}
   "modelAnswer": "<example 1 sentence response>",
   "acceptableKeywords": ["<3-5 simple words>"],
