@@ -438,7 +438,7 @@ const TeacherDashboard = () => {
                               className={`text-base py-3 ${gradeBand === band ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                               onClick={() => setGradeBand(band)}
                             >
-                              {band}
+                              {displayGradeBand(band)}
                             </Button>
                           ))}
                         </div>
