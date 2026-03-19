@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { displayGradeBand } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -186,7 +187,7 @@ const TeacherDashboard = () => {
   const createSession = async () => {
     if (!user) return;
     if (gradeBand === "K-2" && themeOptions.length < 1) {
-      toast.error("Select at least 1 theme option for K-2 students");
+      toast.error("Select at least 1 theme option for 1-2 students");
       return;
     }
     setGenerating(true);
@@ -357,7 +358,7 @@ const TeacherDashboard = () => {
                                     if (sessionCode && user) {
                                       await supabase.from("sessions").update({ grade_band: band } as any).eq("code", sessionCode).eq("teacher_id", user.id);
                                     }
-                                    toast.success(`Grade band set to ${band} ✓`);
+                                    toast.success(`Grade band set to ${displayGradeBand(band)} ✓`);
                                   }}
                                   className={`text-xs font-medium px-3 py-1 transition-all flex items-center gap-1 ${
                                     isSelected
@@ -366,7 +367,7 @@ const TeacherDashboard = () => {
                                   } ${sessionStarted ? "cursor-not-allowed" : "cursor-pointer"}`}
                                 >
                                   {sessionStarted && isSelected && <Lock className="h-3 w-3" />}
-                                  {band}
+                                  {displayGradeBand(band)}
                                 </button>
                               );
                             })}
@@ -438,7 +439,7 @@ const TeacherDashboard = () => {
                               className={`text-base py-3 ${gradeBand === band ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
                               onClick={() => setGradeBand(band)}
                             >
-                              {band}
+                              {displayGradeBand(band)}
                             </Button>
                           ))}
                         </div>
@@ -450,7 +451,7 @@ const TeacherDashboard = () => {
                           <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
                             🎨 Theme Options for Students
                           </label>
-                          <p className="text-xs text-muted-foreground mb-2">K-2 students will pick from these (select up to 3)</p>
+                          <p className="text-xs text-muted-foreground mb-2">1-2 students will pick from these (select up to 3)</p>
                           <div className="grid grid-cols-2 gap-2">
                             {ALL_THEMES.map((theme) => {
                               const checked = themeOptions.includes(theme.label);
@@ -625,7 +626,7 @@ const TeacherDashboard = () => {
                             {new Date(session.created_at).toLocaleDateString()}
                           </span>
                           {(session as any).grade_band && (
-                            <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{(session as any).grade_band}</span>
+                            <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full">{displayGradeBand((session as any).grade_band)}</span>
                           )}
                         </div>
                         <span className={`text-xs px-2 py-1 rounded-full ${session.status === "active" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
