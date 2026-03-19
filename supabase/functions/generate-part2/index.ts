@@ -521,7 +521,8 @@ ${k2Rules}
 ${histCtx}
 
 DIFFICULTY ARC: ${arcLabel}
-INPUT FORMAT: "typing" — ${inputDesc}
+INPUT FORMAT: "tap" — The student will TAP word tiles to fill in blanks. They do NOT type.
+CRITICAL: inputType MUST be "tap" for all K-2 sentence frame activities. Never use "typing".
 
 Generate a SENTENCE FRAME activity about "${topic}" for K-2 students.
 Do NOT include a reading passage — omit the "passage" field entirely or set it to null.
@@ -534,7 +535,7 @@ Include a fillInBlank object: { "sentence": string, "blanks": array, "answers": 
 Return ONLY valid JSON:
 {
   "type": "sentence_frame",
-  "inputType": "typing",
+  "inputType": "tap",
   "passage": null,
   "question": "Tap a word to finish the sentence.",
   "sentenceFrame": "<sentence with ___ blanks>",
@@ -633,6 +634,10 @@ serve(async (req) => {
     // FORCE correct inputType for K-2
     if (isK2 && expectedInputType) {
       activity.inputType = expectedInputType;
+    }
+    // SAFETY: K-2 sentence_frame MUST always be tap, never typing
+    if (isK2 && activity.type === "sentence_frame") {
+      activity.inputType = "tap";
     }
 
     // Add metadata
