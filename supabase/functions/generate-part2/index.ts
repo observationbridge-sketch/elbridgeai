@@ -38,7 +38,7 @@ const GRADES_3_5_SEQUENCE = [
 
 // K-2 sequence: keep existing strategy-based approach but enforce at least 2 recordings
 // Positions 5 and 6 are always recording for K-2 (existing behavior), plus position 2
-const K2_INPUT_TYPES = ["typing", "recording", "typing", "recording", "recording", "recording"];
+const K2_INPUT_TYPES = ["tap", "recording", "typing", "recording", "recording", "recording"];
 
 function getOptionCount(questionIndex: number, isK2: boolean): number {
   if (isK2) return 2;
