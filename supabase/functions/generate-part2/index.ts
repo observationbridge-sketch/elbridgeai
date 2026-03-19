@@ -170,7 +170,19 @@ function normalizeSentenceFrameActivity(activity: any): any {
   if (!activity || typeof activity !== "object") return activity;
 
   const fillInBlank = activity.fillInBlank || (isValidFillInBlankSchema(activity) ? activity : null);
-  if (!fillInBlank || !isValidFillInBlankSchema(fillInBlank)) return activity;
+  if (!fillInBlank || !isValidFillInBlankSchema(fillInBlank)) {
+    if (activity.sentenceFrame && activity.wordBank?.length > 0) {
+      const answers = activity.acceptableKeywords?.slice(0, 1) || [activity.wordBank[0]];
+      activity.fillInBlank = {
+        sentence: activity.sentenceFrame,
+        blanks: ["blank"],
+        answers,
+        wordBank: activity.wordBank,
+      };
+      return activity;
+    }
+    return activity;
+  }
 
   const sentenceFrame = fillInBlank.sentence;
 
