@@ -3370,6 +3370,7 @@ function Part3ChallengeView({
   challenge, answer, setAnswer, speech, tts, speedIndex,
   onSubmitStory, onSubmitSpeedAnswer, onSubmitTeach,
 }: Part3Props) {
+  const [showHints, setShowHints] = useState(false);
   if (challenge.challengeType === "story_builder") {
     return (
       <Card className="card-shadow border-border">
