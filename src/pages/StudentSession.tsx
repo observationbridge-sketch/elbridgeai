@@ -3456,9 +3456,39 @@ function WaveformBars({ isK2 }: { isK2?: boolean }) {
 // ═══════════════════════════════════════════════
 // Conclusion Section — between Part 3 and celebration
 // ═══════════════════════════════════════════════
+function getThemeAwarePrompt(sessionTheme: string, sessionTopic: string, anchorSentence: string, isK2: boolean): string {
+  const themeLower = (sessionTheme || "").toLowerCase();
+  if (/sport|soccer|basketball|football/.test(themeLower)) {
+    return isK2 ? "Who is your favorite player? Tell me something about them! 🎤" : "Who is your favorite player? Tell me something about them!";
+  }
+  if (/animal|pet/.test(themeLower)) {
+    return isK2 ? "Do you have a pet or know an animal? Tell me about it! 🎤" : "Do you have a pet or know an animal? Tell me about it!";
+  }
+  if (/superhero|hero/.test(themeLower)) {
+    return isK2 ? "Who is your favorite superhero? What can they do? 🎤" : "Who is your favorite superhero? What can they do?";
+  }
+  if (/food/.test(themeLower)) {
+    return isK2 ? "What is your favorite food? Tell me about it! 🎤" : "What is your favorite food? Tell me about it!";
+  }
+  // Default: derive a personal question from the anchor sentence
+  const words = anchorSentence.replace(/[.!?]$/, "").split(/\s+/);
+  // Try to extract verb+subject for a "Have you ever..." question
+  const verbIdx = words.findIndex((w, i) => i > 0 && /^(runs?|jumps?|plays?|eats?|reads?|likes?|goes?|sees?|makes?|finds?|helps?|loves?|writes?|swims?|flies?|builds?|draws?|sings?|dances?|walks?|talks?|grows?|learns?)$/i.test(w));
+  if (verbIdx > 0) {
+    const subject = words.slice(0, verbIdx).join(" ").replace(/^(the|a|an)\s+/i, "").toLowerCase();
+    const verb = words[verbIdx].toLowerCase().replace(/s$/, "");
+    return isK2
+      ? `Have you ever seen a ${subject} ${verb}? Tell me about it! 🎤`
+      : `Have you ever seen a ${subject} ${verb}? Tell me about it!`;
+  }
+  return isK2
+    ? `Do you know something about ${sessionTopic}? Tell me! 🎤`
+    : `Do you know something about ${sessionTopic}? Tell me about it!`;
+}
+
 function ConclusionView({
   step, answer, setAnswer, submitted, nudgeShown, reaction,
-  sessionTopic, anchor, speech, tts, isK2, pts, gamification, sounds,
+  sessionTopic, sessionTheme, anchor, speech, tts, isK2, pts, gamification, sounds,
   onSubmit,
 }: {
   step: 1 | 2;
@@ -3468,6 +3498,7 @@ function ConclusionView({
   nudgeShown: boolean;
   reaction: string | null;
   sessionTopic: string;
+  sessionTheme: string;
   anchor: AnchorSentence | null;
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
@@ -3479,6 +3510,7 @@ function ConclusionView({
 }) {
   const powerWords = (anchor?.keyWords || []).slice(0, 3);
   const [speakingWord, setSpeakingWord] = useState<number | null>(null);
+  const [isReadingAloud, setIsReadingAloud] = useState(false);
 
   const handleWordTap = (word: string, index: number) => {
     setSpeakingWord(index);
@@ -3486,9 +3518,25 @@ function ConclusionView({
     setTimeout(() => setSpeakingWord(null), 800);
   };
 
-  const prompt = step === 1
-    ? (isK2 ? `Say something about ${sessionTopic}! 🎤` : `Say something interesting about ${sessionTopic}!`)
+  const anchorText = anchor?.sentence || "";
+  const themePrompt = step === 1
+    ? getThemeAwarePrompt(sessionTheme, sessionTopic, anchorText, isK2)
     : (isK2 ? "Say it again — make it even bigger! 💪" : "Now level it up — add one more detail!");
+
+  const handleReadAloud = () => {
+    if (isReadingAloud || !window.speechSynthesis) return;
+    setIsReadingAloud(true);
+    window.speechSynthesis.cancel();
+    const anchorUtterance = new SpeechSynthesisUtterance(anchorText);
+    anchorUtterance.rate = isK2 ? 0.85 : 0.95;
+    const promptUtterance = new SpeechSynthesisUtterance(themePrompt.replace(/🎤|💪/g, ""));
+    promptUtterance.rate = isK2 ? 0.85 : 0.95;
+    promptUtterance.onend = () => setIsReadingAloud(false);
+    anchorUtterance.onend = () => {
+      setTimeout(() => window.speechSynthesis.speak(promptUtterance), 400);
+    };
+    window.speechSynthesis.speak(anchorUtterance);
+  };
 
   const nudgeMsg = nudgeShown
     ? (isK2 ? "Try again — say more! 🎤" : "Give it another try — say more! 🎤")
@@ -3505,8 +3553,23 @@ function ConclusionView({
       <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
         {/* Prompt */}
         <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-6 text-center" : "p-4"} border border-border`}>
-          <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{prompt}</p>
+          <p className={`${isK2 ? "text-2xl" : "text-lg"} font-medium text-foreground leading-relaxed`}>{themePrompt}</p>
         </div>
+
+        {/* Read-aloud button */}
+        {isK2 && (
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={handleReadAloud}
+              disabled={isReadingAloud}
+              className="text-lg px-6 py-4 h-auto gap-2"
+            >
+              <Volume2 className={`h-5 w-5 ${isReadingAloud ? "animate-pulse" : ""}`} />
+              {isReadingAloud ? "Playing... 🔊" : "Hear it again! 🔁"}
+            </Button>
+          </div>
+        )}
 
         {/* Power Word chips */}
         <div className="space-y-1">
