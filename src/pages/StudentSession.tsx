@@ -110,7 +110,7 @@ const STRATEGY_LABELS: Record<string, { label: string; icon: any; color: string;
   quick_write: { label: "Quick Write", icon: PenTool, color: "text-accent", targetDomain: "Writing" },
   say_and_expand: { label: "Say & Expand", icon: Mic, color: "text-success", targetDomain: "Speaking" },
   multiple_choice: { label: "Multiple Choice", icon: Brain, color: "text-primary", targetDomain: "Reading & Listening" },
-  talk_to_companion: { label: "Talk to Companion", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
+  talk_to_companion: { label: "Share Your Voice 🎤", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
   share_your_thoughts: { label: "Share Your Thoughts 🎤", icon: Mic, color: "text-warning", targetDomain: "Speaking" },
 };
 
