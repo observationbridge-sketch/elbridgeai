@@ -381,7 +381,15 @@ Return ONLY valid JSON:
 }`;
   }
 
-  // Position 6: talk_to_companion, recording — light & fun
+  // Position 6: share_your_thoughts, recording — light & fun
+  // Rotate between 3 prompt frames
+  const promptFrames = [
+    `"What do YOU think about ${topic}?"`,
+    `"Have you ever seen something like this in real life?"`,
+    `"Tell a friend something interesting about ${topic}"`,
+  ];
+  const selectedFrame = promptFrames[qIdx % promptFrames.length];
+
   return `You are an expert ELD activity generator for grades 3-5 ELL students.
 
 ${themeDirective}
@@ -391,21 +399,24 @@ ${histCtx}
 DIFFICULTY ARC: ${arcLabel}
 INPUT FORMAT: "recording" — ${inputDesc}
 
-Generate a TALK TO COMPANION activity about "${topic}".
-The student talks to their animal companion about what they learned or enjoyed.
-This MUST be light, fun, creative. No wrong answers. Maximum 1-2 sentences.
+Generate a SHARE YOUR THOUGHTS activity about "${topic}".
+This is the final activity — light, fun, creative, open-ended. No wrong answers. Maximum 1-2 sentences.
 The student must end the session feeling successful and happy.
 
-Examples:
-- "Tell your animal companion one amazing thing you learned about ${topic} today!"
-- "If your animal companion could visit ${topic}, what would you tell them to do first?"
-- "Record a fun fact about ${topic} to teach your animal companion!"
+Use this prompt frame as inspiration (adapt it naturally): ${selectedFrame}
+
+IMPORTANT:
+- Do NOT mention any animal companion, pet, or mascot
+- Frame it as the student sharing their own thoughts
+- Always include a "helpWords" array with 2-3 vocabulary words from the lesson (e.g., ["brave", "strong", "protect"])
+- Add a line like "Try using: brave, strong, protect" in the question text
 
 Return ONLY valid JSON:
 {
-  "type": "talk_to_companion",
+  "type": "share_your_thoughts",
   "inputType": "recording",
-  "question": "<fun prompt involving animal companion and ${topic}>",
+  "question": "<open-ended prompt about ${topic} — no companion references>",
+  "helpWords": ["<2-3 vocabulary words from the lesson>"],
   "modelAnswer": "<example 1-2 sentence response>",
   "acceptableKeywords": ["<3-5 content words>"],
   "difficulty": 6,
