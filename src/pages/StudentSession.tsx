@@ -2802,11 +2802,19 @@ function Part2StrategyView({
 
   const k2BlankSentence = useMemo(() => {
     if (!isK2SF) return "";
-    // Use deterministic generator output
     if (k2SfData) return k2SfData.blankSentence;
-    // Fallback (shouldn't happen)
     return "___";
   }, [isK2SF, k2SfData]);
+
+  // Filled sentence for feedback: replace blanks with correct words
+  const k2FilledSentence = useMemo(() => {
+    if (!isK2SF || !k2SfData) return activity.modelAnswer || "";
+    let filled = k2SfData.blankSentence;
+    for (const word of k2SfData.correctWords) {
+      filled = filled.replace("___", word);
+    }
+    return filled;
+  }, [isK2SF, k2SfData, activity.modelAnswer]);
 
   // Reset retry state when activity changes — use index as primary trigger
   useEffect(() => {
