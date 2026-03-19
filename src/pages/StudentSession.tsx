@@ -1904,7 +1904,15 @@ const StudentSession = () => {
               Done ✅
             </Button>
             {/* Home learning prompt */}
-            {sessionTopic && anchor?.sentence && (
+            {effectiveGradeBand === "K-2" ? (
+              <div className="rounded-xl p-5 text-center mt-4" style={{ background: "rgb(79,70,229)", border: "2px solid rgb(99,102,241)" }}>
+                <p className="text-2xl mb-2">🏠</p>
+                <p className="text-lg font-bold text-white">Tell someone at home:</p>
+                <p className="text-base text-white/90 mt-2 leading-relaxed italic">
+                  "Today I practiced speaking, reading, writing, and listening at ElbridgeAI.com!"
+                </p>
+              </div>
+            ) : sessionTopic && anchor?.sentence ? (
               <div className="rounded-xl p-5 text-center mt-4" style={{ background: "rgb(79,70,229)", border: "2px solid rgb(99,102,241)" }}>
                 <p className="text-2xl mb-2">🏠</p>
                 <p className="text-lg font-bold text-white">Tell someone at home:</p>
@@ -1912,7 +1920,7 @@ const StudentSession = () => {
                   "Today I learned about {sessionTheme ? sessionTheme.charAt(0).toUpperCase() + sessionTheme.slice(1) : 'something new'}. I can say: {anchor.sentence}"
                 </p>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
