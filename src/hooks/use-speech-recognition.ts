@@ -16,6 +16,7 @@ export function useSpeechRecognition() {
   const sessionFinalsRef = useRef("");
   const shouldListenRef = useRef(false);
   const recordingStartRef = useRef<number>(0);
+  const stopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSupported =
     typeof window !== "undefined" &&
@@ -131,7 +132,7 @@ export function useSpeechRecognition() {
     }
 
     // Give browser 300ms to finish processing final speech segment before committing
-    setTimeout(() => {
+    stopTimeoutRef.current = setTimeout(() => {
       accumulatedRef.current += sessionFinalsRef.current;
       sessionFinalsRef.current = "";
       setTranscript(accumulatedRef.current);
@@ -140,6 +141,10 @@ export function useSpeechRecognition() {
   }, []);
 
   const resetTranscript = useCallback(() => {
+    if (stopTimeoutRef.current) {
+      clearTimeout(stopTimeoutRef.current);
+      stopTimeoutRef.current = null;
+    }
     accumulatedRef.current = "";
     sessionFinalsRef.current = "";
     setTranscript("");
