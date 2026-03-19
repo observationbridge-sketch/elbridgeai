@@ -186,7 +186,7 @@ const TeacherDashboard = () => {
   const createSession = async () => {
     if (!user) return;
     if (gradeBand === "K-2" && themeOptions.length < 1) {
-      toast.error("Select at least 1 theme option for K-2 students");
+      toast.error("Select at least 1 theme option for 1-2 students");
       return;
     }
     setGenerating(true);
