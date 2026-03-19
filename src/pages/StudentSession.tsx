@@ -1884,11 +1884,13 @@ const StudentSession = () => {
               Done ✅
             </Button>
             {/* Home learning prompt */}
-            {sessionTopic && (
-              <div className="rounded-xl p-4 text-center border mt-4" style={{ background: "rgba(99,102,241,0.15)", borderColor: "rgba(99,102,241,0.35)" }}>
-                <p className="text-2xl mb-1">💬</p>
-                <p className="text-base font-semibold text-white">Tell someone at home:</p>
-                <p className="text-sm text-gray-300 mt-1">"One thing I learned today about {sessionTopic}"</p>
+            {sessionTopic && anchor?.sentence && (
+              <div className="rounded-xl p-5 text-center mt-4" style={{ background: "rgb(79,70,229)", border: "2px solid rgb(99,102,241)" }}>
+                <p className="text-2xl mb-2">🏠</p>
+                <p className="text-lg font-bold text-white">Tell someone at home:</p>
+                <p className="text-base text-white/90 mt-2 leading-relaxed italic">
+                  "Today I learned about {sessionTopic}. I can say: {anchor.sentence}"
+                </p>
               </div>
             )}
           </div>
