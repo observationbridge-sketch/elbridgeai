@@ -217,7 +217,8 @@ const ARC_LABELS = [
   "Activity 6 of 6 — EASY & FUN (lightest, creative, end on a win!)",
 ];
 
-function buildPrompt35(questionIndex: number, theme: string, topic: string, contentHistory?: any): string {
+function buildPrompt35(questionIndex: number, theme: string, topic: string, contentHistory?: any, qIdx?: number): string {
+  const effectiveQIdx = qIdx ?? questionIndex;
   const pos = GRADES_3_5_SEQUENCE[questionIndex];
   const arcLabel = ARC_LABELS[questionIndex];
   const histCtx = buildHistoryContext(contentHistory);
