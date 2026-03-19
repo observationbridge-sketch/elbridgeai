@@ -1304,14 +1304,19 @@ const StudentSession = () => {
     let correct: boolean;
     if (part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice") {
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
-      const normModel = (part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
-      // 1) Exact match
+      const normModel = (part2Activity.modelAnswer ?? part2Activity.correctAnswer ?? "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+      // 1) Exact match against modelAnswer or correctAnswer
       correct = normAnswer === normModel;
-      // 2) Model answer contains the tapped word
+      // 2) Model/correct answer contains the tapped word (or vice versa)
       if (!correct && normAnswer && normModel) {
-        correct = normModel.includes(normAnswer);
+        correct = normModel.includes(normAnswer) || normAnswer.includes(normModel);
       }
-      // 3) Fall through to flexible grading
+      // 3) Check against options list if available (student tapped an option that IS the correct answer)
+      if (!correct && part2Activity.options?.length) {
+        const correctOpt = (part2Activity.correctAnswer || part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+        correct = normAnswer === correctOpt;
+      }
+      // 4) Fall through to flexible grading
       if (!correct) {
         correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
       }
