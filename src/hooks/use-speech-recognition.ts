@@ -16,6 +16,7 @@ export function useSpeechRecognition() {
   const sessionFinalsRef = useRef("");
   const shouldListenRef = useRef(false);
   const recordingStartRef = useRef<number>(0);
+  const stopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSupported =
     typeof window !== "undefined" &&
