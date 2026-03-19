@@ -2778,6 +2778,15 @@ function Part2StrategyView({
   const [speakNudgeMsg, setSpeakNudgeMsg] = useState<string | null>(null);
   const [speakAttemptCount, setSpeakAttemptCount] = useState(0);
 
+  // Share Your Thoughts companion reaction state
+  const COMPANION_REACTIONS = [
+    "That's so interesting! I didn't know that!",
+    "Wow, you explained that really well!",
+    "I love how you connected that to real life!",
+  ];
+  const [companionReaction, setCompanionReaction] = useState<string | null>(null);
+  const [showNextAfterReaction, setShowNextAfterReaction] = useState(false);
+
   // Deterministic K-2 sentence frame — replaces Gemini-generated blank/tiles
   const k2SfData = useMemo(() => {
     if (!isK2SF || !anchor) return null;
