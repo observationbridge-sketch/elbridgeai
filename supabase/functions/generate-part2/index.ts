@@ -635,6 +635,10 @@ serve(async (req) => {
     if (isK2 && expectedInputType) {
       activity.inputType = expectedInputType;
     }
+    // SAFETY: K-2 sentence_frame MUST always be tap, never typing
+    if (isK2 && activity.type === "sentence_frame") {
+      activity.inputType = "tap";
+    }
 
     // Add metadata
     activity.strategy = activity.type;
