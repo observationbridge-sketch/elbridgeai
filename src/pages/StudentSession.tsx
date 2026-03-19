@@ -3226,7 +3226,9 @@ function Part2StrategyView({
               </p>
               {!isCorrect && (
                 <p className={`text-lg mt-2 ${sfRevealed ? "font-bold text-warning" : "text-muted-foreground text-sm"}`}>
-                  {sfRevealed ? activity.modelAnswer : <>The answer was: <span className="font-medium text-foreground">{activity.modelAnswer}</span></>}
+                  {sfRevealed
+                    ? (isK2SF ? k2FilledSentence : activity.modelAnswer)
+                    : <>The answer was: <span className="font-medium text-foreground">{isK2SF ? k2FilledSentence : activity.modelAnswer}</span></>}
                 </p>
               )}
             </div>
