@@ -1874,6 +1874,12 @@ const StudentSession = () => {
             <Button variant="hero" onClick={() => navigate("/student/join")} className="w-full text-lg py-6">
               Done ✅
             </Button>
+            {/* Home learning prompt */}
+            {sessionTopic && (
+              <p className="text-center text-sm text-gray-400 mt-3 px-2">
+                💬 Tell someone at home one thing you learned today about {sessionTopic}.
+              </p>
+            )}
           </div>
         </div>
 
