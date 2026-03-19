@@ -2761,7 +2761,7 @@ function Part2StrategyView({
   const strategyMeta = STRATEGY_LABELS[activity.strategy] || STRATEGY_LABELS[activity.type] || DEFAULT_STRATEGY_META;
   const StrategyIcon = strategyMeta.icon;
   const isSentenceFramesActivity = activity.strategy === "sentence_frames" || activity.type === "sentence_frames" || activity.type === "sentence_frame";
-  const isShareYourThoughts = activity.type === "share_your_thoughts" || activity.strategy === "share_your_thoughts";
+  const isShareYourThoughts = activity.type === "share_your_thoughts" || (activity as any).strategy === "share_your_thoughts";
   const isK2SF = Boolean(isK2 && isSentenceFramesActivity);
   const inputType = isK2SF ? "k2_word_tiles" : (activity.inputType || "typing");
 
