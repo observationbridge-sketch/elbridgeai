@@ -2653,7 +2653,7 @@ function Part1View({
                   return (
                     <button
                       key={i}
-                      onClick={() => !isUsed && !jumbleSubmitted && (isK2 ? handleChipTap(word, i) : undefined)}
+                      onClick={() => !isUsed && !jumbleSubmitted && handleChipTap(word, i)}
                       disabled={isUsed || jumbleSubmitted}
                       className={`px-4 py-2 rounded-full font-medium border-2 transition-all duration-200 select-none
                         ${isK2 ? "text-lg min-h-[48px]" : "text-sm"}
