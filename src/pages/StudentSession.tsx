@@ -2878,10 +2878,10 @@ function Part2StrategyView({
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (isK2 && submitted && isCorrect && k2Countdown === null) {
+    if (submitted && isCorrect && k2Countdown === null) {
       setK2Countdown(3);
     }
-  }, [isK2, submitted, isCorrect]);
+  }, [submitted, isCorrect]);
 
   useEffect(() => {
     if (k2Countdown === null || k2Countdown <= 0) return;
