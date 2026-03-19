@@ -1302,6 +1302,12 @@ const StudentSession = () => {
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       const normModel = (part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       correct = normAnswer === normModel;
+    } else if ((part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame") && part2Activity.fillInBlank?.answers?.length) {
+      // Fill-in-blank: direct word comparison against accepted answers
+      const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+      correct = part2Activity.fillInBlank.answers.some(
+        (a: string) => a.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "") === normAnswer
+      );
     } else {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
