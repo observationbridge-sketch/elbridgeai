@@ -3161,7 +3161,30 @@ function Part2StrategyView({
         )}
 
         {/* Feedback */}
-        {submitted && isK2 ? (
+        {submitted && isShareYourThoughts ? (
+          // Share Your Thoughts: companion reaction flow
+          <div className="space-y-4">
+            {companionReaction ? (
+              <>
+                <div className="flex flex-col items-center gap-2 animate-fade-in">
+                  <div className="text-6xl animate-bounce">{isK2 ? "🐣" : "🌟"}</div>
+                  <div className="bg-primary/10 rounded-2xl px-6 py-3 border border-primary/20 max-w-xs">
+                    <p className={`${isK2 ? "text-xl" : "text-base"} font-bold text-primary text-center`}>{companionReaction}</p>
+                  </div>
+                </div>
+                {showNextAfterReaction && (
+                  <Button variant="hero" className="w-full animate-fade-in" size="lg" onClick={onNext}>
+                    {index < totalActivities - 1 ? "Next Activity" : "Continue to Challenge! 🎉"} <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        ) : submitted && isK2 ? (
           <div className="space-y-4">
             {/* Simplified K-2 feedback */}
             <div className={`rounded-xl p-6 text-center ${
