@@ -210,6 +210,15 @@ export function useGamification(studentName: string, teacherId: string) {
     setEarnedBadgeIds((prev) => [...prev, badgeId]);
     setPendingBadge({ icon: badge.icon, name: badge.name });
 
+    const badgeRow = {
+        student_name: studentName,
+        teacher_id: teacherId,
+        badge_id: badgeId,
+        badge_name: badge.name,
+        badge_icon: badge.icon,
+      };
+      console.log("[gamification] Badge insert payload:", JSON.stringify(badgeRow));
+
     try {
       const { error } = await supabase.from("student_badges").insert({
         student_name: studentName,
