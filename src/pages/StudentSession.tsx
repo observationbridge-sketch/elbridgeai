@@ -3370,6 +3370,7 @@ function Part3ChallengeView({
   challenge, answer, setAnswer, speech, tts, speedIndex,
   onSubmitStory, onSubmitSpeedAnswer, onSubmitTeach,
 }: Part3Props) {
+  const [showHints, setShowHints] = useState(false);
   if (challenge.challengeType === "story_builder") {
     return (
       <Card className="card-shadow border-border">
@@ -3479,25 +3480,35 @@ function Part3ChallengeView({
         </div>
         <CardContent className="pt-4 space-y-6">
           <h3 className="text-lg font-bold text-foreground">{challenge.instruction}</h3>
-          {challenge.guidingQuestions && challenge.guidingQuestions.length > 0 && (
-            <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
-              <p className="text-sm font-medium text-primary mb-2">💡 Try to include:</p>
-              <ul className="space-y-1">
-                {challenge.guidingQuestions.map((q, i) => (
-                  <li key={i} className="text-sm text-foreground">• {q}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {challenge.vocabularyHints && challenge.vocabularyHints.length > 0 && (
-            <div className="bg-muted/50 rounded-lg p-3 border border-border">
-              <p className="text-sm text-muted-foreground mb-2">📚 Key vocabulary from today:</p>
-              <div className="flex flex-wrap gap-2">
-                {challenge.vocabularyHints.map((word, i) => (
-                  <span key={i} className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full font-medium">{word}</span>
-                ))}
-              </div>
-            </div>
+          <button
+            onClick={() => setShowHints(h => !h)}
+            className="text-sm text-primary underline mt-2"
+          >
+            {showHints ? "Hide hints 🙈" : "Need a hint? 💡"}
+          </button>
+          {showHints && (
+            <>
+              {challenge.guidingQuestions && challenge.guidingQuestions.length > 0 && (
+                <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+                  <p className="text-sm font-medium text-primary mb-2">💡 Try to include:</p>
+                  <ul className="space-y-1">
+                    {challenge.guidingQuestions.map((q, i) => (
+                      <li key={i} className="text-sm text-foreground">• {q}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {challenge.vocabularyHints && challenge.vocabularyHints.length > 0 && (
+                <div className="bg-muted/50 rounded-lg p-3 border border-border">
+                  <p className="text-sm text-muted-foreground mb-2">📚 Key vocabulary from today:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {challenge.vocabularyHints.map((word, i) => (
+                      <span key={i} className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full font-medium">{word}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
           <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={false} />
           <Button variant="hero" className="w-full" size="lg" onClick={onSubmitTeach} disabled={!answer.trim()}>
