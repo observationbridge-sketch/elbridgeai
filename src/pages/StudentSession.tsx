@@ -1221,8 +1221,9 @@ const StudentSession = () => {
               type: "sentence_completion",
               inputType: isK2 ? "recording" : "typing",
               question: isK2 
-                ? `Tell your animal companion: "My favorite thing about ${sessionTopic} is ___!" Say it out loud! 🎤`
+                ? `Do you like ${sessionTopic}? Say it out loud! 🎤`
                 : `Complete this sentence about ${sessionTopic}: "The most interesting thing I learned is _____."`,
+              sentenceStarter: isK2 ? `You can say: I like ${sessionTopic} because…` : undefined,
               modelAnswer: `The most interesting thing I learned about ${sessionTopic} is how amazing it is!`,
               acceptableKeywords: [sessionTopic.split(" ")[0]?.toLowerCase() || "learned", "interesting", "because"],
               difficulty: 6,
