@@ -1301,16 +1301,34 @@ const StudentSession = () => {
 
     let correct: boolean;
     if (part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice") {
-      // Normalize both sides for comparison
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       const normModel = (part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+      // 1) Exact match
       correct = normAnswer === normModel;
+      // 2) Model answer contains the tapped word
+      if (!correct && normAnswer && normModel) {
+        correct = normModel.includes(normAnswer);
+      }
+      // 3) Fall through to flexible grading
+      if (!correct) {
+        correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
+      }
     } else if ((part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame") && part2Activity.fillInBlank?.answers?.length) {
-      // Fill-in-blank: direct word comparison against accepted answers
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+      // 1) Direct word match against accepted answers
       correct = part2Activity.fillInBlank.answers.some(
         (a: string) => a.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "") === normAnswer
       );
+      // 2) Check if any accepted answer contains the student's word
+      if (!correct && normAnswer) {
+        correct = part2Activity.fillInBlank.answers.some(
+          (a: string) => a.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "").includes(normAnswer)
+        );
+      }
+      // 3) Fall through to flexible grading
+      if (!correct) {
+        correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
+      }
     } else {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
