@@ -1907,7 +1907,7 @@ const StudentSession = () => {
                 <p className="text-2xl mb-2">🏠</p>
                 <p className="text-lg font-bold text-white">Tell someone at home:</p>
                 <p className="text-base text-white/90 mt-2 leading-relaxed italic">
-                  "Today I learned about {sessionTopic}. I can say: {anchor.sentence}"
+                  "Today I learned about {sessionTopic ? sessionTopic.charAt(0).toUpperCase() + sessionTopic.slice(1) : 'something new'}. I can say: {anchor.sentence}"
                 </p>
               </div>
             )}
