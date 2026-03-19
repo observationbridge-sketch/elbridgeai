@@ -2695,8 +2695,8 @@ function Part1View({
             )}
 
             {!jumbleSubmitted ? (
-              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={isK2 ? jumbleTappedWords.length !== jumble.jumbled.length : !jumbleAnswer.trim()}>
-                {isK2 ? "Check! ✅" : "Check My Sentence"}
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={jumbleTappedWords.length < 3}>
+                {isK2 ? "Check! ✅" : "Check My Answer ✅"}
               </Button>
             ) : (
               <>
