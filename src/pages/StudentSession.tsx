@@ -2145,6 +2145,7 @@ const StudentSession = () => {
                     nudgeShown={conclusionNudgeShown}
                     reaction={conclusionReaction}
                     sessionTopic={sessionTopic}
+                    sessionTheme={sessionTheme}
                     anchor={anchor}
                     speech={speech}
                     tts={tts}
