@@ -3300,25 +3300,19 @@ function Part3ChallengeView({
               </div>
             ))}
           </div>
-          {challenge.sentenceStarter && (
+          {challenge.sequenceWords && challenge.sequenceWords.length > 0 && (
             <div className="bg-accent/5 rounded-lg p-3 border border-accent/20">
-              <p className="text-sm text-muted-foreground mb-1">You can start with:</p>
-              <p className="text-foreground font-medium italic">{challenge.sentenceStarter}</p>
+              <p className="text-sm text-muted-foreground mb-1">💡 Use these words to connect your story:</p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {challenge.sequenceWords.map((word, i) => (
+                  <span key={i} className="px-3 py-1 bg-accent/10 text-accent text-sm rounded-full font-medium">{word}</span>
+                ))}
+              </div>
             </div>
           )}
-          <div>
-            <Textarea
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Write your story here... (4-6 sentences)"
-              className="min-h-[150px]"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              💡 Tip: Use words like <span className="font-medium">first, then, next, finally</span> to connect your scenes! +10 bonus points!
-            </p>
-          </div>
+          <MicrophoneInput speech={speech} answer={answer} setAnswer={setAnswer} disabled={false} />
           <Button variant="hero" className="w-full" size="lg" onClick={onSubmitStory} disabled={!answer.trim()}>
-            Submit My Story ✨
+            Submit My Story 🎤
           </Button>
         </CardContent>
       </Card>
