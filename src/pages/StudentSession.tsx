@@ -1390,6 +1390,7 @@ const StudentSession = () => {
       sentence_expansion: "speaking",
       say_and_expand: "speaking",
       talk_to_companion: "speaking",
+      share_your_thoughts: "speaking",
       quick_writes: "writing",
       quick_write: "writing",
       multiple_choice: "reading",
