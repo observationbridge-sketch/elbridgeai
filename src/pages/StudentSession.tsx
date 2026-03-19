@@ -3111,6 +3111,7 @@ function Part2StrategyView({
                           }
 
                           // Check against deterministic correct words
+                          console.log("[SF-DEBUG] sfCorrectWords:", JSON.stringify(sfCorrectWords), "| normalizeWord(tappedWord):", JSON.stringify(normalizeWord(tappedWord)), "| raw tappedWord:", JSON.stringify(tappedWord), "| k2FilledSentence:", JSON.stringify(k2FilledSentence), "| k2SfData:", JSON.stringify(k2SfData));
                           const isCorrectTile = sfCorrectWords.includes(normalizeWord(tappedWord));
                           if (isCorrectTile) {
                             // CORRECT — set selected word, reset attempts so feedback renders success state
