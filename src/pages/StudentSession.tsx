@@ -77,6 +77,7 @@ interface Part2Activity {
   inputType?: string;
   options?: string[];
   audioClip?: string;
+  fillInBlank?: { sentence?: string; answers?: string[]; wordBank?: string[] };
 }
 
 interface Part3Challenge {
@@ -384,20 +385,21 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
 }
 
 function jumbleSentence(passage: string): { original: string; correctWords: string[]; jumbled: string[] } {
-  const sentences = passage.split(/(?<=[.!?])\s+/).filter(Boolean);
-  const target = sentences[0] || passage;
-  const clean = target.replace(/[.!?]$/, "").trim();
-  // Normalize all chips to lowercase — prevents "a" vs "A" duplicates
+  // Only use the first sentence — full passages are too long to reconstruct
+  const firstSentence = passage.split(/(?<=[.!?])\s+/)[0] || passage;
+  const clean = firstSentence.replace(/[.!?]$/, "").trim();
   const words = deduplicateChips(clean.split(/\s+/));
 
-  let shuffled = [...words].sort(() => Math.random() - 0.5);
+  // Cap at 10 words maximum for manageability
+  const capped = words.slice(0, 10);
+
+  let shuffled = [...capped].sort(() => Math.random() - 0.5);
   let attempts = 0;
-  while (isExactWordOrderMatch(shuffled, words) && attempts < 10) {
-    shuffled = [...words].sort(() => Math.random() - 0.5);
+  while (isExactWordOrderMatch(shuffled, capped) && attempts < 10) {
+    shuffled = [...capped].sort(() => Math.random() - 0.5);
     attempts++;
   }
-
-  return { original: target.trim(), correctWords: words, jumbled: shuffled };
+  return { original: firstSentence.trim(), correctWords: capped, jumbled: shuffled };
 }
 
 // ═══════════════════════════════════════════════
@@ -1302,6 +1304,12 @@ const StudentSession = () => {
       const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       const normModel = (part2Activity.modelAnswer || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
       correct = normAnswer === normModel;
+    } else if ((part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame") && part2Activity.fillInBlank?.answers?.length) {
+      // Fill-in-blank: direct word comparison against accepted answers
+      const normAnswer = answerText.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "");
+      correct = part2Activity.fillInBlank.answers.some(
+        (a: string) => a.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "") === normAnswer
+      );
     } else {
       correct = flexibleGrade(answerText, part2Activity.acceptableKeywords || []);
     }
