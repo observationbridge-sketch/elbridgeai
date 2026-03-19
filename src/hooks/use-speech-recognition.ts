@@ -141,6 +141,10 @@ export function useSpeechRecognition() {
   }, []);
 
   const resetTranscript = useCallback(() => {
+    if (stopTimeoutRef.current) {
+      clearTimeout(stopTimeoutRef.current);
+      stopTimeoutRef.current = null;
+    }
     accumulatedRef.current = "";
     sessionFinalsRef.current = "";
     setTranscript("");
