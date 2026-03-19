@@ -132,7 +132,7 @@ export function useSpeechRecognition() {
     }
 
     // Give browser 300ms to finish processing final speech segment before committing
-    setTimeout(() => {
+    stopTimeoutRef.current = setTimeout(() => {
       accumulatedRef.current += sessionFinalsRef.current;
       sessionFinalsRef.current = "";
       setTranscript(accumulatedRef.current);
