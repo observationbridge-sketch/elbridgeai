@@ -2443,9 +2443,9 @@ function Part1View({
     prepareStep3Content(0);
   }, [step, anchor, prepareStep3Content]);
 
-  // K-2: Tap a chip to add to build area
+  // Tap a chip to add to build area (K-2 and 3-5)
   const handleChipTap = (word: string, index: number) => {
-    if (!isK2 || jumbleSubmitted) return;
+    if (jumbleSubmitted) return;
     const newTapped = [...jumbleTappedWords, word]; // already lowercase from jumbleSentence
     setJumbleTappedWords(newTapped);
     setJumbleAnswer(newTapped.join(" "));
@@ -2475,9 +2475,7 @@ function Part1View({
   const handleJumbleSubmit = () => {
     if (!jumble) return;
 
-    const studentWords = isK2
-      ? jumbleTappedWords.map(normalizeWord).filter(Boolean)
-      : sentenceToWords(jumbleAnswer);
+    const studentWords = jumbleTappedWords.map(normalizeWord).filter(Boolean);
 
     const isCorrect = isExactWordOrderMatch(studentWords, jumble.correctWords);
 
@@ -2653,7 +2651,7 @@ function Part1View({
                   return (
                     <button
                       key={i}
-                      onClick={() => !isUsed && !jumbleSubmitted && (isK2 ? handleChipTap(word, i) : undefined)}
+                      onClick={() => !isUsed && !jumbleSubmitted && handleChipTap(word, i)}
                       disabled={isUsed || jumbleSubmitted}
                       className={`px-4 py-2 rounded-full font-medium border-2 transition-all duration-200 select-none
                         ${isK2 ? "text-lg min-h-[48px]" : "text-sm"}
@@ -2667,45 +2665,36 @@ function Part1View({
               </div>
             </div>
 
-            {/* K-2: Building area — tap chips here to remove them */}
-            {isK2 ? (
-              <div className="bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px]">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Your sentence: {jumbleTappedWords.length > 0 && !jumbleSubmitted && "(tap a word to remove it)"}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {jumbleTappedWords.length > 0 ? jumbleTappedWords.map((word, i) => (
-                    <button
-                      key={i}
-                      onClick={() => !jumbleSubmitted && handleBuildChipRemove(i)}
-                      disabled={jumbleSubmitted}
-                      className="px-3 py-1.5 bg-primary/15 text-primary border border-primary/30 rounded-full text-lg font-medium hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all cursor-pointer active:scale-95"
-                    >
-                      {word}
-                    </button>
-                  )) : (
-                    <p className="text-muted-foreground/50 text-lg">Tap words above...</p>
-                  )}
-                </div>
+            {/* Building area — tap chips here to remove them */}
+            <div className="bg-muted/30 rounded-xl p-4 border-2 border-dashed border-primary/30 min-h-[64px]">
+              <p className="text-xs text-muted-foreground mb-2">
+                Your sentence: {jumbleTappedWords.length > 0 && !jumbleSubmitted && "(tap a word to remove it)"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {jumbleTappedWords.length > 0 ? jumbleTappedWords.map((word, i) => (
+                  <button
+                    key={i}
+                    onClick={() => !jumbleSubmitted && handleBuildChipRemove(i)}
+                    disabled={jumbleSubmitted}
+                    className={`bg-primary/15 text-primary border border-primary/30 rounded-full font-medium hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all cursor-pointer active:scale-95
+                      ${isK2 ? "px-3 py-1.5 text-lg" : "px-3 py-1.5 text-sm"}`}
+                  >
+                    {word}
+                  </button>
+                )) : (
+                  <p className={`text-muted-foreground/50 ${isK2 ? "text-lg" : "text-base"}`}>Tap words above...</p>
+                )}
               </div>
-            ) : (
-              <Input
-                value={jumbleAnswer}
-                onChange={(e) => setJumbleAnswer(e.target.value)}
-                placeholder="Type the sentence in correct order..."
-                className="h-12"
-                disabled={jumbleSubmitted}
-              />
-            )}
+            </div>
 
-            {/* K-2 start over button */}
-            {isK2 && jumbleTappedWords.length > 0 && !jumbleSubmitted && (
+            {/* Start over button */}
+            {jumbleTappedWords.length > 0 && !jumbleSubmitted && (
               <Button variant="outline" size="sm" onClick={() => { setJumbleTappedWords([]); setJumbleAnswer(""); setUsedJumbleIndices(new Set()); }}>Start over 🔄</Button>
             )}
 
             {!jumbleSubmitted ? (
-              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={isK2 ? jumbleTappedWords.length !== jumble.jumbled.length : !jumbleAnswer.trim()}>
-                {isK2 ? "Check! ✅" : "Check My Sentence"}
+              <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-6" : ""}`} size="lg" onClick={handleJumbleSubmit} disabled={jumbleTappedWords.length < 3}>
+                {isK2 ? "Check! ✅" : "Check My Answer ✅"}
               </Button>
             ) : (
               <>
