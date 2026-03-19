@@ -68,6 +68,7 @@ interface Part2Activity {
   sentenceStarter?: string | null;
   wordBank?: string[] | null;
   modelAnswer: string;
+  correctAnswer?: string;
   acceptableKeywords: string[];
   difficulty: number;
   theme: string;
