@@ -636,7 +636,14 @@ serve(async (req) => {
       activity.inputType = expectedInputType;
     }
     // SAFETY: K-2 sentence_frame MUST always be tap, never typing
-    if (isK2 && activity.type === "sentence_frame") {
+    // Check type OR structural indicators (fillInBlank, sentenceFrame, wordBank) since AI may omit type
+    if (isK2 && (
+      activity.type === "sentence_frame" ||
+      activity.fillInBlank ||
+      activity.sentenceFrame ||
+      (activity.wordBank && activity.question?.toLowerCase().includes("tap"))
+    )) {
+      activity.type = "sentence_frame";
       activity.inputType = "tap";
     }
 
