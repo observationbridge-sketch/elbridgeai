@@ -2443,9 +2443,9 @@ function Part1View({
     prepareStep3Content(0);
   }, [step, anchor, prepareStep3Content]);
 
-  // K-2: Tap a chip to add to build area
+  // Tap a chip to add to build area (K-2 and 3-5)
   const handleChipTap = (word: string, index: number) => {
-    if (!isK2 || jumbleSubmitted) return;
+    if (jumbleSubmitted) return;
     const newTapped = [...jumbleTappedWords, word]; // already lowercase from jumbleSentence
     setJumbleTappedWords(newTapped);
     setJumbleAnswer(newTapped.join(" "));
