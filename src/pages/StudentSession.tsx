@@ -77,6 +77,7 @@ interface Part2Activity {
   inputType?: string;
   options?: string[];
   audioClip?: string;
+  fillInBlank?: { sentence?: string; answers?: string[]; wordBank?: string[] };
 }
 
 interface Part3Challenge {
