@@ -2826,12 +2826,6 @@ function Part2StrategyView({
     }
   }, [isK2SF, sfAttempts, sfRevealed]);
 
-        {/* Help words for share_your_thoughts */}
-        {isShareYourThoughts && (activity as any).helpWords?.length > 0 && !submitted && (
-          <div className="bg-warning/5 rounded-lg p-3 border border-warning/20">
-            <p className="text-sm font-medium text-warning">💡 Try using: {(activity as any).helpWords.join(", ")}</p>
-          </div>
-        )}
 
   // Speaking nudge gate for recording activities
   const handlePart2SubmitWithNudge = useCallback(() => {
