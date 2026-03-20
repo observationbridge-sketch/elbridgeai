@@ -75,6 +75,7 @@ export function useGamification(studentName: string, teacherId: string) {
 
       if (badgeData) {
         setEarnedBadgeIds(badgeData.map((b) => b.badge_id));
+        badgeData.map((b) => b.badge_id).forEach(id => awardedBadgeIdsRef.current.add(id));
       }
     } catch (err) {
       console.error("[gamification] Badges load exception:", err);
