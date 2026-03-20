@@ -33,6 +33,7 @@ export function useGamification(studentName: string, teacherId: string) {
   const evolutionFiredRef = useRef<Set<string>>(new Set());
   // Queue failed badge inserts for retry at session end
   const failedBadgesRef = useRef<FailedBadge[]>([]);
+  const awardedBadgeIdsRef = useRef<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
     if (!studentName || !teacherId) return;
