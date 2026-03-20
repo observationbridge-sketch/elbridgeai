@@ -2158,20 +2158,11 @@ const StudentSession = () => {
                     </CardContent>
                   </Card>
                 ) : part3Submitted && part3Feedback && !showConclusion ? (
-                  // Part 3 done → show conclusion section
-                  (() => {
-                    // Trigger conclusion on first render
-                    if (!showConclusion) {
-                      setTimeout(() => setShowConclusion(true), 600);
-                    }
-                    return (
-                      <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-fade-in">
-                        <Trophy className="h-16 w-16 text-warning animate-bounce" />
-                        <h2 className="text-2xl font-bold text-foreground">Challenge Complete! 🎉</h2>
-                        <p className="text-muted-foreground">One more thing...</p>
-                      </div>
-                    );
-                  })()
+                  <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-fade-in">
+                    <Trophy className="h-16 w-16 text-warning animate-bounce" />
+                    <h2 className="text-2xl font-bold text-foreground">Challenge Complete! 🎉</h2>
+                    <p className="text-muted-foreground">One more thing...</p>
+                  </div>
                 ) : showConclusion ? (
                   <ConclusionView
                     step={conclusionStep}
