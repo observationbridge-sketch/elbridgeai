@@ -1399,12 +1399,9 @@ const StudentSession = () => {
     };
     const domain = domainMap[part2Activity.strategy] || domainMap[part2Activity.type] || "reading";
 
-    // Track quick_writes completions for badge
+    // Track quick_writes completions
     if ((part2Activity.strategy === "quick_writes" || part2Activity.type === "quick_write") && effectiveGradeBand === "3-5") {
       quickWriteCountRef.current += 1;
-      if (quickWriteCountRef.current >= 3) {
-        gamification.awardBadge("quick_writer");
-      }
     }
 
     const isRecordingActivity = part2Activity.inputType === "recording" || part2Activity.inputType === "record_then_type";
