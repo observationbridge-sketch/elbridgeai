@@ -1936,9 +1936,7 @@ const StudentSession = () => {
                       </>
                     ) : isK2 ? (
                       <>
-                        <div className="animate-bounce-slow">
-                          <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
-                        </div>
+                        <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
                         <p className="text-xl text-muted-foreground">Getting ready... 🐣</p>
                       </>
                     ) : (
