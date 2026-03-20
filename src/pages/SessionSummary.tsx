@@ -131,35 +131,6 @@ const SessionSummary = () => {
         }
       }
 
-      // Load gamification data
-      if (session?.teacher_id && students && students.length > 0) {
-        const studentNames = students.map((s) => s.student_name);
-
-        const { data: pointsData } = await supabase
-          .from("student_points")
-          .select("student_name, total_points, current_streak, sessions_completed")
-          .eq("teacher_id", session.teacher_id)
-          .in("student_name", studentNames);
-
-        const { data: badgesData } = await supabase
-          .from("student_badges")
-          .select("student_name, badge_icon")
-          .eq("teacher_id", session.teacher_id)
-          .in("student_name", studentNames);
-
-        const gamData: StudentGamification[] = studentNames.map((name) => {
-          const pts = pointsData?.find((p) => p.student_name === name);
-          const badges = badgesData?.filter((b) => b.student_name === name).map((b) => b.badge_icon) || [];
-          return {
-            student_name: name,
-            total_points: pts?.total_points || 0,
-            current_streak: pts?.current_streak || 0,
-            sessions_completed: pts?.sessions_completed || 0,
-            badges,
-          };
-        });
-        setStudentGamification(gamData.sort((a, b) => b.total_points - a.total_points));
-      }
     };
 
     load();
