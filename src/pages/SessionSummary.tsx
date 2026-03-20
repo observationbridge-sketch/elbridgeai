@@ -285,43 +285,6 @@ const SessionSummary = () => {
           })}
         </div>
 
-        {/* Student Gamification */}
-        {studentGamification.length > 0 && (
-          <Card className="card-shadow border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-warning" />
-                Student Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {studentGamification.map((student) => {
-                  const level = getAnimalLevel(student.total_points);
-                  return (
-                    <div key={student.student_name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <span className="text-2xl">{level.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-foreground truncate">{student.student_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {level.name} • {student.total_points} pts • {student.current_streak} day streak • {student.sessions_completed} sessions
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        {student.badges.slice(0, 5).map((icon, i) => (
-                          <span key={i} className="text-lg">{icon}</span>
-                        ))}
-                        {student.badges.length > 5 && (
-                          <span className="text-xs text-muted-foreground">+{student.badges.length - 5}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {domainSummaries.every((s) => s.total === 0) && studentGamification.length === 0 && (
           <Card className="card-shadow border-border">
