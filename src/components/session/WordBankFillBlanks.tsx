@@ -188,24 +188,25 @@ export function WordBankFillBlanks({
   const handleCheck = () => {
     const newStates = [...blankStates];
     const newLocked = new Set(lockedBlanks);
-    let correctCount = lockedBlanks.size; // already locked = already correct
+    let correctCount = 0;
 
     for (const i of activeBlanks) {
       if (isAnswerCorrect(answers[i], missingWords[i], isK2)) {
         newStates[i] = "correct";
         newLocked.add(i);
-        correctCount++;
       } else {
         newStates[i] = "wrong";
       }
     }
+
+    correctCount = newLocked.size;
 
     setBlankStates(newStates);
     setLockedBlanks(newLocked);
     const currentAttempt = attempts + 1;
     setAttempts(currentAttempt);
 
-    const allCorrect = correctCount === blankCount;
+    const allCorrect = newLocked.size === blankCount;
     const wrongBlanks = [...activeBlanks].filter(i => !isAnswerCorrect(answers[i], missingWords[i], isK2));
 
     if (allCorrect) {
