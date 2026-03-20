@@ -251,8 +251,6 @@ function isValidK2AnchorSentence(sentence: string): boolean {
   return true;
 }
 
-const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
-BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
 interface FillInBlankPayload {
   sentence: string;
