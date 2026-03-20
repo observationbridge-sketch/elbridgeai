@@ -1063,11 +1063,9 @@ const StudentSession = () => {
     setPart1Feedback("Great job! 🌟");
     setPart1Submitted(true);
     sounds.playCorrect();
-    gamification.addPoints(pts.STEP2_SAY_IT, effectiveGradeBand);
     sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
-      gamification.awardBadge("first_voice");
     }
     const speakingMeta = {
       speaking_duration_seconds: speech.lastDurationSeconds,
