@@ -962,14 +962,13 @@ const StudentSession = () => {
     setPart3Answer("");
   }, [globalStep, part1Step, part2Index, part3SpeedIndex]);
 
-  useEffect(() => {
+   useEffect(() => {
     if (speech.transcript) {
-      if (showConclusion) setConclusionAnswer(speech.transcript);
-      else if (inPart1) setPart1Answer(speech.transcript);
+      if (inPart1) setPart1Answer(speech.transcript);
       else if (inPart2 && part2Activity?.strategy !== "quick_writes") setPart2Answer(speech.transcript);
       else if (inPart3) setPart3Answer(speech.transcript);
     }
-  }, [speech.transcript, inPart1, inPart2, inPart3, showConclusion, part2Activity?.strategy]);
+  }, [speech.transcript, inPart1, inPart2, inPart3, part2Activity?.strategy]);
 
   // ─── Save response helper ───
   const saveResponse = async (
