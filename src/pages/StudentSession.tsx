@@ -1814,11 +1814,6 @@ const StudentSession = () => {
             <span className="font-bold text-white">ElbridgeAI</span>
           </div>
           <div className="flex items-center gap-3">
-            {gamification.loaded && (
-              <ThemedCompanionGlow theme={sessionTheme}>
-                <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={!isK2} />
-              </ThemedCompanionGlow>
-            )}
             <button
               onClick={sounds.toggleMute}
               className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
@@ -1826,14 +1821,6 @@ const StudentSession = () => {
             >
               {sounds.muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </button>
-            <div className="hidden sm:flex items-center gap-2">
-              <button onClick={() => setShowView("badges")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
-                <Award className="h-3 w-3" /> Badges
-              </button>
-              <button onClick={() => setShowView("leaderboard")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
-                <Users className="h-3 w-3" /> Rank
-              </button>
-            </div>
           </div>
         </div>
         {sessionTopic && (
