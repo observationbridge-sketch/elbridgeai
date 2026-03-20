@@ -551,9 +551,8 @@ const StudentSession = () => {
   const [tierConsecutiveCorrect, setTierConsecutiveCorrect] = useState(0);
   const [tierConsecutiveWrong, setTierConsecutiveWrong] = useState(0);
 
-  // Part 3 state
+   // Part 3 state
   const [part3Challenge, setPart3Challenge] = useState<Part3Challenge | null>(null);
-  const [part3ShowIntro, setPart3ShowIntro] = useState(true);
   const [part3Answer, setPart3Answer] = useState("");
   const [part3Submitted, setPart3Submitted] = useState(false);
   const [part3Feedback, setPart3Feedback] = useState<string | null>(null);
@@ -562,14 +561,6 @@ const StudentSession = () => {
   const [part3SpeedAnswers, setPart3SpeedAnswers] = useState<string[]>([]);
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
-
-  // Conclusion state
-  const [showConclusion, setShowConclusion] = useState(false);
-  const [conclusionStep, setConclusionStep] = useState<1 | 2>(1);
-  const [conclusionAnswer, setConclusionAnswer] = useState("");
-  const [conclusionSubmitted, setConclusionSubmitted] = useState(false);
-  const [conclusionNudgeShown, setConclusionNudgeShown] = useState(false);
-  const [conclusionReaction, setConclusionReaction] = useState<string | null>(null);
 
   // Theme visual state
   const [showConfetti, setShowConfetti] = useState(false);
@@ -955,12 +946,12 @@ const StudentSession = () => {
     };
   }, []);
 
-  // Auto-show conclusion after Part 3 completes
+   // Auto-finish session after Part 3 completes
   useEffect(() => {
-    if (!part3Submitted || !part3Feedback || showConclusion) return;
-    const t = setTimeout(() => setShowConclusion(true), 600);
+    if (!part3Submitted || !part3Feedback) return;
+    const t = setTimeout(() => finishSession(), 600);
     return () => clearTimeout(t);
-  }, [part3Submitted, !!part3Feedback, showConclusion]);
+  }, [part3Submitted, !!part3Feedback]);
 
   // Reactive cleanup: kill speech + reset state on every activity/question/part change
   useEffect(() => {
@@ -971,14 +962,13 @@ const StudentSession = () => {
     setPart3Answer("");
   }, [globalStep, part1Step, part2Index, part3SpeedIndex]);
 
-  useEffect(() => {
+   useEffect(() => {
     if (speech.transcript) {
-      if (showConclusion) setConclusionAnswer(speech.transcript);
-      else if (inPart1) setPart1Answer(speech.transcript);
+      if (inPart1) setPart1Answer(speech.transcript);
       else if (inPart2 && part2Activity?.strategy !== "quick_writes") setPart2Answer(speech.transcript);
       else if (inPart3) setPart3Answer(speech.transcript);
     }
-  }, [speech.transcript, inPart1, inPart2, inPart3, showConclusion, part2Activity?.strategy]);
+  }, [speech.transcript, inPart1, inPart2, inPart3, part2Activity?.strategy]);
 
   // ─── Save response helper ───
   const saveResponse = async (
@@ -1428,9 +1418,8 @@ const StudentSession = () => {
     tts.stop();
     setShowMotivational(true);
     const nextIdx = part2Index + 1;
-    if (nextIdx >= part2Count) {
+     if (nextIdx >= part2Count) {
     setGlobalStep(5 + part2Count);
-    setPart3ShowIntro(true);
     fetchPart3Challenge();
     return;
   }
@@ -1516,10 +1505,6 @@ const StudentSession = () => {
     }
   }, [sessionTheme, sessionTopic, effectiveGradeBand, contentHistory, makeFallbackChallenge]);
 
-  const startPart3 = () => {
-    setPart3ShowIntro(false);
-    setPart3StartTime(Date.now());
-  };
 
   const submitPart3StoryBuilder = () => {
     if (!part3Challenge || !part3Answer.trim()) {
@@ -1947,86 +1932,13 @@ const StudentSession = () => {
                     )}
                   </CardContent>
                 </Card>
-              ) : inPart3 ? (
-                part3ShowIntro ? (
-                  <Card className="card-shadow border-border text-center">
-                    <CardContent className="pt-8 pb-8 space-y-6">
-                      <Sparkles className={`${isK2 ? "h-20 w-20" : "h-16 w-16"} text-warning mx-auto`} />
-                      <h2 className={`${isK2 ? "text-3xl" : "text-2xl"} font-bold text-foreground`}>🎉 Almost done!</h2>
-                      <p className={`${isK2 ? "text-xl" : "text-lg"} text-muted-foreground`}>Time for your Language Challenge!</p>
-                      <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground`}>One fun final activity about <span className="font-bold text-primary">{sessionTopic}</span></p>
-                      <Button variant="hero" size="lg" className={`w-full ${isK2 ? "text-xl py-8" : ""}`} onClick={startPart3}>
-                        Let's Go! 🚀
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : part3Submitted && part3Feedback && !showConclusion ? (
+               ) : inPart3 ? (
+                part3Submitted && part3Feedback ? (
                   <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-fade-in">
                     <Trophy className="h-16 w-16 text-warning animate-bounce" />
                     <h2 className="text-2xl font-bold text-foreground">Challenge Complete! 🎉</h2>
-                    <p className="text-muted-foreground">One more thing...</p>
+                    <p className="text-muted-foreground">Wrapping up your session...</p>
                   </div>
-                ) : showConclusion ? (
-                  <ConclusionView
-                    step={conclusionStep}
-                    answer={conclusionAnswer}
-                    setAnswer={setConclusionAnswer}
-                    submitted={conclusionSubmitted}
-                    nudgeShown={conclusionNudgeShown}
-                    reaction={conclusionReaction}
-                    sessionTopic={sessionTopic}
-                    sessionTheme={sessionTheme}
-                    anchor={anchor}
-                    speech={speech}
-                    tts={tts}
-                    isK2={isK2}
-                    sounds={sounds}
-                    onSubmit={(stepNum) => {
-                      const minDuration = isK2 ? 2 : 4;
-                      const keywords = anchor?.keyWords || [];
-                      const transcript = conclusionAnswer.toLowerCase();
-                      const hasKeyword = keywords.some(kw => transcript.includes(kw.toLowerCase()));
-                      const hasDuration = speech.lastDurationSeconds >= minDuration;
-
-                      if (!hasDuration && !hasKeyword && !conclusionNudgeShown) {
-                        setConclusionNudgeShown(true);
-                        speech.resetTranscript();
-                        setConclusionAnswer("");
-                        return;
-                      }
-
-                      setConclusionSubmitted(true);
-                      const strategy = stepNum === 1 ? "conclusion_express" : "conclusion_level_up";
-                      sounds.playCorrect();
-                      sounds.playCorrect();
-                      sounds.playPoints();
-
-                      const speakingMeta = {
-                        speaking_duration_seconds: speech.lastDurationSeconds,
-                        speaking_full_attempt: hasDuration && hasKeyword,
-                      };
-                      saveResponse("speaking", `Conclusion Step ${stepNum}: ${sessionTopic}`, conclusionAnswer, sessionTopic, true, "Developing", "conclusion", strategy, speakingMeta);
-
-                      const reactionMsg = stepNum === 1
-                        ? (isK2 ? "WOW! You're amazing! 🐣⭐" : "Incredible! You just taught ME something! 🌟")
-                        : (isK2 ? "YOU DID IT! I'm so proud of you! 🎉🐣" : "That was your best sentence yet! You're a language superstar! 🏆");
-                      setConclusionReaction(reactionMsg);
-
-                      const advanceDelay = stepNum === 1 ? 1500 : 2000;
-                      setTimeout(() => {
-                        if (stepNum === 1) {
-                          setConclusionStep(2);
-                          setConclusionAnswer("");
-                          setConclusionSubmitted(false);
-                          setConclusionNudgeShown(false);
-                          setConclusionReaction(null);
-                          speech.resetTranscript();
-                        } else {
-                          finishSession();
-                        }
-                      }, advanceDelay);
-                    }}
-                  />
                 ) : part3Challenge ? (
                   <Part3ChallengeView
                     challenge={part3Challenge}
