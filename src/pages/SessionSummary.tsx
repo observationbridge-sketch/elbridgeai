@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap, Trophy, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAnimalLevel } from "@/components/gamification/constants";
 
 type DomainSummary = {
   domain: string;
