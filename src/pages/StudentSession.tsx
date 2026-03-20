@@ -1634,39 +1634,12 @@ const StudentSession = () => {
   const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
 
-  // ─── Badge/Leaderboard screens ───
-  if (showView === "badges") {
-    return <BadgeCollection earnedBadgeIds={gamification.earnedBadgeIds} onBack={() => setShowView("session")} />;
-  }
-  if (showView === "leaderboard") {
-    return <Leaderboard teacherId={teacherId} currentStudentName={studentName} onBack={() => setShowView("session")} />;
-  }
-
-  // ─── Session ended — FULL CELEBRATION SCREEN (2 phases) ───
+  // ─── Session ended — CELEBRATION SCREEN (2 phases) ───
 
   if (sessionEnded) {
     // Force dark background on body to prevent ThemePageWrapper bleed-through
     document.body.style.background = '#0f0f1a';
 
-    try {
-    const animalLevel = effectiveGradeBand === "3-5" ? getAnimalLevel35(gamification.totalPoints) : getAnimalLevel(gamification.totalPoints);
-    const nextLevel = effectiveGradeBand === "3-5" ? getNextLevel35(gamification.totalPoints) : getNextLevel(gamification.totalPoints);
-
-    // Safety: if animalLevel is undefined, show a simple completion screen instead of white screen
-    if (!animalLevel) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
-          <div className="text-[100px] leading-none">🎉</div>
-          <h1 className="text-4xl font-bold text-white">Great job! You finished!</h1>
-          <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
-          <p className="text-3xl font-bold text-yellow-400">+{gamification.sessionPoints} ⭐</p>
-          <p className="text-gray-300">Total: <span className="font-bold text-white">{gamification.totalPoints} points</span></p>
-          <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/student/join")}>
-            Done ✅
-          </Button>
-        </div>
-      );
-    }
     const totalActivities = 5 + part2Count + 1; // Part1(5) + Part2 + Part3(1)
 
     if (!showResults) {
@@ -1692,54 +1665,26 @@ const StudentSession = () => {
 
           <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
             <div className="w-full max-w-sm space-y-6 text-center">
-              {/* Heading */}
               <div className="animate-fade-in">
                 <h1 className="text-4xl font-bold text-white mb-2">You did it! 🎉</h1>
                 <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
               </div>
 
-              {/* Animal companion — large and pulsing */}
               <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
                 <div className="text-[100px] leading-none" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
-                  {animalLevel.emoji}
+                  🎉
                 </div>
-                <p className="text-sm text-gray-400 mt-2">{animalLevel.name}</p>
               </div>
 
-              {/* Points total */}
               <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
-                <p className="text-5xl font-bold text-yellow-400" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
-                  +{gamification.sessionPoints} ⭐
+                <p className="text-lg text-gray-300">
+                  You completed <span className="font-bold text-white">{totalActivities} activities</span> today!
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
-                  Total: <span className="font-bold text-white">{gamification.totalPoints} points</span>
+                  Practice score: <span className="font-bold text-white">{part2Score}/{part2Count}</span>
                 </p>
-                {nextLevel && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {nextLevel.min - gamification.totalPoints} pts to {nextLevel.emoji} {nextLevel.name}!
-                  </p>
-                )}
               </div>
 
-              {/* Badges earned this session */}
-              {gamification.earnedBadgeIds.length > 0 && (
-                <div className="animate-fade-in" style={{ animationDelay: "0.6s" }}>
-                  <p className="text-sm font-medium text-white mb-2">🎖️ Badges Earned</p>
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    {gamification.earnedBadgeIds.map((id) => {
-                      const badge = BADGES_LOOKUP[id];
-                      return badge ? (
-                        <div key={id} className="flex flex-col items-center gap-1 rounded-lg px-3 py-2 border" style={{ background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)" }}>
-                          <span className="text-3xl">{badge.icon}</span>
-                          <span className="text-[10px] text-gray-400">{badge.name}</span>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* See My Results button */}
               <div className="animate-fade-in pt-4" style={{ animationDelay: "0.8s" }}>
                 <Button
                   variant="hero"
@@ -1753,21 +1698,12 @@ const StudentSession = () => {
             </div>
           </div>
 
-          {/* Confetti fall keyframes */}
           <style>{`
             @keyframes confetti-fall {
               0% { transform: translateY(0) rotate(0deg); opacity: 1; }
               100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
             }
           `}</style>
-
-          <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
-          {gamification.evolutionData && (
-            <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
-          )}
-          {gamification.pendingBadge && (
-            <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
-          )}
         </div>
       );
     }
@@ -1779,20 +1715,20 @@ const StudentSession = () => {
           <Card className="border" style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)" }}>
             <CardContent className="py-8 space-y-6">
               <div className="text-center">
-                <div className="text-6xl mb-3">{animalLevel.emoji}</div>
+                <div className="text-6xl mb-3">🎉</div>
                 <h2 className="text-2xl font-bold text-white">
                   Great job today, {studentName}! 🌟
                 </h2>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(234,179,8,0.15)", borderColor: "rgba(234,179,8,0.25)" }}>
-                  <p className="text-3xl font-bold text-yellow-400">{gamification.sessionPoints}</p>
-                  <p className="text-xs text-gray-400 mt-1">Points Earned</p>
-                </div>
                 <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.25)" }}>
                   <p className="text-3xl font-bold text-blue-400">{totalActivities}</p>
                   <p className="text-xs text-gray-400 mt-1">Activities Done</p>
+                </div>
+                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.25)" }}>
+                  <p className="text-3xl font-bold text-green-400">{part2Score}/{part2Count}</p>
+                  <p className="text-xs text-gray-400 mt-1">Practice Score</p>
                 </div>
               </div>
 
@@ -1810,32 +1746,10 @@ const StudentSession = () => {
                   <p className="text-xl font-bold text-green-400">✓</p>
                 </div>
               </div>
-
-              {gamification.earnedBadgeIds.length > 0 && (
-                <div className="text-center">
-                  <p className="text-xs text-gray-400 mb-2">Badges</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {gamification.earnedBadgeIds.map((id) => {
-                      const badge = BADGES_LOOKUP[id];
-                      return badge ? (
-                        <span key={id} className="text-2xl" title={badge.name}>{badge.icon}</span>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" onClick={() => setShowView("badges")} className="gap-2">
-                <Award className="h-4 w-4" /> My Badges
-              </Button>
-              <Button variant="outline" onClick={() => setShowView("leaderboard")} className="gap-2">
-                <Users className="h-4 w-4" /> Leaderboard
-              </Button>
-            </div>
             <Button variant="hero" onClick={() => navigate("/student/join")} className="w-full text-lg py-6">
               Done ✅
             </Button>
@@ -1859,27 +1773,8 @@ const StudentSession = () => {
             ) : null}
           </div>
         </div>
-
-        <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
-        {gamification.evolutionData && (
-          <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
-        )}
-        {gamification.pendingBadge && (
-          <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
-        )}
       </div>
     );
-    } catch (celebrationError) {
-      console.error("Celebration screen error:", celebrationError);
-      return (
-        <div style={{minHeight:'100vh', background:'#1a1a2e', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'24px'}}>
-          <div style={{fontSize:'80px'}}>🎉</div>
-          <h1 style={{color:'white', fontSize:'32px'}}>You did it, {studentName}!</h1>
-          <p style={{color:'#aaa', fontSize:'20px'}}>{gamification.sessionPoints} points earned!</p>
-          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/student/join')}>Done ✅</button>
-        </div>
-      );
-    }
   }
 
   // ─── Progress label ───
