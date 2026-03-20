@@ -1051,7 +1051,6 @@ const StudentSession = () => {
 
   const handleStep1Done = () => {
     setPart1Scores((s) => ({ ...s, listen: true }));
-    gamification.addPoints(pts.STEP1_LISTEN, effectiveGradeBand);
     saveResponse("listening", "Listened to anchor passage", "heard", anchor?.sentence || "", true, "Entering", "part1");
     handlePart1Next();
   };
