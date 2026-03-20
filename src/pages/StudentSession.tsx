@@ -1505,10 +1505,6 @@ const StudentSession = () => {
     }
   }, [sessionTheme, sessionTopic, effectiveGradeBand, contentHistory, makeFallbackChallenge]);
 
-  const startPart3 = () => {
-    setPart3ShowIntro(false);
-    setPart3StartTime(Date.now());
-  };
 
   const submitPart3StoryBuilder = () => {
     if (!part3Challenge || !part3Answer.trim()) {
