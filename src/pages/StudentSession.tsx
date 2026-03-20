@@ -3342,7 +3342,7 @@ function getThemeAwarePrompt(sessionTheme: string, sessionTopic: string, anchorS
 
 function ConclusionView({
   step, answer, setAnswer, submitted, nudgeShown, reaction,
-  sessionTopic, sessionTheme, anchor, speech, tts, isK2, pts, gamification, sounds,
+  sessionTopic, sessionTheme, anchor, speech, tts, isK2, sounds,
   onSubmit,
 }: {
   step: 1 | 2;
@@ -3357,8 +3357,6 @@ function ConclusionView({
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
   isK2: boolean;
-  pts: any;
-  gamification: any;
   sounds: any;
   onSubmit: (step: 1 | 2) => void;
 }) {
