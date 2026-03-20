@@ -17,13 +17,6 @@ type StrategyInfo = {
   count: number;
 };
 
-type StudentGamification = {
-  student_name: string;
-  total_points: number;
-  current_streak: number;
-  sessions_completed: number;
-  badges: string[];
-};
 
 const DOMAIN_META: Record<string, { icon: any; color: string; label: string }> = {
   reading: { icon: BookOpen, color: "text-primary", label: "Reading" },
