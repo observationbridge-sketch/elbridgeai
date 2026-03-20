@@ -924,7 +924,6 @@ const StudentSession = () => {
 
   useEffect(() => {
     if (studentName && teacherId) {
-      gamification.loadData();
       // Load sentence frame tier from student_points
       supabase
         .from("student_points")
