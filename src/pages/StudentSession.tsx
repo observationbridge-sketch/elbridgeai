@@ -1534,22 +1534,13 @@ const StudentSession = () => {
     const hasEnoughSentences = sentences.length >= 2;
 
     if (hasEnoughSentences && hasSequence) {
-      // Full points
-      gamification.addPoints(pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
-      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's great storytelling! 🌟 +${pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
+      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's great storytelling! 🌟`;
       setPart3Feedback(feedback);
-      // Award sequence_master badge if 3+ sequence words used
-      if (usedSeqWords.length >= 3 && effectiveGradeBand === "3-5") {
-        gamification.awardBadge("sequence_master");
-      }
     } else {
-      // Half points + encouraging feedback
-      const halfPoints = Math.round(pts.CHALLENGE_STORY_COMPLETE / 2);
-      gamification.addPoints(halfPoints, effectiveGradeBand);
       const tips: string[] = [];
       if (!hasEnoughSentences) tips.push("try saying at least 2 sentences");
       if (!hasSequence) tips.push('use sequence words like "first, then, finally"');
-      const feedback = `Good effort! Next time, ${tips.join(" and ")} to earn full points! 🎤 +${halfPoints} points!`;
+      const feedback = `Good effort! Next time, ${tips.join(" and ")} for an even better story! 🎤`;
       setPart3Feedback(feedback);
     }
     setPart3Submitted(true);
