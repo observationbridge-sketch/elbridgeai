@@ -248,7 +248,7 @@ export function useGamification(studentName: string, teacherId: string) {
         badgeIcon: badge.icon,
       });
     }
-  }, [studentName, teacherId, earnedBadgeIds]);
+  }, [studentName, teacherId]);
 
   return {
     totalPoints,
