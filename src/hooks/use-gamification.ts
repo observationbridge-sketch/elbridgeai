@@ -33,6 +33,7 @@ export function useGamification(studentName: string, teacherId: string) {
   const evolutionFiredRef = useRef<Set<string>>(new Set());
   // Queue failed badge inserts for retry at session end
   const failedBadgesRef = useRef<FailedBadge[]>([]);
+  const awardedBadgeIdsRef = useRef<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
     if (!studentName || !teacherId) return;
@@ -74,6 +75,7 @@ export function useGamification(studentName: string, teacherId: string) {
 
       if (badgeData) {
         setEarnedBadgeIds(badgeData.map((b) => b.badge_id));
+        badgeData.map((b) => b.badge_id).forEach(id => awardedBadgeIdsRef.current.add(id));
       }
     } catch (err) {
       console.error("[gamification] Badges load exception:", err);
@@ -201,7 +203,9 @@ export function useGamification(studentName: string, teacherId: string) {
   }, [studentName, teacherId]);
 
   const awardBadge = useCallback(async (badgeId: string) => {
-    if (!studentName || !teacherId || earnedBadgeIds.includes(badgeId)) return;
+    if (!studentName || !teacherId) return;
+    if (awardedBadgeIdsRef.current.has(badgeId)) return;
+    awardedBadgeIdsRef.current.add(badgeId);
 
     const badge = BADGES.find((b) => b.id === badgeId);
     if (!badge) return;
@@ -244,7 +248,7 @@ export function useGamification(studentName: string, teacherId: string) {
         badgeIcon: badge.icon,
       });
     }
-  }, [studentName, teacherId, earnedBadgeIds]);
+  }, [studentName, teacherId]);
 
   return {
     totalPoints,
