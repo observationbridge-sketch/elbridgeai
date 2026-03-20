@@ -1026,8 +1026,7 @@ const StudentSession = () => {
       setPart1Step((s) => (s + 1) as any);
       setGlobalStep((g) => g + 1);
     } else {
-      // Part 1 complete → award badge + grade band auto-adjustment
-      gamification.awardBadge("first_word");
+      // Part 1 complete → grade band auto-adjustment
 
       // Auto-adjust grade band based on Part 1 performance
       const totalPossible = part1Scores.sayItTotal + part1Scores.dragDropTotal + part1Scores.memoryMatchTotal + part1Scores.jumbledTotal;
