@@ -551,9 +551,8 @@ const StudentSession = () => {
   const [tierConsecutiveCorrect, setTierConsecutiveCorrect] = useState(0);
   const [tierConsecutiveWrong, setTierConsecutiveWrong] = useState(0);
 
-  // Part 3 state
+   // Part 3 state
   const [part3Challenge, setPart3Challenge] = useState<Part3Challenge | null>(null);
-  const [part3ShowIntro, setPart3ShowIntro] = useState(true);
   const [part3Answer, setPart3Answer] = useState("");
   const [part3Submitted, setPart3Submitted] = useState(false);
   const [part3Feedback, setPart3Feedback] = useState<string | null>(null);
@@ -562,14 +561,6 @@ const StudentSession = () => {
   const [part3SpeedAnswers, setPart3SpeedAnswers] = useState<string[]>([]);
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
-
-  // Conclusion state
-  const [showConclusion, setShowConclusion] = useState(false);
-  const [conclusionStep, setConclusionStep] = useState<1 | 2>(1);
-  const [conclusionAnswer, setConclusionAnswer] = useState("");
-  const [conclusionSubmitted, setConclusionSubmitted] = useState(false);
-  const [conclusionNudgeShown, setConclusionNudgeShown] = useState(false);
-  const [conclusionReaction, setConclusionReaction] = useState<string | null>(null);
 
   // Theme visual state
   const [showConfetti, setShowConfetti] = useState(false);
