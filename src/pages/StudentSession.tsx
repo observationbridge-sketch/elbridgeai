@@ -1418,9 +1418,8 @@ const StudentSession = () => {
     tts.stop();
     setShowMotivational(true);
     const nextIdx = part2Index + 1;
-    if (nextIdx >= part2Count) {
+     if (nextIdx >= part2Count) {
     setGlobalStep(5 + part2Count);
-    setPart3ShowIntro(true);
     fetchPart3Challenge();
     return;
   }
