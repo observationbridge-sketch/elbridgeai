@@ -1078,7 +1078,6 @@ const StudentSession = () => {
 
   const handleStep3Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, dragDrop: score.correct, dragDropTotal: score.total }));
-    gamification.addPoints(pts.STEP3_DRAG_DROP, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Drag & Drop fill-in-the-blank", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
