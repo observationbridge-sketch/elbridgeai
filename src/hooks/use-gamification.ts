@@ -203,7 +203,9 @@ export function useGamification(studentName: string, teacherId: string) {
   }, [studentName, teacherId]);
 
   const awardBadge = useCallback(async (badgeId: string) => {
-    if (!studentName || !teacherId || earnedBadgeIds.includes(badgeId)) return;
+    if (!studentName || !teacherId) return;
+    if (awardedBadgeIdsRef.current.has(badgeId)) return;
+    awardedBadgeIdsRef.current.add(badgeId);
 
     const badge = BADGES.find((b) => b.id === badgeId);
     if (!badge) return;
