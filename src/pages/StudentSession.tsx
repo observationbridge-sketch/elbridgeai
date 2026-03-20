@@ -1605,25 +1605,6 @@ const StudentSession = () => {
 
   const finishSession = async () => {
     sounds.playSessionComplete();
-    gamification.addPoints(pts.SESSION_COMPLETE, effectiveGradeBand);
-    gamification.completeSession({
-      gradeBand: effectiveGradeBand,
-      part2Score: part2Score,
-      part2Count: part2Count,
-      domainScores: domainScores || undefined,
-    });
-    if (domainScores) {
-      for (const [domain, pct] of Object.entries(domainScores)) {
-        if (pct >= 80) {
-          gamification.addPoints(pts.DOMAIN_80_BONUS, effectiveGradeBand);
-          // Award domain_ace badge for 3-5 students
-          if (effectiveGradeBand === "3-5") {
-            gamification.awardBadge("domain_ace");
-          }
-          break;
-        }
-      }
-    }
 
     // Save content history
     try {
