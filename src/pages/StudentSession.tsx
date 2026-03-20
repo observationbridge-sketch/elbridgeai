@@ -1981,7 +1981,6 @@ const StudentSession = () => {
                     tts={tts}
                     isK2={isK2}
                     sounds={sounds}
-                    sounds={sounds}
                     onSubmit={(stepNum) => {
                       const minDuration = isK2 ? 2 : 4;
                       const keywords = anchor?.keyWords || [];
