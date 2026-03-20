@@ -1998,8 +1998,7 @@ const StudentSession = () => {
 
                       setConclusionSubmitted(true);
                       const strategy = stepNum === 1 ? "conclusion_express" : "conclusion_level_up";
-                      const points = stepNum === 1 ? pts.CONCLUSION_EXPRESS : pts.CONCLUSION_LEVEL_UP;
-                      gamification.addPoints(points, effectiveGradeBand);
+                      sounds.playCorrect();
                       sounds.playCorrect();
                       sounds.playPoints();
 
