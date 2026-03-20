@@ -2079,14 +2079,6 @@ const StudentSession = () => {
 
       <ConfettiCelebration show={showConfetti} theme={sessionTheme} />
       <MotivationalBanner show={showMotivational} theme={sessionTheme} onDone={() => setShowMotivational(false)} />
-
-      <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
-      {gamification.evolutionData && (
-        <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
-      )}
-      {gamification.pendingBadge && (
-        <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
-      )}
     </div>
     </ThemePageWrapper>
   );
