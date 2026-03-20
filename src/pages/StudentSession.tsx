@@ -977,6 +977,14 @@ const StudentSession = () => {
     };
   }, []);
 
+  // Auto-show conclusion after Part 3 completes
+  useEffect(() => {
+    if (part3Submitted && part3Feedback && !showConclusion) {
+      const t = setTimeout(() => setShowConclusion(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, [part3Submitted, part3Feedback, showConclusion]);
+
   // Reactive cleanup: kill speech + reset state on every activity/question/part change
   useEffect(() => {
     speech.stopListening();
