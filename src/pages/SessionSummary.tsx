@@ -57,7 +57,7 @@ const SessionSummary = () => {
   const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
   const [challenges, setChallenges] = useState<StrategyInfo[]>([]);
   const [weakestDomainNote, setWeakestDomainNote] = useState("");
-  const [studentGamification, setStudentGamification] = useState<StudentGamification[]>([]);
+  
 
   useEffect(() => {
     if (!sessionId) return;
