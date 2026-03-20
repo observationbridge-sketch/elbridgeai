@@ -1932,86 +1932,13 @@ const StudentSession = () => {
                     )}
                   </CardContent>
                 </Card>
-              ) : inPart3 ? (
-                part3ShowIntro ? (
-                  <Card className="card-shadow border-border text-center">
-                    <CardContent className="pt-8 pb-8 space-y-6">
-                      <Sparkles className={`${isK2 ? "h-20 w-20" : "h-16 w-16"} text-warning mx-auto`} />
-                      <h2 className={`${isK2 ? "text-3xl" : "text-2xl"} font-bold text-foreground`}>🎉 Almost done!</h2>
-                      <p className={`${isK2 ? "text-xl" : "text-lg"} text-muted-foreground`}>Time for your Language Challenge!</p>
-                      <p className={`${isK2 ? "text-base" : "text-sm"} text-muted-foreground`}>One fun final activity about <span className="font-bold text-primary">{sessionTopic}</span></p>
-                      <Button variant="hero" size="lg" className={`w-full ${isK2 ? "text-xl py-8" : ""}`} onClick={startPart3}>
-                        Let's Go! 🚀
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : part3Submitted && part3Feedback && !showConclusion ? (
+               ) : inPart3 ? (
+                part3Submitted && part3Feedback ? (
                   <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-fade-in">
                     <Trophy className="h-16 w-16 text-warning animate-bounce" />
                     <h2 className="text-2xl font-bold text-foreground">Challenge Complete! 🎉</h2>
-                    <p className="text-muted-foreground">One more thing...</p>
+                    <p className="text-muted-foreground">Wrapping up your session...</p>
                   </div>
-                ) : showConclusion ? (
-                  <ConclusionView
-                    step={conclusionStep}
-                    answer={conclusionAnswer}
-                    setAnswer={setConclusionAnswer}
-                    submitted={conclusionSubmitted}
-                    nudgeShown={conclusionNudgeShown}
-                    reaction={conclusionReaction}
-                    sessionTopic={sessionTopic}
-                    sessionTheme={sessionTheme}
-                    anchor={anchor}
-                    speech={speech}
-                    tts={tts}
-                    isK2={isK2}
-                    sounds={sounds}
-                    onSubmit={(stepNum) => {
-                      const minDuration = isK2 ? 2 : 4;
-                      const keywords = anchor?.keyWords || [];
-                      const transcript = conclusionAnswer.toLowerCase();
-                      const hasKeyword = keywords.some(kw => transcript.includes(kw.toLowerCase()));
-                      const hasDuration = speech.lastDurationSeconds >= minDuration;
-
-                      if (!hasDuration && !hasKeyword && !conclusionNudgeShown) {
-                        setConclusionNudgeShown(true);
-                        speech.resetTranscript();
-                        setConclusionAnswer("");
-                        return;
-                      }
-
-                      setConclusionSubmitted(true);
-                      const strategy = stepNum === 1 ? "conclusion_express" : "conclusion_level_up";
-                      sounds.playCorrect();
-                      sounds.playCorrect();
-                      sounds.playPoints();
-
-                      const speakingMeta = {
-                        speaking_duration_seconds: speech.lastDurationSeconds,
-                        speaking_full_attempt: hasDuration && hasKeyword,
-                      };
-                      saveResponse("speaking", `Conclusion Step ${stepNum}: ${sessionTopic}`, conclusionAnswer, sessionTopic, true, "Developing", "conclusion", strategy, speakingMeta);
-
-                      const reactionMsg = stepNum === 1
-                        ? (isK2 ? "WOW! You're amazing! 🐣⭐" : "Incredible! You just taught ME something! 🌟")
-                        : (isK2 ? "YOU DID IT! I'm so proud of you! 🎉🐣" : "That was your best sentence yet! You're a language superstar! 🏆");
-                      setConclusionReaction(reactionMsg);
-
-                      const advanceDelay = stepNum === 1 ? 1500 : 2000;
-                      setTimeout(() => {
-                        if (stepNum === 1) {
-                          setConclusionStep(2);
-                          setConclusionAnswer("");
-                          setConclusionSubmitted(false);
-                          setConclusionNudgeShown(false);
-                          setConclusionReaction(null);
-                          speech.resetTranscript();
-                        } else {
-                          finishSession();
-                        }
-                      }, advanceDelay);
-                    }}
-                  />
                 ) : part3Challenge ? (
                   <Part3ChallengeView
                     challenge={part3Challenge}
