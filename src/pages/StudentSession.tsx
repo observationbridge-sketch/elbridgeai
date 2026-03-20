@@ -1591,13 +1591,12 @@ const StudentSession = () => {
         return;
       }
     }
-    gamification.addPoints(pts.CHALLENGE_TEACH_COMPLETE, effectiveGradeBand);
     const keywords = part3Challenge?.acceptableKeywords || [];
     const norm = part3Answer.toLowerCase();
     const usedWords = keywords.filter((kw) => norm.includes(kw.toLowerCase())).slice(0, 3);
     const feedback = usedWords.length > 0
-      ? `Amazing! You explained ${sessionTopic} really well. You used these great words: ${usedWords.join(", ")}! 🎤🌟 +${pts.CHALLENGE_TEACH_COMPLETE} points!`
-      : `Great job explaining ${sessionTopic}! Keep using topic vocabulary to make your explanations even stronger! 🎤 +${pts.CHALLENGE_TEACH_COMPLETE} points!`;
+      ? `Amazing! You explained ${sessionTopic} really well. You used these great words: ${usedWords.join(", ")}! 🎤🌟`
+      : `Great job explaining ${sessionTopic}! Keep using topic vocabulary to make your explanations even stronger! 🎤`;
     setPart3Feedback(feedback);
     setPart3Submitted(true);
     setChallengeCompleted("Teach It Back");
