@@ -1980,8 +1980,7 @@ const StudentSession = () => {
                     speech={speech}
                     tts={tts}
                     isK2={isK2}
-                    pts={pts}
-                    gamification={gamification}
+                    sounds={sounds}
                     sounds={sounds}
                     onSubmit={(stepNum) => {
                       const minDuration = isK2 ? 2 : 4;
