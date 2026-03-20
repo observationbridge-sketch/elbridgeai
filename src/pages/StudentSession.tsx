@@ -512,20 +512,10 @@ const StudentSession = () => {
 
   const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
   const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
-  const pts = effectiveGradeBand === "3-5" ? POINTS_35 : POINTS;
 
-  // Gamification & Sounds
-  const gamification = useGamification(studentName, teacherId);
+  // Sounds
   const sounds = useSounds();
-  const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
   const quickWriteCountRef = useRef(0);
-
-  // Play evolution sound when animal evolves
-  useEffect(() => {
-    if (gamification.evolutionData) {
-      sounds.playEvolution();
-    }
-  }, [gamification.evolutionData]);
 
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
