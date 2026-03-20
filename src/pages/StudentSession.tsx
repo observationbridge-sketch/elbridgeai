@@ -186,26 +186,6 @@ function validatePart3Challenge(data: any): data is Part3Challenge {
   return true;
 }
 
-// Auto-trigger finishSession when Part 3 completes
-function Part3CompletionTrigger({ finishSession }: { finishSession: () => void }) {
-  const triggered = useRef(false);
-  useEffect(() => {
-    if (!triggered.current) {
-      triggered.current = true;
-      const t = setTimeout(finishSession, 600);
-      return () => clearTimeout(t);
-    }
-  }, [finishSession]);
-
-  return (
-    <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-fade-in">
-      <Trophy className="h-16 w-16 text-warning animate-bounce" />
-      <h2 className="text-2xl font-bold text-foreground">Challenge Complete! 🎉</h2>
-      <p className="text-muted-foreground">Preparing your celebration...</p>
-    </div>
-  );
-}
-
 // Fetch with timeout helper
 function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([
