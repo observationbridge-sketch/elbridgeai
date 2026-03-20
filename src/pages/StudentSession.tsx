@@ -8,22 +8,13 @@ import { Progress } from "@/components/ui/progress";
 import {
   Brain, BookOpen, PenTool, Mic, MicOff, Headphones, CheckCircle,
   ArrowRight, Loader2, Star, Volume2, VolumeX, Trophy, Flame, RefreshCw,
-  Eye, EyeOff, Target, Zap, Award, Users, Clock, Sparkles,
+  Eye, EyeOff, Target, Zap, Clock, Sparkles,
 } from "lucide-react";
 import { useSounds } from "@/hooks/use-sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTTS } from "@/hooks/use-tts";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
-import { useGamification } from "@/hooks/use-gamification";
-import { AnimalCompanion } from "@/components/gamification/AnimalCompanion";
-import { PointsAnimation } from "@/components/gamification/PointsAnimation";
-import { EvolutionCelebration } from "@/components/gamification/EvolutionCelebration";
-import { BadgePopup } from "@/components/gamification/BadgePopup";
-import { BadgeCollection } from "@/components/gamification/BadgeCollection";
-import { Leaderboard } from "@/components/gamification/Leaderboard";
-import { POINTS, POINTS_35, BADGES } from "@/components/gamification/constants";
-import { getAnimalLevel, getAnimalLevel35, getNextLevel, getNextLevel35 } from "@/components/gamification/constants";
 import { ThemeBackground, ThemePageWrapper, ThemedCard, ThemedCompanionGlow, ConfettiCelebration, MotivationalBanner, getThemeStyles } from "@/components/session/ThemeBackground";
 import { WordBankFillBlanks } from "@/components/session/WordBankFillBlanks";
 import { MemoryMatch } from "@/components/session/MemoryMatch";
@@ -260,8 +251,6 @@ function isValidK2AnchorSentence(sentence: string): boolean {
   return true;
 }
 
-const BADGES_LOOKUP: Record<string, { icon: string; name: string }> = {};
-BADGES.forEach((b) => { BADGES_LOOKUP[b.id] = { icon: b.icon, name: b.name }; });
 
 interface FillInBlankPayload {
   sentence: string;
@@ -523,20 +512,10 @@ const StudentSession = () => {
 
   const totalSteps = effectiveGradeBand === "K-2" ? TOTAL_STEPS_K2 : TOTAL_STEPS_3_5;
   const part2Count = effectiveGradeBand === "K-2" ? 4 : 6;
-  const pts = effectiveGradeBand === "3-5" ? POINTS_35 : POINTS;
 
-  // Gamification & Sounds
-  const gamification = useGamification(studentName, teacherId);
+  // Sounds
   const sounds = useSounds();
-  const [showView, setShowView] = useState<"session" | "badges" | "leaderboard">("session");
   const quickWriteCountRef = useRef(0);
-
-  // Play evolution sound when animal evolves
-  useEffect(() => {
-    if (gamification.evolutionData) {
-      sounds.playEvolution();
-    }
-  }, [gamification.evolutionData]);
 
   // Part 1 state
   const [anchor, setAnchor] = useState<AnchorSentence | null>(null);
@@ -945,7 +924,6 @@ const StudentSession = () => {
 
   useEffect(() => {
     if (studentName && teacherId) {
-      gamification.loadData();
       // Load sentence frame tier from student_points
       supabase
         .from("student_points")
@@ -1048,8 +1026,7 @@ const StudentSession = () => {
       setPart1Step((s) => (s + 1) as any);
       setGlobalStep((g) => g + 1);
     } else {
-      // Part 1 complete → award badge + grade band auto-adjustment
-      gamification.awardBadge("first_word");
+      // Part 1 complete → grade band auto-adjustment
 
       // Auto-adjust grade band based on Part 1 performance
       const totalPossible = part1Scores.sayItTotal + part1Scores.dragDropTotal + part1Scores.memoryMatchTotal + part1Scores.jumbledTotal;
@@ -1074,7 +1051,6 @@ const StudentSession = () => {
 
   const handleStep1Done = () => {
     setPart1Scores((s) => ({ ...s, listen: true }));
-    gamification.addPoints(pts.STEP1_LISTEN, effectiveGradeBand);
     saveResponse("listening", "Listened to anchor passage", "heard", anchor?.sentence || "", true, "Entering", "part1");
     handlePart1Next();
   };
@@ -1087,11 +1063,9 @@ const StudentSession = () => {
     setPart1Feedback("Great job! 🌟");
     setPart1Submitted(true);
     sounds.playCorrect();
-    gamification.addPoints(pts.STEP2_SAY_IT, effectiveGradeBand);
     sounds.playPoints();
     if (!hasSpoken) {
       setHasSpoken(true);
-      gamification.awardBadge("first_voice");
     }
     const speakingMeta = {
       speaking_duration_seconds: speech.lastDurationSeconds,
@@ -1104,14 +1078,12 @@ const StudentSession = () => {
 
   const handleStep3Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, dragDrop: score.correct, dragDropTotal: score.total }));
-    gamification.addPoints(pts.STEP3_DRAG_DROP, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Drag & Drop fill-in-the-blank", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
 
   const handleStep4Complete = (score: { correct: number; total: number }) => {
     setPart1Scores((s) => ({ ...s, memoryMatch: score.correct, memoryMatchTotal: score.total }));
-    gamification.addPoints(pts.STEP4_MEMORY_MATCH, effectiveGradeBand);
     sounds.playPoints();
     saveResponse("reading", "Memory Match", `${score.correct}/${score.total}`, "completed", score.correct === score.total, "Entering", "part1");
   };
@@ -1119,12 +1091,10 @@ const StudentSession = () => {
   const handleStep5Complete = (correct: boolean) => {
     setPart1Scores((s) => ({ ...s, jumbled: correct ? 1 : 0, jumbledTotal: 1 }));
     if (correct) {
-      gamification.addPoints(pts.STEP5_JUMBLED, effectiveGradeBand);
       sounds.playPoints();
     }
     if (!hasWritten) {
       setHasWritten(true);
-      gamification.awardBadge("first_writer");
     }
   };
 
@@ -1413,7 +1383,6 @@ const StudentSession = () => {
     }
 
     if (correct) {
-      gamification.addPoints(pts.PART2_ACTIVITY, effectiveGradeBand);
       sounds.playPoints();
     }
 
@@ -1430,12 +1399,9 @@ const StudentSession = () => {
     };
     const domain = domainMap[part2Activity.strategy] || domainMap[part2Activity.type] || "reading";
 
-    // Track quick_writes completions for badge
+    // Track quick_writes completions
     if ((part2Activity.strategy === "quick_writes" || part2Activity.type === "quick_write") && effectiveGradeBand === "3-5") {
       quickWriteCountRef.current += 1;
-      if (quickWriteCountRef.current >= 3) {
-        gamification.awardBadge("quick_writer");
-      }
     }
 
     const isRecordingActivity = part2Activity.inputType === "recording" || part2Activity.inputType === "record_then_type";
@@ -1568,22 +1534,13 @@ const StudentSession = () => {
     const hasEnoughSentences = sentences.length >= 2;
 
     if (hasEnoughSentences && hasSequence) {
-      // Full points
-      gamification.addPoints(pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS, effectiveGradeBand);
-      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's great storytelling! 🌟 +${pts.CHALLENGE_STORY_COMPLETE + pts.CHALLENGE_STORY_SEQUENCE_BONUS} points!`;
+      const feedback = `Amazing story! You used sequence words (${usedSeqWords.join(", ")}) — that's great storytelling! 🌟`;
       setPart3Feedback(feedback);
-      // Award sequence_master badge if 3+ sequence words used
-      if (usedSeqWords.length >= 3 && effectiveGradeBand === "3-5") {
-        gamification.awardBadge("sequence_master");
-      }
     } else {
-      // Half points + encouraging feedback
-      const halfPoints = Math.round(pts.CHALLENGE_STORY_COMPLETE / 2);
-      gamification.addPoints(halfPoints, effectiveGradeBand);
       const tips: string[] = [];
       if (!hasEnoughSentences) tips.push("try saying at least 2 sentences");
       if (!hasSequence) tips.push('use sequence words like "first, then, finally"');
-      const feedback = `Good effort! Next time, ${tips.join(" and ")} to earn full points! 🎤 +${halfPoints} points!`;
+      const feedback = `Good effort! Next time, ${tips.join(" and ")} for an even better story! 🎤`;
       setPart3Feedback(feedback);
     }
     setPart3Submitted(true);
@@ -1597,7 +1554,6 @@ const StudentSession = () => {
     const isCorrect = selectedOption === q.correctAnswer;
     if (isCorrect) {
       setPart3SpeedScore((s) => s + 1);
-      gamification.addPoints(pts.CHALLENGE_SPEED_CORRECT, effectiveGradeBand);
       sounds.playCorrect();
       sounds.playPoints();
       setShowConfetti(true);
@@ -1619,10 +1575,6 @@ const StudentSession = () => {
       setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
       setPart3Submitted(true);
       setChallengeCompleted("Speed Round");
-      // Award speed_star badge for perfect 5/5
-      if (finalScore === 5 && effectiveGradeBand === "3-5") {
-        gamification.awardBadge("speed_star");
-      }
     }
   };
 
@@ -1639,13 +1591,12 @@ const StudentSession = () => {
         return;
       }
     }
-    gamification.addPoints(pts.CHALLENGE_TEACH_COMPLETE, effectiveGradeBand);
     const keywords = part3Challenge?.acceptableKeywords || [];
     const norm = part3Answer.toLowerCase();
     const usedWords = keywords.filter((kw) => norm.includes(kw.toLowerCase())).slice(0, 3);
     const feedback = usedWords.length > 0
-      ? `Amazing! You explained ${sessionTopic} really well. You used these great words: ${usedWords.join(", ")}! 🎤🌟 +${pts.CHALLENGE_TEACH_COMPLETE} points!`
-      : `Great job explaining ${sessionTopic}! Keep using topic vocabulary to make your explanations even stronger! 🎤 +${pts.CHALLENGE_TEACH_COMPLETE} points!`;
+      ? `Amazing! You explained ${sessionTopic} really well. You used these great words: ${usedWords.join(", ")}! 🎤🌟`
+      : `Great job explaining ${sessionTopic}! Keep using topic vocabulary to make your explanations even stronger! 🎤`;
     setPart3Feedback(feedback);
     setPart3Submitted(true);
     setChallengeCompleted("Teach It Back");
@@ -1654,25 +1605,6 @@ const StudentSession = () => {
 
   const finishSession = async () => {
     sounds.playSessionComplete();
-    gamification.addPoints(pts.SESSION_COMPLETE, effectiveGradeBand);
-    gamification.completeSession({
-      gradeBand: effectiveGradeBand,
-      part2Score: part2Score,
-      part2Count: part2Count,
-      domainScores: domainScores || undefined,
-    });
-    if (domainScores) {
-      for (const [domain, pct] of Object.entries(domainScores)) {
-        if (pct >= 80) {
-          gamification.addPoints(pts.DOMAIN_80_BONUS, effectiveGradeBand);
-          // Award domain_ace badge for 3-5 students
-          if (effectiveGradeBand === "3-5") {
-            gamification.awardBadge("domain_ace");
-          }
-          break;
-        }
-      }
-    }
 
     // Save content history
     try {
@@ -1702,39 +1634,12 @@ const StudentSession = () => {
   const [feelingRatings, setFeelingRatings] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
 
-  // ─── Badge/Leaderboard screens ───
-  if (showView === "badges") {
-    return <BadgeCollection earnedBadgeIds={gamification.earnedBadgeIds} onBack={() => setShowView("session")} />;
-  }
-  if (showView === "leaderboard") {
-    return <Leaderboard teacherId={teacherId} currentStudentName={studentName} onBack={() => setShowView("session")} />;
-  }
-
-  // ─── Session ended — FULL CELEBRATION SCREEN (2 phases) ───
+  // ─── Session ended — CELEBRATION SCREEN (2 phases) ───
 
   if (sessionEnded) {
     // Force dark background on body to prevent ThemePageWrapper bleed-through
     document.body.style.background = '#0f0f1a';
 
-    try {
-    const animalLevel = effectiveGradeBand === "3-5" ? getAnimalLevel35(gamification.totalPoints) : getAnimalLevel(gamification.totalPoints);
-    const nextLevel = effectiveGradeBand === "3-5" ? getNextLevel35(gamification.totalPoints) : getNextLevel(gamification.totalPoints);
-
-    // Safety: if animalLevel is undefined, show a simple completion screen instead of white screen
-    if (!animalLevel) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center space-y-6" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
-          <div className="text-[100px] leading-none">🎉</div>
-          <h1 className="text-4xl font-bold text-white">Great job! You finished!</h1>
-          <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
-          <p className="text-3xl font-bold text-yellow-400">+{gamification.sessionPoints} ⭐</p>
-          <p className="text-gray-300">Total: <span className="font-bold text-white">{gamification.totalPoints} points</span></p>
-          <Button variant="hero" size="lg" className="w-full max-w-xs text-xl py-7" onClick={() => navigate("/student/join")}>
-            Done ✅
-          </Button>
-        </div>
-      );
-    }
     const totalActivities = 5 + part2Count + 1; // Part1(5) + Part2 + Part3(1)
 
     if (!showResults) {
@@ -1760,54 +1665,26 @@ const StudentSession = () => {
 
           <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
             <div className="w-full max-w-sm space-y-6 text-center">
-              {/* Heading */}
               <div className="animate-fade-in">
                 <h1 className="text-4xl font-bold text-white mb-2">You did it! 🎉</h1>
                 <p className="text-xl text-blue-300 font-semibold">{studentName}</p>
               </div>
 
-              {/* Animal companion — large and pulsing */}
               <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
                 <div className="text-[100px] leading-none" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
-                  {animalLevel.emoji}
+                  🎉
                 </div>
-                <p className="text-sm text-gray-400 mt-2">{animalLevel.name}</p>
               </div>
 
-              {/* Points total */}
               <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
-                <p className="text-5xl font-bold text-yellow-400" style={{ animation: "loading-pulse 2s ease-in-out infinite" }}>
-                  +{gamification.sessionPoints} ⭐
+                <p className="text-lg text-gray-300">
+                  You completed <span className="font-bold text-white">{totalActivities} activities</span> today!
                 </p>
                 <p className="text-sm text-gray-400 mt-1">
-                  Total: <span className="font-bold text-white">{gamification.totalPoints} points</span>
+                  Practice score: <span className="font-bold text-white">{part2Score}/{part2Count}</span>
                 </p>
-                {nextLevel && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {nextLevel.min - gamification.totalPoints} pts to {nextLevel.emoji} {nextLevel.name}!
-                  </p>
-                )}
               </div>
 
-              {/* Badges earned this session */}
-              {gamification.earnedBadgeIds.length > 0 && (
-                <div className="animate-fade-in" style={{ animationDelay: "0.6s" }}>
-                  <p className="text-sm font-medium text-white mb-2">🎖️ Badges Earned</p>
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    {gamification.earnedBadgeIds.map((id) => {
-                      const badge = BADGES_LOOKUP[id];
-                      return badge ? (
-                        <div key={id} className="flex flex-col items-center gap-1 rounded-lg px-3 py-2 border" style={{ background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)" }}>
-                          <span className="text-3xl">{badge.icon}</span>
-                          <span className="text-[10px] text-gray-400">{badge.name}</span>
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* See My Results button */}
               <div className="animate-fade-in pt-4" style={{ animationDelay: "0.8s" }}>
                 <Button
                   variant="hero"
@@ -1821,21 +1698,12 @@ const StudentSession = () => {
             </div>
           </div>
 
-          {/* Confetti fall keyframes */}
           <style>{`
             @keyframes confetti-fall {
               0% { transform: translateY(0) rotate(0deg); opacity: 1; }
               100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
             }
           `}</style>
-
-          <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
-          {gamification.evolutionData && (
-            <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
-          )}
-          {gamification.pendingBadge && (
-            <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
-          )}
         </div>
       );
     }
@@ -1847,20 +1715,20 @@ const StudentSession = () => {
           <Card className="border" style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)" }}>
             <CardContent className="py-8 space-y-6">
               <div className="text-center">
-                <div className="text-6xl mb-3">{animalLevel.emoji}</div>
+                <div className="text-6xl mb-3">🎉</div>
                 <h2 className="text-2xl font-bold text-white">
                   Great job today, {studentName}! 🌟
                 </h2>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(234,179,8,0.15)", borderColor: "rgba(234,179,8,0.25)" }}>
-                  <p className="text-3xl font-bold text-yellow-400">{gamification.sessionPoints}</p>
-                  <p className="text-xs text-gray-400 mt-1">Points Earned</p>
-                </div>
                 <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(59,130,246,0.15)", borderColor: "rgba(59,130,246,0.25)" }}>
                   <p className="text-3xl font-bold text-blue-400">{totalActivities}</p>
                   <p className="text-xs text-gray-400 mt-1">Activities Done</p>
+                </div>
+                <div className="rounded-xl p-4 text-center border" style={{ background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.25)" }}>
+                  <p className="text-3xl font-bold text-green-400">{part2Score}/{part2Count}</p>
+                  <p className="text-xs text-gray-400 mt-1">Practice Score</p>
                 </div>
               </div>
 
@@ -1878,32 +1746,10 @@ const StudentSession = () => {
                   <p className="text-xl font-bold text-green-400">✓</p>
                 </div>
               </div>
-
-              {gamification.earnedBadgeIds.length > 0 && (
-                <div className="text-center">
-                  <p className="text-xs text-gray-400 mb-2">Badges</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {gamification.earnedBadgeIds.map((id) => {
-                      const badge = BADGES_LOOKUP[id];
-                      return badge ? (
-                        <span key={id} className="text-2xl" title={badge.name}>{badge.icon}</span>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" onClick={() => setShowView("badges")} className="gap-2">
-                <Award className="h-4 w-4" /> My Badges
-              </Button>
-              <Button variant="outline" onClick={() => setShowView("leaderboard")} className="gap-2">
-                <Users className="h-4 w-4" /> Leaderboard
-              </Button>
-            </div>
             <Button variant="hero" onClick={() => navigate("/student/join")} className="w-full text-lg py-6">
               Done ✅
             </Button>
@@ -1927,27 +1773,8 @@ const StudentSession = () => {
             ) : null}
           </div>
         </div>
-
-        <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
-        {gamification.evolutionData && (
-          <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
-        )}
-        {gamification.pendingBadge && (
-          <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
-        )}
       </div>
     );
-    } catch (celebrationError) {
-      console.error("Celebration screen error:", celebrationError);
-      return (
-        <div style={{minHeight:'100vh', background:'#1a1a2e', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'24px'}}>
-          <div style={{fontSize:'80px'}}>🎉</div>
-          <h1 style={{color:'white', fontSize:'32px'}}>You did it, {studentName}!</h1>
-          <p style={{color:'#aaa', fontSize:'20px'}}>{gamification.sessionPoints} points earned!</p>
-          <button style={{background:'#6366f1', color:'white', padding:'16px 32px', borderRadius:'12px', fontSize:'20px', border:'none', cursor:'pointer'}} onClick={() => navigate('/student/join')}>Done ✅</button>
-        </div>
-      );
-    }
   }
 
   // ─── Progress label ───
@@ -1987,11 +1814,6 @@ const StudentSession = () => {
             <span className="font-bold text-white">ElbridgeAI</span>
           </div>
           <div className="flex items-center gap-3">
-            {gamification.loaded && (
-              <ThemedCompanionGlow theme={sessionTheme}>
-                <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={!isK2} />
-              </ThemedCompanionGlow>
-            )}
             <button
               onClick={sounds.toggleMute}
               className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
@@ -1999,14 +1821,6 @@ const StudentSession = () => {
             >
               {sounds.muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </button>
-            <div className="hidden sm:flex items-center gap-2">
-              <button onClick={() => setShowView("badges")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
-                <Award className="h-3 w-3" /> Badges
-              </button>
-              <button onClick={() => setShowView("leaderboard")} className="text-xs px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center gap-1">
-                <Users className="h-3 w-3" /> Rank
-              </button>
-            </div>
           </div>
         </div>
         {sessionTopic && (
@@ -2030,14 +1844,6 @@ const StudentSession = () => {
         </div>
       </div>
 
-      {/* Animal Companion Profile Card — all grade bands */}
-      {!loading && gamification.loaded && (
-        <div className="flex justify-center py-4">
-          <div className={`text-center ${isK2 ? "animate-bounce-slow" : "animate-bounce-fast"}`}>
-            <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
-          </div>
-        </div>
-      )}
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {loading ? (
@@ -2130,9 +1936,7 @@ const StudentSession = () => {
                       </>
                     ) : isK2 ? (
                       <>
-                        <div className="animate-bounce-slow">
-                          <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
-                        </div>
+                        <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
                         <p className="text-xl text-muted-foreground">Getting ready... 🐣</p>
                       </>
                     ) : (
@@ -2176,8 +1980,6 @@ const StudentSession = () => {
                     speech={speech}
                     tts={tts}
                     isK2={isK2}
-                    pts={pts}
-                    gamification={gamification}
                     sounds={sounds}
                     onSubmit={(stepNum) => {
                       const minDuration = isK2 ? 2 : 4;
@@ -2195,8 +1997,7 @@ const StudentSession = () => {
 
                       setConclusionSubmitted(true);
                       const strategy = stepNum === 1 ? "conclusion_express" : "conclusion_level_up";
-                      const points = stepNum === 1 ? pts.CONCLUSION_EXPRESS : pts.CONCLUSION_LEVEL_UP;
-                      gamification.addPoints(points, effectiveGradeBand);
+                      sounds.playCorrect();
                       sounds.playCorrect();
                       sounds.playPoints();
 
@@ -2257,9 +2058,7 @@ const StudentSession = () => {
                         </>
                       ) : isK2 ? (
                         <>
-                          <div className="animate-bounce-slow">
-                            <AnimalCompanion points={gamification.totalPoints} studentName={studentName} compact={false} />
-                          </div>
+                          <Loader2 className="h-10 w-10 text-primary mx-auto animate-spin" />
                           <p className="text-xl text-muted-foreground">Getting ready... 🐣</p>
                         </>
                       ) : (
@@ -2279,14 +2078,6 @@ const StudentSession = () => {
 
       <ConfettiCelebration show={showConfetti} theme={sessionTheme} />
       <MotivationalBanner show={showMotivational} theme={sessionTheme} onDone={() => setShowMotivational(false)} />
-
-      <PointsAnimation points={gamification.lastPointsEarned} show={gamification.showPointsAnim} onDone={() => gamification.setShowPointsAnim(false)} />
-      {gamification.evolutionData && (
-        <EvolutionCelebration show={true} animalEmoji={gamification.evolutionData.emoji} animalName={gamification.evolutionData.name} onClose={() => gamification.setEvolutionData(null)} />
-      )}
-      {gamification.pendingBadge && (
-        <BadgePopup show={true} badgeIcon={gamification.pendingBadge.icon} badgeName={gamification.pendingBadge.name} onClose={() => gamification.setPendingBadge(null)} />
-      )}
     </div>
     </ThemePageWrapper>
   );
@@ -3551,7 +3342,7 @@ function getThemeAwarePrompt(sessionTheme: string, sessionTopic: string, anchorS
 
 function ConclusionView({
   step, answer, setAnswer, submitted, nudgeShown, reaction,
-  sessionTopic, sessionTheme, anchor, speech, tts, isK2, pts, gamification, sounds,
+  sessionTopic, sessionTheme, anchor, speech, tts, isK2, sounds,
   onSubmit,
 }: {
   step: 1 | 2;
@@ -3566,8 +3357,6 @@ function ConclusionView({
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
   isK2: boolean;
-  pts: any;
-  gamification: any;
   sounds: any;
   onSubmit: (step: 1 | 2) => void;
 }) {

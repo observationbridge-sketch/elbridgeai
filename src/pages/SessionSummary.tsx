@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap, Award, Trophy, Sparkles } from "lucide-react";
+import { Brain, ArrowLeft, BookOpen, PenTool, Mic, Headphones, Users, Target, Zap, Trophy, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAnimalLevel } from "@/components/gamification/constants";
 
 type DomainSummary = {
   domain: string;
@@ -18,13 +17,6 @@ type StrategyInfo = {
   count: number;
 };
 
-type StudentGamification = {
-  student_name: string;
-  total_points: number;
-  current_streak: number;
-  sessions_completed: number;
-  badges: string[];
-};
 
 const DOMAIN_META: Record<string, { icon: any; color: string; label: string }> = {
   reading: { icon: BookOpen, color: "text-primary", label: "Reading" },
@@ -65,7 +57,7 @@ const SessionSummary = () => {
   const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
   const [challenges, setChallenges] = useState<StrategyInfo[]>([]);
   const [weakestDomainNote, setWeakestDomainNote] = useState("");
-  const [studentGamification, setStudentGamification] = useState<StudentGamification[]>([]);
+  
 
   useEffect(() => {
     if (!sessionId) return;
@@ -139,35 +131,6 @@ const SessionSummary = () => {
         }
       }
 
-      // Load gamification data
-      if (session?.teacher_id && students && students.length > 0) {
-        const studentNames = students.map((s) => s.student_name);
-
-        const { data: pointsData } = await supabase
-          .from("student_points")
-          .select("student_name, total_points, current_streak, sessions_completed")
-          .eq("teacher_id", session.teacher_id)
-          .in("student_name", studentNames);
-
-        const { data: badgesData } = await supabase
-          .from("student_badges")
-          .select("student_name, badge_icon")
-          .eq("teacher_id", session.teacher_id)
-          .in("student_name", studentNames);
-
-        const gamData: StudentGamification[] = studentNames.map((name) => {
-          const pts = pointsData?.find((p) => p.student_name === name);
-          const badges = badgesData?.filter((b) => b.student_name === name).map((b) => b.badge_icon) || [];
-          return {
-            student_name: name,
-            total_points: pts?.total_points || 0,
-            current_streak: pts?.current_streak || 0,
-            sessions_completed: pts?.sessions_completed || 0,
-            badges,
-          };
-        });
-        setStudentGamification(gamData.sort((a, b) => b.total_points - a.total_points));
-      }
     };
 
     load();
@@ -322,45 +285,8 @@ const SessionSummary = () => {
           })}
         </div>
 
-        {/* Student Gamification */}
-        {studentGamification.length > 0 && (
-          <Card className="card-shadow border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-warning" />
-                Student Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {studentGamification.map((student) => {
-                  const level = getAnimalLevel(student.total_points);
-                  return (
-                    <div key={student.student_name} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <span className="text-2xl">{level.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-foreground truncate">{student.student_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {level.name} • {student.total_points} pts • {student.current_streak} day streak • {student.sessions_completed} sessions
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        {student.badges.slice(0, 5).map((icon, i) => (
-                          <span key={i} className="text-lg">{icon}</span>
-                        ))}
-                        {student.badges.length > 5 && (
-                          <span className="text-xs text-muted-foreground">+{student.badges.length - 5}</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {domainSummaries.every((s) => s.total === 0) && studentGamification.length === 0 && (
+        {domainSummaries.every((s) => s.total === 0) && (
           <Card className="card-shadow border-border">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">No student responses recorded for this session yet.</p>
