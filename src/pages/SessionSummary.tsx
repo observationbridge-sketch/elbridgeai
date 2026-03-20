@@ -286,7 +286,7 @@ const SessionSummary = () => {
         </div>
 
 
-        {domainSummaries.every((s) => s.total === 0) && studentGamification.length === 0 && (
+        {domainSummaries.every((s) => s.total === 0) && (
           <Card className="card-shadow border-border">
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">No student responses recorded for this session yet.</p>
