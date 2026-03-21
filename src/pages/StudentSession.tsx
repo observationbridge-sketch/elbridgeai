@@ -561,6 +561,7 @@ const StudentSession = () => {
   const [part3SpeedAnswers, setPart3SpeedAnswers] = useState<string[]>([]);
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
+  const [part3SpeedFeedback, setPart3SpeedFeedback] = useState<{ selected: string; correct: string; isCorrect: boolean } | null>(null);
 
   // Theme visual state
   const [showConfetti, setShowConfetti] = useState(false);
