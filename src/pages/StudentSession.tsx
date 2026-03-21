@@ -1957,6 +1957,7 @@ const StudentSession = () => {
                     speech={speech}
                     tts={tts}
                     speedIndex={part3SpeedIndex}
+                    speedFeedback={part3SpeedFeedback}
                     onSubmitStory={submitPart3StoryBuilder}
                     onSubmitSpeedAnswer={submitPart3SpeedAnswer}
                     onSubmitTeach={submitPart3TeachItBack}
