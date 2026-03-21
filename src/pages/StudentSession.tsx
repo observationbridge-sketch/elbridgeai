@@ -561,6 +561,7 @@ const StudentSession = () => {
   const [part3SpeedAnswers, setPart3SpeedAnswers] = useState<string[]>([]);
   const [part3StartTime, setPart3StartTime] = useState<number>(0);
   const [challengeCompleted, setChallengeCompleted] = useState<string | null>(null);
+  const [part3SpeedFeedback, setPart3SpeedFeedback] = useState<{ selected: string; correct: string; isCorrect: boolean } | null>(null);
 
   // Theme visual state
   const [showConfetti, setShowConfetti] = useState(false);
@@ -1350,9 +1351,13 @@ const StudentSession = () => {
     }
 
     let feedback: string;
+    const isMC = part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice" || part2Activity.type === "tap";
     if (correct) {
-      const msgs = ["Excellent work! 🌟", "Great job — you nailed it! ✨", "Wonderful response! Keep it up! 🎉", "Amazing! 🏆", "You're doing great! 💪", "Fantastic answer! 🌈"];
+      const msgs = ["Excellent work! ✅", "Great job — you nailed it! ✅", "Wonderful response! ✅", "Amazing! ✅", "You're doing great! ✅", "Fantastic answer! ✅"];
       feedback = msgs[part2Index % msgs.length];
+    } else if (isMC) {
+      const correctAnswer = part2Activity.correctAnswer || part2Activity.modelAnswer || "";
+      feedback = `Not quite! The answer was: ${correctAnswer}`;
     } else {
       feedback = "Good effort! Here's a model answer to compare:";
     }
@@ -1534,7 +1539,7 @@ const StudentSession = () => {
   };
 
   const submitPart3SpeedAnswer = (selectedOption: string) => {
-    if (!part3Challenge?.questions) return;
+    if (!part3Challenge?.questions || part3SpeedFeedback) return;
     const q = part3Challenge.questions[part3SpeedIndex];
     const isCorrect = selectedOption === q.correctAnswer;
     if (isCorrect) {
@@ -1547,20 +1552,25 @@ const StudentSession = () => {
       sounds.playWrong();
     }
     setPart3SpeedAnswers((a) => [...a, selectedOption]);
+    setPart3SpeedFeedback({ selected: selectedOption, correct: q.correctAnswer, isCorrect });
 
     saveResponse(q.domain, q.question, selectedOption, q.correctAnswer, isCorrect, "Developing", "part3", "speed_round");
 
-    if (part3SpeedIndex < (part3Challenge?.questions?.length ?? 1) - 1) {
-      setPart3SpeedIndex((i) => i + 1);
-    } else {
-      const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
-      const elapsed = Math.round((Date.now() - part3StartTime) / 1000);
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
-      setPart3Submitted(true);
-      setChallengeCompleted("Speed Round");
-    }
+    // Show feedback for 1.5s then advance
+    setTimeout(() => {
+      setPart3SpeedFeedback(null);
+      if (part3SpeedIndex < (part3Challenge?.questions?.length ?? 1) - 1) {
+        setPart3SpeedIndex((i) => i + 1);
+      } else {
+        const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
+        const elapsed = Math.round((Date.now() - part3StartTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
+        setPart3Submitted(true);
+        setChallengeCompleted("Speed Round");
+      }
+    }, 1500);
   };
 
   const submitPart3TeachItBack = () => {
@@ -1947,6 +1957,7 @@ const StudentSession = () => {
                     speech={speech}
                     tts={tts}
                     speedIndex={part3SpeedIndex}
+                    speedFeedback={part3SpeedFeedback}
                     onSubmitStory={submitPart3StoryBuilder}
                     onSubmitSpeedAnswer={submitPart3SpeedAnswer}
                     onSubmitTeach={submitPart3TeachItBack}
@@ -3037,6 +3048,7 @@ interface Part3Props {
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
   speedIndex: number;
+  speedFeedback: { selected: string; correct: string; isCorrect: boolean } | null;
   onSubmitStory: () => void;
   onSubmitSpeedAnswer: (option: string) => void;
   onSubmitTeach: () => void;
@@ -3044,7 +3056,7 @@ interface Part3Props {
 
 function Part3ChallengeView({
   challenge, answer, setAnswer, speech, tts, speedIndex,
-  onSubmitStory, onSubmitSpeedAnswer, onSubmitTeach,
+  speedFeedback, onSubmitStory, onSubmitSpeedAnswer, onSubmitTeach,
 }: Part3Props) {
   const [showHints, setShowHints] = useState(false);
   if (challenge.challengeType === "story_builder") {
@@ -3119,28 +3131,46 @@ function Part3ChallengeView({
             </div>
           )}
           <h3 className="text-lg font-medium text-foreground">{q.question}</h3>
-          <div className="grid grid-cols-1 gap-3">
-            {(() => {
-              // Seeded shuffle so correct answer position varies per question
-              const seed = (q.question || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0) + speedIndex;
-              const shuffled = [...q.options];
-              for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = ((seed * (i + 1) * 9301 + 49297) % 233280) % (i + 1);
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-              }
-              return shuffled.map((option, i) => (
-                <Button
-                  key={option}
-                  variant="outline"
-                  className="justify-start text-left h-auto py-3 px-4 text-foreground hover:bg-primary/10 hover:border-primary/30"
-                  onClick={() => onSubmitSpeedAnswer(option)}
-                >
-                  <span className="font-bold text-primary mr-2">{String.fromCharCode(65 + i)}.</span>
-                  {option}
-                </Button>
-              ));
-            })()}
-          </div>
+          {speedFeedback ? (
+            <div className={`rounded-xl p-5 text-center animate-fade-in ${
+              speedFeedback.isCorrect 
+                ? "bg-success/15 border-2 border-success/30" 
+                : "bg-destructive/10 border-2 border-destructive/20"
+            }`}>
+              <p className="text-3xl mb-2">{speedFeedback.isCorrect ? "✅" : "😅"}</p>
+              <p className={`font-bold text-lg ${speedFeedback.isCorrect ? "text-success" : "text-destructive"}`}>
+                {speedFeedback.isCorrect ? "Correct!" : "Not quite!"}
+              </p>
+              {!speedFeedback.isCorrect && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  The answer was: <span className="font-semibold text-foreground">{speedFeedback.correct}</span>
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {(() => {
+                // Seeded shuffle so correct answer position varies per question
+                const seed = (q.question || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0) + speedIndex;
+                const shuffled = [...q.options];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                  const j = ((seed * (i + 1) * 9301 + 49297) % 233280) % (i + 1);
+                  [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled.map((option, i) => (
+                  <Button
+                    key={option}
+                    variant="outline"
+                    className="justify-start text-left h-auto py-3 px-4 text-foreground hover:bg-primary/10 hover:border-primary/30"
+                    onClick={() => onSubmitSpeedAnswer(option)}
+                  >
+                    <span className="font-bold text-primary mr-2">{String.fromCharCode(65 + i)}.</span>
+                    {option}
+                  </Button>
+                ));
+              })()}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
