@@ -3005,11 +3005,15 @@ function Part2StrategyView({
         ) : submitted && (
           <div className="space-y-4">
             <div className={`rounded-lg p-4 flex items-start gap-3 ${
-              isCorrect ? "bg-success/10 border border-success/20" : "bg-primary/10 border border-primary/20"
+              isCorrect ? "bg-success/10 border border-success/20" : "bg-warning/10 border border-warning/20"
             }`}>
-              <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isCorrect ? "text-success" : "text-primary"}`} />
+              {isCorrect ? (
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0 text-success" />
+              ) : (
+                <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0 text-warning" />
+              )}
               <div>
-                <p className={`font-medium text-sm ${isCorrect ? "text-success" : "text-primary"}`}>{feedback}</p>
+                <p className={`font-medium text-sm ${isCorrect ? "text-success" : "text-warning"}`}>{feedback}</p>
                 <div className="mt-2 bg-muted/50 rounded p-2">
                   <p className="text-xs text-muted-foreground mb-1">Model answer:</p>
                   <p className="text-sm text-foreground font-medium">{activity.modelAnswer}</p>
