@@ -360,8 +360,8 @@ function jumbleSentence(passage: string): { original: string; correctWords: stri
   const clean = firstSentence.replace(/[.!?]$/, "").trim();
   const words = clean.split(/\s+/);
 
-  // Cap at 10 words maximum for manageability
-  const capped = words.slice(0, 10);
+  // Cap at 8 words maximum so all chips are always visible
+  const capped = words.slice(0, 8);
 
   let shuffled = [...capped].sort(() => Math.random() - 0.5);
   let attempts = 0;
