@@ -1765,7 +1765,7 @@ const StudentSession = () => {
                   "Today I practiced speaking, reading, writing, and listening at ElbridgeAI.com!"
                 </p>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
