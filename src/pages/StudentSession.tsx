@@ -3047,6 +3047,7 @@ interface Part3Props {
   speech: ReturnType<typeof useSpeechRecognition>;
   tts: ReturnType<typeof useTTS>;
   speedIndex: number;
+  speedFeedback: { selected: string; correct: string; isCorrect: boolean } | null;
   onSubmitStory: () => void;
   onSubmitSpeedAnswer: (option: string) => void;
   onSubmitTeach: () => void;
@@ -3054,7 +3055,7 @@ interface Part3Props {
 
 function Part3ChallengeView({
   challenge, answer, setAnswer, speech, tts, speedIndex,
-  onSubmitStory, onSubmitSpeedAnswer, onSubmitTeach,
+  speedFeedback, onSubmitStory, onSubmitSpeedAnswer, onSubmitTeach,
 }: Part3Props) {
   const [showHints, setShowHints] = useState(false);
   if (challenge.challengeType === "story_builder") {
