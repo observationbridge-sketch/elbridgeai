@@ -1351,9 +1351,13 @@ const StudentSession = () => {
     }
 
     let feedback: string;
+    const isMC = part2Activity.inputType === "multiple_choice" || part2Activity.inputType === "tap" || part2Activity.type === "multiple_choice" || part2Activity.type === "tap";
     if (correct) {
-      const msgs = ["Excellent work! 🌟", "Great job — you nailed it! ✨", "Wonderful response! Keep it up! 🎉", "Amazing! 🏆", "You're doing great! 💪", "Fantastic answer! 🌈"];
+      const msgs = ["Excellent work! ✅", "Great job — you nailed it! ✅", "Wonderful response! ✅", "Amazing! ✅", "You're doing great! ✅", "Fantastic answer! ✅"];
       feedback = msgs[part2Index % msgs.length];
+    } else if (isMC) {
+      const correctAnswer = part2Activity.correctAnswer || part2Activity.modelAnswer || "";
+      feedback = `Not quite! The answer was: ${correctAnswer}`;
     } else {
       feedback = "Good effort! Here's a model answer to compare:";
     }
