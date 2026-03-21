@@ -1539,7 +1539,7 @@ const StudentSession = () => {
   };
 
   const submitPart3SpeedAnswer = (selectedOption: string) => {
-    if (!part3Challenge?.questions) return;
+    if (!part3Challenge?.questions || part3SpeedFeedback) return;
     const q = part3Challenge.questions[part3SpeedIndex];
     const isCorrect = selectedOption === q.correctAnswer;
     if (isCorrect) {
@@ -1552,20 +1552,25 @@ const StudentSession = () => {
       sounds.playWrong();
     }
     setPart3SpeedAnswers((a) => [...a, selectedOption]);
+    setPart3SpeedFeedback({ selected: selectedOption, correct: q.correctAnswer, isCorrect });
 
     saveResponse(q.domain, q.question, selectedOption, q.correctAnswer, isCorrect, "Developing", "part3", "speed_round");
 
-    if (part3SpeedIndex < (part3Challenge?.questions?.length ?? 1) - 1) {
-      setPart3SpeedIndex((i) => i + 1);
-    } else {
-      const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
-      const elapsed = Math.round((Date.now() - part3StartTime) / 1000);
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
-      setPart3Submitted(true);
-      setChallengeCompleted("Speed Round");
-    }
+    // Show feedback for 1.5s then advance
+    setTimeout(() => {
+      setPart3SpeedFeedback(null);
+      if (part3SpeedIndex < (part3Challenge?.questions?.length ?? 1) - 1) {
+        setPart3SpeedIndex((i) => i + 1);
+      } else {
+        const finalScore = part3SpeedScore + (isCorrect ? 1 : 0);
+        const elapsed = Math.round((Date.now() - part3StartTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        setPart3Feedback(`You completed the Speed Round in ${mins}:${secs.toString().padStart(2, "0")}! Score: ${finalScore}/5 🏎️`);
+        setPart3Submitted(true);
+        setChallengeCompleted("Speed Round");
+      }
+    }, 1500);
   };
 
   const submitPart3TeachItBack = () => {
