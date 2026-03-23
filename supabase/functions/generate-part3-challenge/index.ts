@@ -195,6 +195,15 @@ Each question must have exactly ${optionCount} options with one clearly correct 
 Do NOT reference any images, pictures, or visuals.
 Each question MUST include a "domain" field with one of: "reading", "listening", "speaking", "writing".
 
+WRITING DOMAIN RULES (CRITICAL):
+- Writing questions must ALWAYS be multiple choice like every other domain — NEVER ask the student to write or compose anything.
+- Use one of these formats:
+  1. Sentence completion: "Which word best completes this sentence: The ___ plates shifted underground?" with word options
+  2. Correct usage: "Which sentence uses the word 'tectonic' correctly?" with sentence options
+  3. Grammar/mechanics: "Which sentence is written correctly?" with sentence options
+- The options must be clearly distinguishable — one obviously correct, the rest clearly wrong.
+- NEVER use options like "Write only one word", "Write about...", or any instruction as an option.
+
 CRITICAL: The correct answer must NOT always be the first option. Randomly vary which position (A, B, C, or D) contains the correct answer across all ${questionCount} questions. Never put the correct answer in position A more than twice out of ${questionCount} questions.
 
 Return ONLY valid JSON (no markdown):
