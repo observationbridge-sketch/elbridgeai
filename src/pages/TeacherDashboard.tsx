@@ -28,16 +28,6 @@ function generateCode() {
   return code;
 }
 
-const ALL_THEMES = [
-  { label: "Nature & animals", emoji: "🌿" },
-  { label: "Superheroes", emoji: "⚡" },
-  { label: "Fantasy & myths", emoji: "🧙" },
-  { label: "Sports & games", emoji: "⚽" },
-  { label: "Science", emoji: "🔬" },
-  { label: "School & classroom life", emoji: "📚" },
-  { label: "Social studies", emoji: "🗺️" },
-  { label: "Character development", emoji: "💖" },
-] as const;
 
 interface StudentOverview {
   student_name: string;
