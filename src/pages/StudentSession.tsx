@@ -2715,13 +2715,11 @@ function Part2StrategyView({
           </div>
         )}
 
-        {/* Base sentence for expansion */}
-        {activity.baseSentence && (
+        {/* Base sentence for expansion — only show for non-recording activities */}
+        {activity.baseSentence && inputType !== "recording" && (
           <div className="bg-success/5 rounded-lg p-4 border border-success/20 text-center space-y-2">
             <Zap className="h-6 w-6 text-success mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              {inputType === "recording" ? "Say this sentence out loud:" : "Build on this sentence:"}
-            </p>
+            <p className="text-sm text-muted-foreground">Build on this sentence:</p>
             <p className="text-lg font-bold text-foreground">{activity.baseSentence}</p>
             {activity.expansionHint && (
               <p className="text-sm text-accent font-medium">➕ Add: {activity.expansionHint}</p>
