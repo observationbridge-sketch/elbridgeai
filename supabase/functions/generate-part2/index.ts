@@ -477,6 +477,16 @@ ${tier === 1 ? "- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly
   if (inputType === "recording") {
     // Speaking activity for K-2
     const isLastTwo = questionIndex >= 4;
+    
+    // Each position gets a DIFFERENT prompt pattern to avoid duplicate questions
+    const positionPromptRules: Record<number, string> = {
+      1: `Use this EXACT pattern: "Tell me about a time you [verb related to ${topic}]." Example: "Tell me about a time you saw a bird." The sentenceStarter must begin with "I" (e.g., "I saw a…", "I went to…").`,
+      3: `Use this EXACT pattern: "What does a [${topic}-related noun] look like? Describe it!" Example: "What does a tree look like? Describe it!" The sentenceStarter must begin with "A" or "The" (e.g., "A tree looks…", "The bird has…").`,
+      4: `Use this EXACT pattern: "What is your favorite thing about [something related to ${topic}]?" Example: "What is your favorite thing about animals?" The sentenceStarter must begin with "My favorite" (e.g., "My favorite thing is…").`,
+      5: `Use this EXACT pattern: "If you could [do something fun related to ${topic}], what would you do?" Example: "If you could fly like a bird, what would you do?" The sentenceStarter must begin with "I would" (e.g., "I would fly to…").`,
+    };
+    const positionRule = positionPromptRules[questionIndex] || positionPromptRules[3];
+
     return `You are an expert ELD activity generator for grades K-2 ELL students.
 
 ${themeDirective}
@@ -492,14 +502,11 @@ The student records themselves saying one sentence. Use personal, open-ended pro
 NEVER address the companion (Baby Chick) as the audience. NEVER use "Tell Baby Chick" or "Explain to your companion".
 CRITICAL: NEVER use yes/no questions. NEVER start with "Do you…", "Have you ever…", "Is…", "Can you…", "Did you…", or "Are you…".
 Every prompt MUST require the student to describe, tell, or explain something in a full sentence.
-Use one of these prompt patterns:
-- "Tell me about a time you saw a [topic]…"
-- "What would you do if you saw a [topic]?"
-- "Describe what a [topic] looks like."
-- "What is your favorite thing about [topic]?"
-- "Tell me something you know about [topic]."
-- "What does a [topic] do?"
-Include a "sentenceStarter" field that DIRECTLY matches the question you wrote. The starter must be a natural first few words of an answer TO THAT SPECIFIC QUESTION — not a generic topic sentence. Examples: if question is "Tell me about a time you saw a bird", starter should be "I saw a bird…". If question is "Describe what a tree looks like", starter should be "A tree looks…". If question is "What is your favorite thing about dogs?", starter should be "My favorite thing about dogs is…". The starter must feel like the beginning of a real answer to the question asked.
+
+POSITION-SPECIFIC RULE (this is activity ${questionIndex + 1} of 6):
+${positionRule}
+
+Include a "sentenceStarter" field that DIRECTLY matches the question you wrote. The starter must be a natural first few words of an answer TO THAT SPECIFIC QUESTION — not a generic topic sentence.
 ${isLastTwo ? "This must be LIGHT and FUN. No wrong answers. End on a win!" : ""}
 
 Return ONLY valid JSON:
