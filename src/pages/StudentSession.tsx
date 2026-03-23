@@ -337,19 +337,26 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
   const missingWords = finalPicked.map((i) => words[i].replace(/[^a-zA-Z']/g, ""));
   const blanked = words.map((w, i) => (finalPicked.includes(i) ? "___" : w)).join(" ");
 
-  const wordBank = [...missingWords];
-  if (isK2) {
-    const k2DistractorPool = keyWords
-      .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
-      .sort(() => Math.random() - 0.5);
-    wordBank.push(...k2DistractorPool.slice(0, 1));
-  } else {
-    const distractorPool = keyWords
-      .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
-      .sort(() => Math.random() - 0.5);
-    wordBank.push(...distractorPool.slice(0, 2));
-  }
+  // Build distractor pool from words that actually appear in the sentence
+  // This ensures students only see words they've read on screen — no phantom words like "jump"
+  const sentenceWordPool = words
+    .map((w) => w.replace(/[^a-zA-Z']/g, ""))
+    .filter((w) => w.length > 2 && !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()));
 
+  const distractorCount = isK2 ? 1 : 2;
+  const distractors = sentenceWordPool
+    .sort(() => Math.random() - 0.5)
+    .slice(0, distractorCount);
+
+  // Fallback: if sentence doesn't have enough words, use keyWords as before
+  const finalDistractors = distractors.length >= distractorCount
+    ? distractors
+    : keyWords
+        .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, distractorCount);
+
+  const wordBank = [...missingWords, ...finalDistractors];
   const shuffledBank = [...new Set(wordBank)].sort(() => Math.random() - 0.5);
   return { blanked, missingWords, wordBank: shuffledBank };
 }
