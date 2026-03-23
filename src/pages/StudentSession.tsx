@@ -1258,6 +1258,10 @@ const StudentSession = () => {
     } else if (part2Activity.strategy === "sentence_frames" || part2Activity.type === "sentence_frame") {
       // K-2 word tile: correctness already validated client-side before onSubmit is called
       correct = true;
+    } else if (part2Activity.inputType === "recording") {
+      // Speaking/recording activities: always mark correct if student spoke something
+      // Students should never be penalized for speaking — the goal is production, not accuracy
+      correct = answerText.trim().length > 0;
     } else {
       // For quick writes and free response, grade on length if no keywords
       const wordCount = answerText.trim().split(/\s+/).filter(Boolean).length;
