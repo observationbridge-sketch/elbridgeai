@@ -71,10 +71,10 @@ function generateFallbackActivity(position: number, theme: string, topic: string
       return {
         type: "talk_to_companion",
         inputType: "recording",
-        question: `Do you like ${topic}? Say it out loud! 🎤`,
-        sentenceStarter: `You can say: I like ${topic} because…`,
-        modelAnswer: `I like ${topic} because it is fun!`,
-        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "like", "because"],
+        question: `Tell me something you know about ${topic}! 🎤`,
+        sentenceStarter: `I know that ${topic}…`,
+        modelAnswer: `I know that ${topic} is really cool!`,
+        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "know", "is"],
         difficulty: 6,
         theme,
       };
