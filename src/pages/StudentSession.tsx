@@ -773,21 +773,32 @@ const StudentSession = () => {
         }
       } catch { /* proceed without history */ }
 
-      // ── Single call to get-session-content (content bank + fallback) ──
       try {
-        setLoadingMessage("Building your activities... 🎨");
-        const { data: sessionContent, error: contentError } = await supabase.functions.invoke("get-session-content", {
-          body: { grade: sessionGradeBand, theme: "auto" },
-        });
-        if (contentError) throw contentError;
+        const invokeBody = {
+          grade: sessionGradeBand,
+          contentHistory: fetchedHistory,
+        };
 
-        // Extract anchor
-        let anchorData: AnchorSentence = sessionContent.anchor as AnchorSentence;
+        const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
+          body: invokeBody,
+        });
+        if (error) throw error;
+
+        let anchorData = data as AnchorSentence;
         if (!anchorData.topic) anchorData.topic = anchorData.theme;
 
         if (sessionGradeBand === "K-2" && !isValidK2AnchorSentence(anchorData.sentence)) {
-          console.warn("Content bank anchor invalid for K-2, using fallback");
-          throw new Error("K-2 anchor validation failed");
+          console.warn("Invalid K-2 anchor received. Regenerating...");
+          const { data: retryData, error: retryError } = await supabase.functions.invoke("generate-anchor-sentence", {
+            body: invokeBody,
+          });
+          if (retryError) throw retryError;
+          const retryAnchor = retryData as AnchorSentence;
+          if (!retryAnchor.topic) retryAnchor.topic = retryAnchor.theme;
+          if (!isValidK2AnchorSentence(retryAnchor.sentence)) {
+            throw new Error("K-2 anchor validation failed after regeneration");
+          }
+          anchorData = retryAnchor;
         }
 
         setAnchor(anchorData);
@@ -796,28 +807,6 @@ const StudentSession = () => {
         setSessionTheme(resolvedTheme);
         setSessionTopic(resolvedTopic);
         setTtsPreloaded(true);
-
-        // Populate Part 2 cache from bundle
-        const part2Array = sessionContent.part2_activities as Part2Activity[];
-        if (Array.isArray(part2Array)) {
-          prefetchedPart2Ref.current = {};
-          part2Array.forEach((activity, index) => {
-            if (activity && validatePart2Activity(activity)) {
-              prefetchedPart2Ref.current[index] = activity;
-            }
-          });
-        }
-
-        // Populate Part 3 cache from bundle
-        if (sessionContent.part3_challenge && validatePart3Challenge(sessionContent.part3_challenge)) {
-          prefetchedPart3Ref.current = sessionContent.part3_challenge as Part3Challenge;
-        }
-
-        allPrefetchedRef.current = true;
-        console.log(`[init] Session content loaded (source: ${sessionContent.source})`, {
-          part2Cached: Object.keys(prefetchedPart2Ref.current).length,
-          hasPart3: Boolean(prefetchedPart3Ref.current),
-        });
       } catch {
         const fallback: AnchorSentence = sessionGradeBand === "K-2"
           ? {
@@ -842,7 +831,6 @@ const StudentSession = () => {
         setTtsPreloaded(true);
       }
 
-      // Load domain scores for returning students
       try {
         const { data: studentData } = await supabase
           .from("session_students")
@@ -880,6 +868,22 @@ const StudentSession = () => {
           }
         }
       } catch { /* use default */ }
+
+      try {
+        if (resolvedTheme && resolvedTopic) {
+          setLoadingMessage("Building your activities... 🎨");
+          await prefetchSessionContent({
+            grade: sessionGradeBand,
+            theme: resolvedTheme,
+            topic: resolvedTopic,
+            domainScores: computedDomainScores,
+            history: fetchedHistory,
+            setMsg: setLoadingMessage,
+          });
+        }
+      } catch (error) {
+        console.error("Activity pre-generation failed", error);
+      }
 
       setLoading(false);
     };
