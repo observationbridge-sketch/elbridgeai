@@ -676,7 +676,6 @@ const StudentSession = () => {
           body: {
             grade: effectiveGradeBand,
             contentHistory,
-            forcedTheme: sessionTheme || undefined,
           },
         }),
         6000
@@ -698,7 +697,7 @@ const StudentSession = () => {
       console.error("[FillInBlanks] Gemini retry failed", error);
       return null;
     }
-  }, [effectiveGradeBand, contentHistory, sessionTheme]);
+  }, [effectiveGradeBand, contentHistory]);
 
   const inPart1 = globalStep < 5;
   const inPart2 = globalStep >= 5 && globalStep < 5 + part2Count;
@@ -712,48 +711,21 @@ const StudentSession = () => {
       if (!studentId || !sessionId) return;
 
       let currentStudentName = "";
-      let sessionForcedTheme: string | undefined;
       let sessionGradeBand: GradeBand = "3-5";
       let resolvedTheme = "";
       let resolvedTopic = "";
       let computedDomainScores: Record<string, number> | null = null;
 
-      // Read theme from URL query param first (passed from ThemePicker)
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlTheme = urlParams.get('theme');
-      if (urlTheme) {
-        sessionForcedTheme = decodeURIComponent(urlTheme);
-        console.log("[init] theme from URL param:", sessionForcedTheme);
-      }
-
       try {
         const { data: studentData } = await supabase
           .from("session_students")
-          .select("student_name, session_id, theme")
+          .select("student_name, session_id")
           .eq("id", studentId)
           .single();
 
         if (studentData) {
           currentStudentName = studentData.student_name;
           setStudentName(studentData.student_name);
-          // Only fall back to DB theme if URL param didn't provide one
-          if (!sessionForcedTheme) {
-            console.log("[init] no URL theme, checking DB:", studentData.theme);
-            let studentTheme = studentData.theme;
-            if (!studentTheme) {
-              await new Promise(r => setTimeout(r, 1000));
-              const { data: retryData } = await supabase
-                .from("session_students")
-                .select("theme")
-                .eq("id", studentId)
-                .single();
-              studentTheme = retryData?.theme;
-            }
-            if (studentTheme) {
-              sessionForcedTheme = studentTheme;
-            }
-            console.log("[init] sessionForcedTheme from DB:", sessionForcedTheme);
-          }
           const { data: sessionData } = await supabase
             .from("sessions")
             .select("teacher_id, grade_band")
@@ -798,9 +770,7 @@ const StudentSession = () => {
         const invokeBody = {
           grade: sessionGradeBand,
           contentHistory: fetchedHistory,
-          forcedTheme: sessionForcedTheme,
         };
-        console.log("[init] invoking generate-anchor-sentence with forcedTheme:", sessionForcedTheme);
 
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
           body: invokeBody,
@@ -825,7 +795,7 @@ const StudentSession = () => {
         }
 
         setAnchor(anchorData);
-        resolvedTheme = sessionForcedTheme || anchorData.theme;
+        resolvedTheme = anchorData.theme;
         resolvedTopic = anchorData.topic;
         setSessionTheme(resolvedTheme);
         setSessionTopic(resolvedTopic);
@@ -834,14 +804,14 @@ const StudentSession = () => {
         const fallback: AnchorSentence = sessionGradeBand === "K-2"
           ? {
               sentence: "The dog runs in the park.",
-              theme: sessionForcedTheme || "Animals & nature",
+              theme: "Animals & nature",
               topic: "The dog runs in the park",
               category: "Descriptive language models",
               keyWords: ["dog", "runs", "park"],
             }
           : {
               sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
-              theme: sessionForcedTheme || "Social studies",
+              theme: "Social studies",
               topic: "The building of the ancient pyramids",
               category: "Descriptive language models",
               keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],

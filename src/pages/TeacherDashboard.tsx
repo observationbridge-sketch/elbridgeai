@@ -7,7 +7,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode, BarChart3,
   GraduationCap, Loader2, AlertTriangle, Lock,
@@ -29,16 +28,6 @@ function generateCode() {
   return code;
 }
 
-const ALL_THEMES = [
-  { label: "Nature & animals", emoji: "🌿" },
-  { label: "Superheroes", emoji: "⚡" },
-  { label: "Fantasy & myths", emoji: "🧙" },
-  { label: "Sports & games", emoji: "⚽" },
-  { label: "Science", emoji: "🔬" },
-  { label: "School & classroom life", emoji: "📚" },
-  { label: "Social studies", emoji: "🗺️" },
-  { label: "Character development", emoji: "💖" },
-] as const;
 
 interface StudentOverview {
   student_name: string;
@@ -66,7 +55,7 @@ const TeacherDashboard = () => {
   const [sessions, setSessions] = useState<any[]>([]);
   const [topStudents, setTopStudents] = useState<StudentOverview[]>([]);
   const [gradeBand, setGradeBand] = useState<"K-2" | "3-5">("3-5");
-  const [themeOptions, setThemeOptions] = useState<string[]>(["Nature & animals", "Superheroes", "Fantasy & myths"]);
+  
   const [activeGradeBand, setActiveGradeBand] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<"sessions" | "growth">("sessions");
   const [generating, setGenerating] = useState(false);
@@ -186,15 +175,11 @@ const TeacherDashboard = () => {
 
   const createSession = async () => {
     if (!user) return;
-    if (gradeBand === "K-2" && themeOptions.length < 1) {
-      toast.error("Select at least 1 theme option for 1-2 students");
-      return;
-    }
     setGenerating(true);
     const code = generateCode();
     const { data, error } = await supabase
       .from("sessions")
-      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand, theme_options: themeOptions } as any)
+      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand } as any)
       .select()
       .single();
     if (error) {
@@ -445,40 +430,6 @@ const TeacherDashboard = () => {
                         </div>
                       </div>
 
-                      {/* K-2 Theme Options (checkboxes) */}
-                      {gradeBand === "K-2" && (
-                        <div>
-                          <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
-                            🎨 Theme Options for Students
-                          </label>
-                          <p className="text-xs text-muted-foreground mb-2">1-2 students will pick from these (select up to 3)</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {ALL_THEMES.map((theme) => {
-                              const checked = themeOptions.includes(theme.label);
-                              return (
-                                <label
-                                  key={theme.label}
-                                  className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/30"}`}
-                                >
-                                  <Checkbox
-                                    checked={checked}
-                                    onCheckedChange={(v) => {
-                                      if (v) {
-                                        if (themeOptions.length < 3) setThemeOptions([...themeOptions, theme.label]);
-                                      } else {
-                                        setThemeOptions(themeOptions.filter(t => t !== theme.label));
-                                      }
-                                    }}
-                                    disabled={!checked && themeOptions.length >= 3}
-                                  />
-                                  <span className="text-base">{theme.emoji}</span>
-                                  <span className="text-xs text-foreground leading-tight">{theme.label}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
 
                       {/* Microphone tip */}
                       <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 flex items-start gap-2">
@@ -535,7 +486,6 @@ const TeacherDashboard = () => {
                                 <span className="h-2 w-2 rounded-full bg-success shrink-0" />
                                 <span className="text-sm font-medium text-foreground truncate">
                                   {s.student_name}
-                                  {s.theme && ` ${ALL_THEMES.find(t => t.label === s.theme)?.emoji || ""}`}
                                 </span>
                                 <span className="text-xs text-muted-foreground ml-auto">
                                   {new Date(s.joined_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

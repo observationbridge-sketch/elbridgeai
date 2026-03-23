@@ -30,13 +30,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { domain, grade, activityIndex, theme: sessionTheme } = await req.json();
+    const { domain, grade, activityIndex } = await req.json();
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const actualDomain = DOMAIN_ROTATION_8[activityIndex] || domain;
     const proficiencyLevel = PROFICIENCY_PROGRESSION_8[activityIndex] || "Developing";
-    const theme = sessionTheme || "Nature & animals";
+    const theme = "Nature & animals";
 
     const isK2 = (grade || "3-5") === "K-2";
 
