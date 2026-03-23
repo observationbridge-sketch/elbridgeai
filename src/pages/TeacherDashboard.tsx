@@ -430,40 +430,6 @@ const TeacherDashboard = () => {
                         </div>
                       </div>
 
-                      {/* K-2 Theme Options (checkboxes) */}
-                      {gradeBand === "K-2" && (
-                        <div>
-                          <label className="text-sm font-medium text-foreground flex items-center gap-1.5 mb-2">
-                            🎨 Theme Options for Students
-                          </label>
-                          <p className="text-xs text-muted-foreground mb-2">1-2 students will pick from these (select up to 3)</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {ALL_THEMES.map((theme) => {
-                              const checked = themeOptions.includes(theme.label);
-                              return (
-                                <label
-                                  key={theme.label}
-                                  className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${checked ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground/30"}`}
-                                >
-                                  <Checkbox
-                                    checked={checked}
-                                    onCheckedChange={(v) => {
-                                      if (v) {
-                                        if (themeOptions.length < 3) setThemeOptions([...themeOptions, theme.label]);
-                                      } else {
-                                        setThemeOptions(themeOptions.filter(t => t !== theme.label));
-                                      }
-                                    }}
-                                    disabled={!checked && themeOptions.length >= 3}
-                                  />
-                                  <span className="text-base">{theme.emoji}</span>
-                                  <span className="text-xs text-foreground leading-tight">{theme.label}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
 
                       {/* Microphone tip */}
                       <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 flex items-start gap-2">
