@@ -711,48 +711,21 @@ const StudentSession = () => {
       if (!studentId || !sessionId) return;
 
       let currentStudentName = "";
-      let sessionForcedTheme: string | undefined;
       let sessionGradeBand: GradeBand = "3-5";
       let resolvedTheme = "";
       let resolvedTopic = "";
       let computedDomainScores: Record<string, number> | null = null;
 
-      // Read theme from URL query param first (passed from ThemePicker)
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlTheme = urlParams.get('theme');
-      if (urlTheme) {
-        sessionForcedTheme = decodeURIComponent(urlTheme);
-        console.log("[init] theme from URL param:", sessionForcedTheme);
-      }
-
       try {
         const { data: studentData } = await supabase
           .from("session_students")
-          .select("student_name, session_id, theme")
+          .select("student_name, session_id")
           .eq("id", studentId)
           .single();
 
         if (studentData) {
           currentStudentName = studentData.student_name;
           setStudentName(studentData.student_name);
-          // Only fall back to DB theme if URL param didn't provide one
-          if (!sessionForcedTheme) {
-            console.log("[init] no URL theme, checking DB:", studentData.theme);
-            let studentTheme = studentData.theme;
-            if (!studentTheme) {
-              await new Promise(r => setTimeout(r, 1000));
-              const { data: retryData } = await supabase
-                .from("session_students")
-                .select("theme")
-                .eq("id", studentId)
-                .single();
-              studentTheme = retryData?.theme;
-            }
-            if (studentTheme) {
-              sessionForcedTheme = studentTheme;
-            }
-            console.log("[init] sessionForcedTheme from DB:", sessionForcedTheme);
-          }
           const { data: sessionData } = await supabase
             .from("sessions")
             .select("teacher_id, grade_band")
