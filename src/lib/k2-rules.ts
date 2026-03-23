@@ -158,14 +158,15 @@ export function validateTile(tile: string): string | null {
   return trimmed;
 }
 
-const SHORT_FALLBACKS = SAFE_FALLBACK_WORDS;
+const SHORT_FALLBACKS = ALL_SEMANTIC_WORDS;
 
 /** Get a fallback distractor not already in the used set */
 export function getFallbackDistractor(usedWords: Set<string>): string {
-  for (const fb of SHORT_FALLBACKS) {
+  const shuffled = [...SHORT_FALLBACKS].sort(() => Math.random() - 0.5);
+  for (const fb of shuffled) {
     if (!usedWords.has(fb)) return fb;
   }
-  return SHORT_FALLBACKS[0];
+  return "hat";
 }
 
 // ════════════════════════════════════════════════
