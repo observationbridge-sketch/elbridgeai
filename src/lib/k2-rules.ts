@@ -259,7 +259,7 @@ export function buildSentenceFrameTiles(
   // 3. Add distractors from AI output
   for (const tile of cleanedTiles) {
     if (finalTiles.length >= targetCount) break;
-    if (!usedWords.has(tile)) {
+    if (!usedWords.has(tile) && !BANNED_DISTRACTOR_WORDS.has(tile)) {
       usedWords.add(tile);
       finalTiles.push(tile);
     }
