@@ -348,15 +348,8 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
     .sort(() => Math.random() - 0.5)
     .slice(0, distractorCount);
 
-  // Fallback: if sentence doesn't have enough words, use keyWords as before
-  const finalDistractors = distractors.length >= distractorCount
-    ? distractors
-    : keyWords
-        .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, distractorCount);
-
-  const wordBank = [...missingWords, ...finalDistractors];
+  // No fallback to keyWords — only use words the student has actually seen on screen
+  const wordBank = [...missingWords, ...distractors];
   const shuffledBank = [...new Set(wordBank)].sort(() => Math.random() - 0.5);
   return { blanked, missingWords, wordBank: shuffledBank };
 }
