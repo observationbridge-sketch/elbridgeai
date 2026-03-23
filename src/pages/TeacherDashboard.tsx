@@ -486,7 +486,6 @@ const TeacherDashboard = () => {
                                 <span className="h-2 w-2 rounded-full bg-success shrink-0" />
                                 <span className="text-sm font-medium text-foreground truncate">
                                   {s.student_name}
-                                  {s.theme && ` ${ALL_THEMES.find(t => t.label === s.theme)?.emoji || ""}`}
                                 </span>
                                 <span className="text-xs text-muted-foreground ml-auto">
                                   {new Date(s.joined_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
