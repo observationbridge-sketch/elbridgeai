@@ -13,9 +13,72 @@
  * Safe fallback words used ONLY when the anchor sentence is too short
  * to provide enough unique distractors.
  */
-export const SAFE_FALLBACK_WORDS = ["the", "a", "is"];
+/**
+ * Semantically related distractor pools organized by category.
+ * When the anchor sentence is too short, we pick distractors from the same
+ * category as the correct answer so students must actually read to choose.
+ */
+const SEMANTIC_POOLS: Record<string, string[]> = {
+  animals: ["cat", "dog", "bird", "fish", "frog", "bear", "fox", "hen", "bug", "cow", "bat", "pig"],
+  nature: ["tree", "leaf", "rock", "pond", "hill", "sun", "rain", "wind", "dirt", "moss", "seed", "bark"],
+  body: ["hand", "foot", "arm", "leg", "head", "eye", "ear", "nose", "back", "chin"],
+  food: ["egg", "milk", "cake", "rice", "soup", "corn", "pie", "jam", "nut", "plum"],
+  places: ["park", "home", "barn", "pond", "hill", "farm", "den", "nest", "cave", "road"],
+  objects: ["ball", "box", "cup", "hat", "bag", "bed", "pen", "map", "toy", "book"],
+  people: ["mom", "dad", "kid", "pal", "boy", "girl", "man", "nan"],
+  actions: ["run", "hop", "sit", "fly", "dig", "swim", "hug", "clap", "wave", "kick"],
+  colors: ["red", "blue", "pink", "gold", "gray", "tan"],
+  size: ["big", "small", "tall", "long", "wide", "thin", "fat", "old", "new"],
+};
 
-/** Backward-compatible alias used by existing tile helpers */
+/** All semantic words flattened for quick lookup */
+const ALL_SEMANTIC_WORDS = Object.values(SEMANTIC_POOLS).flat();
+
+/**
+ * Find semantically related distractors for a given correct answer.
+ * Picks words from the same category so they're plausible but wrong.
+ */
+export function getSemanticDistractors(correctWord: string, usedWords: Set<string>, count: number): string[] {
+  const norm = normalizeWord(correctWord);
+  const distractors: string[] = [];
+
+  // Find which category the correct word belongs to
+  let matchedPool: string[] | null = null;
+  for (const [, pool] of Object.entries(SEMANTIC_POOLS)) {
+    if (pool.includes(norm)) {
+      matchedPool = pool;
+      break;
+    }
+  }
+
+  // Pull from matched category first
+  if (matchedPool) {
+    const candidates = matchedPool.filter(w => w !== norm && !usedWords.has(w));
+    const shuffled = candidates.sort(() => Math.random() - 0.5);
+    for (const w of shuffled) {
+      if (distractors.length >= count) break;
+      distractors.push(w);
+      usedWords.add(w);
+    }
+  }
+
+  // If still need more, pick from other categories (still real nouns/verbs)
+  if (distractors.length < count) {
+    const remaining = ALL_SEMANTIC_WORDS
+      .filter(w => w !== norm && !usedWords.has(w))
+      .sort(() => Math.random() - 0.5);
+    for (const w of remaining) {
+      if (distractors.length >= count) break;
+      distractors.push(w);
+      usedWords.add(w);
+    }
+  }
+
+  return distractors;
+}
+
+/** Backward-compatible alias — now returns semantic words instead of articles */
+export const SAFE_FALLBACK_WORDS = ["cat", "sun", "hat"];
 export const FALLBACK_DISTRACTORS = SAFE_FALLBACK_WORDS;
 
 /** Required tile count per sentence frame tier */
