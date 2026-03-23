@@ -71,10 +71,10 @@ function generateFallbackActivity(position: number, theme: string, topic: string
       return {
         type: "talk_to_companion",
         inputType: "recording",
-        question: `Do you like ${topic}? Say it out loud! 🎤`,
-        sentenceStarter: `You can say: I like ${topic} because…`,
-        modelAnswer: `I like ${topic} because it is fun!`,
-        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "like", "because"],
+        question: `Tell me something you know about ${topic}! 🎤`,
+        sentenceStarter: `I know that ${topic}…`,
+        modelAnswer: `I know that ${topic} is really cool!`,
+        acceptableKeywords: [topic.split(" ")[0]?.toLowerCase() || "fun", "know", "is"],
         difficulty: 6,
         theme,
       };
@@ -488,14 +488,18 @@ DIFFICULTY ARC: ${arcLabel}
 INPUT FORMAT: "recording" — ${inputDesc}
 
 Generate a SPEAKING activity about "${topic}" for K-2 students.
-The student records themselves saying one sentence. Use personal, open-ended prompts that connect to the student's life.
+The student records themselves saying one sentence. Use personal, open-ended prompts that REQUIRE a full sentence answer.
 NEVER address the companion (Baby Chick) as the audience. NEVER use "Tell Baby Chick" or "Explain to your companion".
+CRITICAL: NEVER use yes/no questions. NEVER start with "Do you…", "Have you ever…", "Is…", "Can you…", "Did you…", or "Are you…".
+Every prompt MUST require the student to describe, tell, or explain something in a full sentence.
 Use one of these prompt patterns:
-- Default: "[Anchor sentence]. What about you?"
-- Opinion: "Do you like [topic]?" followed by "Say it out loud!"
-- Knowledge: "What do you know about [topic]?"
-- Experience: "Have you ever [verb from anchor]?"
-Include a "sentenceStarter" field that DIRECTLY matches the question you wrote. The starter must be a natural first few words of an answer TO THAT SPECIFIC QUESTION — not a generic topic sentence. Examples: if question is "Have you ever run fast?", starter should be "I ran fast when…" not "I like running because…". If question is "What do you know about dogs?", starter should be "I know that dogs…". The starter must feel like the beginning of a real answer to the question asked.
+- "Tell me about a time you saw a [topic]…"
+- "What would you do if you saw a [topic]?"
+- "Describe what a [topic] looks like."
+- "What is your favorite thing about [topic]?"
+- "Tell me something you know about [topic]."
+- "What does a [topic] do?"
+Include a "sentenceStarter" field that DIRECTLY matches the question you wrote. The starter must be a natural first few words of an answer TO THAT SPECIFIC QUESTION — not a generic topic sentence. Examples: if question is "Tell me about a time you saw a bird", starter should be "I saw a bird…". If question is "Describe what a tree looks like", starter should be "A tree looks…". If question is "What is your favorite thing about dogs?", starter should be "My favorite thing about dogs is…". The starter must feel like the beginning of a real answer to the question asked.
 ${isLastTwo ? "This must be LIGHT and FUN. No wrong answers. End on a win!" : ""}
 
 Return ONLY valid JSON:
