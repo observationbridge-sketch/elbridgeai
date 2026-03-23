@@ -795,7 +795,7 @@ const StudentSession = () => {
         }
 
         setAnchor(anchorData);
-        resolvedTheme = sessionForcedTheme || anchorData.theme;
+        resolvedTheme = anchorData.theme;
         resolvedTopic = anchorData.topic;
         setSessionTheme(resolvedTheme);
         setSessionTopic(resolvedTopic);
