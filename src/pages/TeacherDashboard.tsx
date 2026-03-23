@@ -7,7 +7,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Brain, Copy, LogOut, Users, Play, Square, History, Trophy, Link, Download, Check, QrCode, BarChart3,
   GraduationCap, Loader2, AlertTriangle, Lock,
