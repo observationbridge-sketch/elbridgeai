@@ -9,6 +9,12 @@
 // CONSTANTS
 // ════════════════════════════════════════════════
 
+/** Function words that must NEVER appear as distractors under any circumstances */
+const BANNED_DISTRACTOR_WORDS = new Set([
+  "a", "an", "the", "is", "are", "and", "on", "at", "in", "with",
+  "to", "of", "it", "was", "or", "by", "do", "if", "no", "so",
+]);
+
 /**
  * Safe fallback words used ONLY when the anchor sentence is too short
  * to provide enough unique distractors.
@@ -20,7 +26,7 @@
  */
 const SEMANTIC_POOLS: Record<string, string[]> = {
   animals: ["cat", "dog", "bird", "fish", "frog", "bear", "fox", "hen", "bug", "cow", "bat", "pig"],
-  nature: ["tree", "leaf", "rock", "pond", "hill", "sun", "rain", "wind", "dirt", "moss", "seed", "bark"],
+  nature: ["tree", "leaf", "rock", "pond", "hill", "sun", "rain", "wind", "dirt", "moss", "seed", "bark", "branch", "nest", "twig", "vine", "root"],
   body: ["hand", "foot", "arm", "leg", "head", "eye", "ear", "nose", "back", "chin"],
   food: ["egg", "milk", "cake", "rice", "soup", "corn", "pie", "jam", "nut", "plum"],
   places: ["park", "home", "barn", "pond", "hill", "farm", "den", "nest", "cave", "road"],
@@ -253,7 +259,7 @@ export function buildSentenceFrameTiles(
   // 3. Add distractors from AI output
   for (const tile of cleanedTiles) {
     if (finalTiles.length >= targetCount) break;
-    if (!usedWords.has(tile)) {
+    if (!usedWords.has(tile) && !BANNED_DISTRACTOR_WORDS.has(tile)) {
       usedWords.add(tile);
       finalTiles.push(tile);
     }
@@ -390,7 +396,7 @@ export function generateK2SentenceFrame(
   // Build tiles — correct words + distractors from CURRENT anchor sentence only
   const correctWords = toBlank.map((w) => normalizeWord(w)).filter(Boolean);
   const usedWords = new Set(correctWords);
-  const sentenceDistractorPool = uniqueSentenceWords.filter((w) => !usedWords.has(w));
+  const sentenceDistractorPool = uniqueSentenceWords.filter((w) => !usedWords.has(w) && !BANNED_DISTRACTOR_WORDS.has(w) && w.length > 2);
 
   const distractors: string[] = [];
   for (const sentenceWord of sentenceDistractorPool) {
