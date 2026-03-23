@@ -9,6 +9,12 @@
 // CONSTANTS
 // ════════════════════════════════════════════════
 
+/** Function words that must NEVER appear as distractors under any circumstances */
+const BANNED_DISTRACTOR_WORDS = new Set([
+  "a", "an", "the", "is", "are", "and", "on", "at", "in", "with",
+  "to", "of", "it", "was", "or", "by", "do", "if", "no", "so",
+]);
+
 /**
  * Safe fallback words used ONLY when the anchor sentence is too short
  * to provide enough unique distractors.
