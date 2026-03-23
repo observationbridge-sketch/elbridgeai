@@ -26,7 +26,7 @@ const BANNED_DISTRACTOR_WORDS = new Set([
  */
 const SEMANTIC_POOLS: Record<string, string[]> = {
   animals: ["cat", "dog", "bird", "fish", "frog", "bear", "fox", "hen", "bug", "cow", "bat", "pig"],
-  nature: ["tree", "leaf", "rock", "pond", "hill", "sun", "rain", "wind", "dirt", "moss", "seed", "bark"],
+  nature: ["tree", "leaf", "rock", "pond", "hill", "sun", "rain", "wind", "dirt", "moss", "seed", "bark", "branch", "nest", "twig", "vine", "root"],
   body: ["hand", "foot", "arm", "leg", "head", "eye", "ear", "nose", "back", "chin"],
   food: ["egg", "milk", "cake", "rice", "soup", "corn", "pie", "jam", "nut", "plum"],
   places: ["park", "home", "barn", "pond", "hill", "farm", "den", "nest", "cave", "road"],
