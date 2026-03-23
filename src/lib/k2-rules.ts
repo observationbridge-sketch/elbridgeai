@@ -407,14 +407,11 @@ export function generateK2SentenceFrame(
     usedWords.add(sentenceWord);
   }
 
-  // If the sentence is too short, pad only with simple common fallback words
-  for (const fallbackWord of SAFE_FALLBACK_WORDS) {
-    if (distractors.length >= blankCount) break;
-    const normalizedFallback = normalizeWord(fallbackWord);
-    if (!usedWords.has(normalizedFallback)) {
-      distractors.push(normalizedFallback);
-      usedWords.add(normalizedFallback);
-    }
+  // If the sentence is too short, use semantically related distractors
+  if (distractors.length < blankCount) {
+    const needed = blankCount - distractors.length;
+    const semanticFills = getSemanticDistractors(correctWords[0] || "", usedWords, needed);
+    distractors.push(...semanticFills);
   }
 
   // Shuffle tiles
