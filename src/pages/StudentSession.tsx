@@ -804,14 +804,14 @@ const StudentSession = () => {
         const fallback: AnchorSentence = sessionGradeBand === "K-2"
           ? {
               sentence: "The dog runs in the park.",
-              theme: sessionForcedTheme || "Animals & nature",
+              theme: "Animals & nature",
               topic: "The dog runs in the park",
               category: "Descriptive language models",
               keyWords: ["dog", "runs", "park"],
             }
           : {
               sentence: "The ancient pyramids of Egypt were built thousands of years ago by skilled workers. They used massive stone blocks that weighed more than an elephant. These incredible structures still stand tall in the desert today.",
-              theme: sessionForcedTheme || "Social studies",
+              theme: "Social studies",
               topic: "The building of the ancient pyramids",
               category: "Descriptive language models",
               keyWords: ["ancient", "pyramids", "Egypt", "built", "workers", "stone", "blocks", "elephant", "structures", "desert"],
