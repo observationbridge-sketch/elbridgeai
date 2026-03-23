@@ -2253,7 +2253,7 @@ function Part1View({
         <h3 className="text-lg font-bold text-foreground">{stepTitles[step]}</h3>
       </div>
       <CardContent className={`pt-4 space-y-6 ${isK2 ? "text-[22px]" : ""}`}>
-        {/* Step 1: Listen & Look */}
+        {/* Step 1: Listen & Look + Say It Back */}
         {step === 1 && (
           <>
             <div className={`bg-muted/50 rounded-lg ${isK2 ? "p-8" : "p-6"} border border-border text-center space-y-4`}>
@@ -2280,9 +2280,40 @@ function Part1View({
                 </Button>
               )}
             </div>
-            <Button variant="hero" className={`w-full ${isK2 ? "text-xl py-8 min-h-[72px]" : ""}`} size="lg" onClick={onStep1Done}>
-              {isK2 ? "I heard it! 👂" : "I heard it ✓"} <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
+
+            <div className={`text-center space-y-2 ${isK2 ? "pt-2" : ""}`}>
+              <p className={`${isK2 ? "text-2xl font-bold" : "text-base font-medium"} text-foreground`}>
+                {isK2 ? "Now say it back! 🎤" : "Now repeat the sentence out loud 🎤"}
+              </p>
+            </div>
+
+            {!part1Submitted ? (
+              <>
+                <MicrophoneInput
+                  speech={speech}
+                  answer={part1Answer}
+                  setAnswer={setPart1Answer}
+                  disabled={part1Submitted}
+                  isK2={isK2}
+                  nudgeMessage={speakingNudgeMsg}
+                />
+                {part1Answer.trim() && (
+                  <Button
+                    variant="hero"
+                    className={`w-full ${isK2 ? "text-xl py-8 min-h-[72px]" : ""}`}
+                    size="lg"
+                    onClick={handleStep2WithNudge}
+                  >
+                    {isK2 ? "Done! ✅" : "Next Step →"} <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="text-center space-y-4 animate-fade-in">
+                <p className={`font-bold text-success ${isK2 ? "text-2xl" : "text-lg"}`}>Great job! 🌟</p>
+                <p className={`text-muted-foreground ${isK2 ? "text-lg" : "text-sm"}`}>Moving on in a moment...</p>
+              </div>
+            )}
           </>
         )}
 
