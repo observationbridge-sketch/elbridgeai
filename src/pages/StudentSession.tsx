@@ -676,7 +676,6 @@ const StudentSession = () => {
           body: {
             grade: effectiveGradeBand,
             contentHistory,
-            forcedTheme: sessionTheme || undefined,
           },
         }),
         6000
@@ -698,7 +697,7 @@ const StudentSession = () => {
       console.error("[FillInBlanks] Gemini retry failed", error);
       return null;
     }
-  }, [effectiveGradeBand, contentHistory, sessionTheme]);
+  }, [effectiveGradeBand, contentHistory]);
 
   const inPart1 = globalStep < 5;
   const inPart2 = globalStep >= 5 && globalStep < 5 + part2Count;
