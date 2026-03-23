@@ -343,7 +343,7 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
     .map((w) => w.replace(/[^a-zA-Z']/g, ""))
     .filter((w) => w.length > 2 && !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()));
 
-  const distractorCount = isK2 ? 1 : 2;
+  const distractorCount = isK2 ? 2 : 3;
   const distractors = sentenceWordPool
     .sort(() => Math.random() - 0.5)
     .slice(0, distractorCount);
