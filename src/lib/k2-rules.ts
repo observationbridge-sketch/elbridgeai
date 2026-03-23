@@ -291,11 +291,11 @@ export function generateK2SentenceFrame(
   gradeLevel: "K-1" | "2",
   activityIndex: number = 0
 ): { blankSentence: string; correctWords: string[]; tiles: string[] } {
-  const SIMPLE_DISTRACTORS = ["jump", "sit", "run", "big", "red", "fast", "swim", "fly", "eat", "sleep"];
-
   // Get content words from anchor — skip stop words
   const STOP_WORDS = new Set(["the", "a", "an", "is", "are", "was", "in", "on", "at", "to", "and", "of", "it"]);
-  const words = anchor.sentence.replace(/[.!?]/g, "").split(/\s+/);
+  const words = anchor.sentence.replace(/[.!?]/g, "").split(/\s+/).filter(Boolean);
+  const normalizedSentenceWords = words.map(normalizeWord).filter(Boolean);
+  const uniqueSentenceWords = Array.from(new Set(normalizedSentenceWords));
   const contentWords = words.filter(w => !STOP_WORDS.has(w.toLowerCase()) && w.length > 2);
 
   // Force K-1 to always Tier 1 regardless of passed tier
@@ -332,15 +332,25 @@ export function generateK2SentenceFrame(
   }
   blankSentence += ".";
 
-  // Build tiles — correct words + distractors
-  const correctWords = toBlank.map(w => w.toLowerCase());
+  // Build tiles — correct words + distractors from CURRENT anchor sentence only
+  const correctWords = toBlank.map((w) => normalizeWord(w)).filter(Boolean);
   const usedWords = new Set(correctWords);
+  const sentenceDistractorPool = uniqueSentenceWords.filter((w) => !usedWords.has(w));
+
   const distractors: string[] = [];
-  for (const d of SIMPLE_DISTRACTORS) {
+  for (const sentenceWord of sentenceDistractorPool) {
     if (distractors.length >= blankCount) break;
-    if (!usedWords.has(d)) {
-      distractors.push(d);
-      usedWords.add(d);
+    distractors.push(sentenceWord);
+    usedWords.add(sentenceWord);
+  }
+
+  // If the sentence is too short, pad only with simple common fallback words
+  for (const fallbackWord of SAFE_FALLBACK_WORDS) {
+    if (distractors.length >= blankCount) break;
+    const normalizedFallback = normalizeWord(fallbackWord);
+    if (!usedWords.has(normalizedFallback)) {
+      distractors.push(normalizedFallback);
+      usedWords.add(normalizedFallback);
     }
   }
 
