@@ -13,9 +13,72 @@
  * Safe fallback words used ONLY when the anchor sentence is too short
  * to provide enough unique distractors.
  */
-export const SAFE_FALLBACK_WORDS = ["the", "a", "is"];
+/**
+ * Semantically related distractor pools organized by category.
+ * When the anchor sentence is too short, we pick distractors from the same
+ * category as the correct answer so students must actually read to choose.
+ */
+const SEMANTIC_POOLS: Record<string, string[]> = {
+  animals: ["cat", "dog", "bird", "fish", "frog", "bear", "fox", "hen", "bug", "cow", "bat", "pig"],
+  nature: ["tree", "leaf", "rock", "pond", "hill", "sun", "rain", "wind", "dirt", "moss", "seed", "bark"],
+  body: ["hand", "foot", "arm", "leg", "head", "eye", "ear", "nose", "back", "chin"],
+  food: ["egg", "milk", "cake", "rice", "soup", "corn", "pie", "jam", "nut", "plum"],
+  places: ["park", "home", "barn", "pond", "hill", "farm", "den", "nest", "cave", "road"],
+  objects: ["ball", "box", "cup", "hat", "bag", "bed", "pen", "map", "toy", "book"],
+  people: ["mom", "dad", "kid", "pal", "boy", "girl", "man", "nan"],
+  actions: ["run", "hop", "sit", "fly", "dig", "swim", "hug", "clap", "wave", "kick"],
+  colors: ["red", "blue", "pink", "gold", "gray", "tan"],
+  size: ["big", "small", "tall", "long", "wide", "thin", "fat", "old", "new"],
+};
 
-/** Backward-compatible alias used by existing tile helpers */
+/** All semantic words flattened for quick lookup */
+const ALL_SEMANTIC_WORDS = Object.values(SEMANTIC_POOLS).flat();
+
+/**
+ * Find semantically related distractors for a given correct answer.
+ * Picks words from the same category so they're plausible but wrong.
+ */
+export function getSemanticDistractors(correctWord: string, usedWords: Set<string>, count: number): string[] {
+  const norm = normalizeWord(correctWord);
+  const distractors: string[] = [];
+
+  // Find which category the correct word belongs to
+  let matchedPool: string[] | null = null;
+  for (const [, pool] of Object.entries(SEMANTIC_POOLS)) {
+    if (pool.includes(norm)) {
+      matchedPool = pool;
+      break;
+    }
+  }
+
+  // Pull from matched category first
+  if (matchedPool) {
+    const candidates = matchedPool.filter(w => w !== norm && !usedWords.has(w));
+    const shuffled = candidates.sort(() => Math.random() - 0.5);
+    for (const w of shuffled) {
+      if (distractors.length >= count) break;
+      distractors.push(w);
+      usedWords.add(w);
+    }
+  }
+
+  // If still need more, pick from other categories (still real nouns/verbs)
+  if (distractors.length < count) {
+    const remaining = ALL_SEMANTIC_WORDS
+      .filter(w => w !== norm && !usedWords.has(w))
+      .sort(() => Math.random() - 0.5);
+    for (const w of remaining) {
+      if (distractors.length >= count) break;
+      distractors.push(w);
+      usedWords.add(w);
+    }
+  }
+
+  return distractors;
+}
+
+/** Backward-compatible alias — now returns semantic words instead of articles */
+export const SAFE_FALLBACK_WORDS = ["cat", "sun", "hat"];
 export const FALLBACK_DISTRACTORS = SAFE_FALLBACK_WORDS;
 
 /** Required tile count per sentence frame tier */
@@ -95,14 +158,15 @@ export function validateTile(tile: string): string | null {
   return trimmed;
 }
 
-const SHORT_FALLBACKS = SAFE_FALLBACK_WORDS;
+const SHORT_FALLBACKS = ALL_SEMANTIC_WORDS;
 
 /** Get a fallback distractor not already in the used set */
 export function getFallbackDistractor(usedWords: Set<string>): string {
-  for (const fb of SHORT_FALLBACKS) {
+  const shuffled = [...SHORT_FALLBACKS].sort(() => Math.random() - 0.5);
+  for (const fb of shuffled) {
     if (!usedWords.has(fb)) return fb;
   }
-  return SHORT_FALLBACKS[0];
+  return "hat";
 }
 
 // ════════════════════════════════════════════════
@@ -195,26 +259,17 @@ export function buildSentenceFrameTiles(
     }
   }
 
-  // 4. Pad with fallback distractors if needed
-  for (const fb of FALLBACK_DISTRACTORS) {
-    if (finalTiles.length >= targetCount) break;
-    const fbNorm = normalizeWord(fb);
-    if (!usedWords.has(fbNorm)) {
-      usedWords.add(fbNorm);
-      finalTiles.push(fbNorm);
-    }
+  // 4. Pad with semantically related distractors if needed
+  if (finalTiles.length < targetCount) {
+    const needed = targetCount - finalTiles.length;
+    const semanticFills = getSemanticDistractors(correctNorm, usedWords, needed);
+    finalTiles.push(...semanticFills);
   }
 
   // 5. Ensure minimum 2 tiles (at least 1 distractor)
   if (finalTiles.length < 2) {
-    for (const fb of FALLBACK_DISTRACTORS) {
-      if (finalTiles.length >= 2) break;
-      const fbNorm = normalizeWord(fb);
-      if (!usedWords.has(fbNorm)) {
-        usedWords.add(fbNorm);
-        finalTiles.push(fbNorm);
-      }
-    }
+    const semanticFills = getSemanticDistractors(correctNorm, usedWords, 2 - finalTiles.length);
+    finalTiles.push(...semanticFills);
   }
 
   return finalTiles;
@@ -344,14 +399,11 @@ export function generateK2SentenceFrame(
     usedWords.add(sentenceWord);
   }
 
-  // If the sentence is too short, pad only with simple common fallback words
-  for (const fallbackWord of SAFE_FALLBACK_WORDS) {
-    if (distractors.length >= blankCount) break;
-    const normalizedFallback = normalizeWord(fallbackWord);
-    if (!usedWords.has(normalizedFallback)) {
-      distractors.push(normalizedFallback);
-      usedWords.add(normalizedFallback);
-    }
+  // If the sentence is too short, use semantically related distractors
+  if (distractors.length < blankCount) {
+    const needed = blankCount - distractors.length;
+    const semanticFills = getSemanticDistractors(correctWords[0] || "", usedWords, needed);
+    distractors.push(...semanticFills);
   }
 
   // Shuffle tiles
