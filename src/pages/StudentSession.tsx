@@ -770,9 +770,7 @@ const StudentSession = () => {
         const invokeBody = {
           grade: sessionGradeBand,
           contentHistory: fetchedHistory,
-          forcedTheme: sessionForcedTheme,
         };
-        console.log("[init] invoking generate-anchor-sentence with forcedTheme:", sessionForcedTheme);
 
         const { data, error } = await supabase.functions.invoke("generate-anchor-sentence", {
           body: invokeBody,
