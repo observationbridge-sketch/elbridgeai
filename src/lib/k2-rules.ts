@@ -258,26 +258,17 @@ export function buildSentenceFrameTiles(
     }
   }
 
-  // 4. Pad with fallback distractors if needed
-  for (const fb of FALLBACK_DISTRACTORS) {
-    if (finalTiles.length >= targetCount) break;
-    const fbNorm = normalizeWord(fb);
-    if (!usedWords.has(fbNorm)) {
-      usedWords.add(fbNorm);
-      finalTiles.push(fbNorm);
-    }
+  // 4. Pad with semantically related distractors if needed
+  if (finalTiles.length < targetCount) {
+    const needed = targetCount - finalTiles.length;
+    const semanticFills = getSemanticDistractors(correctNorm, usedWords, needed);
+    finalTiles.push(...semanticFills);
   }
 
   // 5. Ensure minimum 2 tiles (at least 1 distractor)
   if (finalTiles.length < 2) {
-    for (const fb of FALLBACK_DISTRACTORS) {
-      if (finalTiles.length >= 2) break;
-      const fbNorm = normalizeWord(fb);
-      if (!usedWords.has(fbNorm)) {
-        usedWords.add(fbNorm);
-        finalTiles.push(fbNorm);
-      }
-    }
+    const semanticFills = getSemanticDistractors(correctNorm, usedWords, 2 - finalTiles.length);
+    finalTiles.push(...semanticFills);
   }
 
   return finalTiles;
