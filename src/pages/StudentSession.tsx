@@ -339,15 +339,15 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
 
   const wordBank = [...missingWords];
   if (isK2) {
-    const distractors = keyWords
+    const k2DistractorPool = keyWords
       .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
-      .slice(0, 1);
-    wordBank.push(...distractors);
+      .sort(() => Math.random() - 0.5);
+    wordBank.push(...k2DistractorPool.slice(0, 1));
   } else {
-    const distractors = keyWords
+    const distractorPool = keyWords
       .filter((w) => !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()) && w.length > 2)
-      .slice(0, 2);
-    wordBank.push(...distractors);
+      .sort(() => Math.random() - 0.5);
+    wordBank.push(...distractorPool.slice(0, 2));
   }
 
   const shuffledBank = [...new Set(wordBank)].sort(() => Math.random() - 0.5);
