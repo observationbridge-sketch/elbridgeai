@@ -9,7 +9,6 @@ import TeacherAuth from "./pages/TeacherAuth.tsx";
 import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 import StudentJoin from "./pages/StudentJoin.tsx";
 import StudentSession from "./pages/StudentSession.tsx";
-import StudentThemePicker from "./pages/StudentThemePicker.tsx";
 import SessionSummary from "./pages/SessionSummary.tsx";
 
 const queryClient = new QueryClient();
