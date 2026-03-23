@@ -396,7 +396,7 @@ export function generateK2SentenceFrame(
   // Build tiles — correct words + distractors from CURRENT anchor sentence only
   const correctWords = toBlank.map((w) => normalizeWord(w)).filter(Boolean);
   const usedWords = new Set(correctWords);
-  const sentenceDistractorPool = uniqueSentenceWords.filter((w) => !usedWords.has(w));
+  const sentenceDistractorPool = uniqueSentenceWords.filter((w) => !usedWords.has(w) && !BANNED_DISTRACTOR_WORDS.has(w) && w.length > 2);
 
   const distractors: string[] = [];
   for (const sentenceWord of sentenceDistractorPool) {
