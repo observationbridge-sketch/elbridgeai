@@ -175,15 +175,11 @@ const TeacherDashboard = () => {
 
   const createSession = async () => {
     if (!user) return;
-    if (gradeBand === "K-2" && themeOptions.length < 1) {
-      toast.error("Select at least 1 theme option for 1-2 students");
-      return;
-    }
     setGenerating(true);
     const code = generateCode();
     const { data, error } = await supabase
       .from("sessions")
-      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand, theme_options: themeOptions } as any)
+      .insert({ teacher_id: user.id, code, status: "active", grade_band: gradeBand } as any)
       .select()
       .single();
     if (error) {
