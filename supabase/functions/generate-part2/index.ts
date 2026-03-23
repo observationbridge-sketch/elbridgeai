@@ -320,16 +320,25 @@ DIFFICULTY ARC: ${arcLabel}
 INPUT FORMAT: "tap" — ${inputDesc}
 
 Generate a MULTIPLE CHOICE activity about "${topic}".
-This is medium-hard difficulty. Include a short passage or context, then ask a comprehension or vocabulary question with 4 options. Make distractors plausible but clearly wrong.
+This is medium-hard difficulty.
+
+MULTIPLE CHOICE QUALITY RULES (MANDATORY):
+1. Always include a short passage (2-4 sentences) that states a specific, unambiguous fact about ${topic}.
+2. The question must ask about ONE specific fact that is explicitly stated in the passage — not an inference, not an opinion.
+3. The correct answer must be stated word-for-word or near-word-for-word in the passage.
+4. Distractors must be clearly and obviously wrong to anyone who read the passage — never use near-synonyms, plausible alternatives, or words that could also fit.
+5. Self-test before outputting: "Could a careful reader choose any option other than the correct one?" If yes, REWRITE the question.
+6. BAD example: "What is flying? A bird or a dragon?" — both could be right if the passage doesn't specify.
+7. GOOD example: passage says "The red dragon breathed blue fire" → question "What color was the dragon's fire?" → correct: "blue" → wrong: "red", "green", "orange".
 
 Return ONLY valid JSON:
 {
   "type": "multiple_choice",
   "inputType": "tap",
-  "passage": "<optional 2-4 sentence context about ${topic}>",
-  "question": "<the question>",
+  "passage": "<REQUIRED 2-4 sentence passage stating specific facts about ${topic}>",
+  "question": "<question about ONE specific fact explicitly stated in the passage>",
   "options": ["<option A>", "<option B>", "<option C>", "<option D>"],
-  "modelAnswer": "<the correct option text, must exactly match one option>",
+  "modelAnswer": "<the correct option text, must exactly match one option AND be stated in the passage>",
   "acceptableKeywords": ["<3-5 key words>"],
   "difficulty": 3,
   "theme": "${theme}"
