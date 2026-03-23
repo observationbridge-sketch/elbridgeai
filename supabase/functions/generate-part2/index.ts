@@ -495,7 +495,7 @@ Use one of these prompt patterns:
 - Opinion: "Do you like [topic]?" followed by "Say it out loud!"
 - Knowledge: "What do you know about [topic]?"
 - Experience: "Have you ever [verb from anchor]?"
-Include a "sentenceStarter" field with a helpful starter like "I like ${topic} because…" or "I think ${topic} is…"
+Include a "sentenceStarter" field that DIRECTLY matches the question you wrote. The starter must be a natural first few words of an answer TO THAT SPECIFIC QUESTION — not a generic topic sentence. Examples: if question is "Have you ever run fast?", starter should be "I ran fast when…" not "I like running because…". If question is "What do you know about dogs?", starter should be "I know that dogs…". The starter must feel like the beginning of a real answer to the question asked.
 ${isLastTwo ? "This must be LIGHT and FUN. No wrong answers. End on a win!" : ""}
 
 Return ONLY valid JSON:
