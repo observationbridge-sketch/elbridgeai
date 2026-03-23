@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      content_bank: {
+        Row: {
+          anchor: Json
+          created_at: string
+          grade: string
+          id: string
+          last_used_at: string | null
+          part2_activities: Json
+          part3_challenge: Json | null
+          theme: string
+          topic: string
+          used_count: number
+        }
+        Insert: {
+          anchor: Json
+          created_at?: string
+          grade: string
+          id?: string
+          last_used_at?: string | null
+          part2_activities: Json
+          part3_challenge?: Json | null
+          theme: string
+          topic: string
+          used_count?: number
+        }
+        Update: {
+          anchor?: Json
+          created_at?: string
+          grade?: string
+          id?: string
+          last_used_at?: string | null
+          part2_activities?: Json
+          part3_challenge?: Json | null
+          theme?: string
+          topic?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -413,6 +452,27 @@ export type Database = {
         Args: { p_full_name?: string; p_user_id: string }
         Returns: undefined
       }
+      get_cached_session: {
+        Args: { p_grade: string; p_theme: string }
+        Returns: {
+          anchor: Json
+          created_at: string
+          grade: string
+          id: string
+          last_used_at: string | null
+          part2_activities: Json
+          part3_challenge: Json | null
+          theme: string
+          topic: string
+          used_count: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "content_bank"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -420,6 +480,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_session_used: { Args: { p_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "teacher"
