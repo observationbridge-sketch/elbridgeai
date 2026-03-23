@@ -9,11 +9,14 @@
 // CONSTANTS
 // ════════════════════════════════════════════════
 
-/** Fallback distractor words — real, common, K-2 appropriate single words */
-export const FALLBACK_DISTRACTORS = [
-  "jump", "swim", "run", "big", "red", "fast", "soft", "climb",
-  "hot", "cold", "tall", "sit", "eat", "play", "fun", "new",
-];
+/**
+ * Safe fallback words used ONLY when the anchor sentence is too short
+ * to provide enough unique distractors.
+ */
+export const SAFE_FALLBACK_WORDS = ["the", "a", "is"];
+
+/** Backward-compatible alias used by existing tile helpers */
+export const FALLBACK_DISTRACTORS = SAFE_FALLBACK_WORDS;
 
 /** Required tile count per sentence frame tier */
 export const TIER_TILE_COUNTS: Record<number, number> = {
@@ -64,9 +67,8 @@ export function isMultiWord(text: string): boolean {
 
 /** Extract a single word from a potentially multi-word tile.
  *  NEVER concatenates words. If multi-word, picks the first short word.
- *  If single word ≤12 chars, returns it. Otherwise returns a fallback. */
+ *  If single word ≤12 chars, returns it. Otherwise returns a safe fallback. */
 export function extractSingleWord(input: string): string {
-  const fallbacks = ['jump', 'swim', 'run', 'big', 'red', 'fast'];
   const words = input.trim().split(/\s+/);
 
   // Single word that's short enough — return as-is
@@ -80,8 +82,8 @@ export function extractSingleWord(input: string): string {
     return singleWords[0].toLowerCase();
   }
 
-  // All words too long — use a random fallback
-  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  // All words too long — use a random safe fallback
+  return SAFE_FALLBACK_WORDS[Math.floor(Math.random() * SAFE_FALLBACK_WORDS.length)];
 }
 
 /** Validate a tile string. Rejects non-space strings longer than 12 chars. */
@@ -93,7 +95,7 @@ export function validateTile(tile: string): string | null {
   return trimmed;
 }
 
-const SHORT_FALLBACKS = ["jump", "swim", "run", "big", "red", "fast"];
+const SHORT_FALLBACKS = SAFE_FALLBACK_WORDS;
 
 /** Get a fallback distractor not already in the used set */
 export function getFallbackDistractor(usedWords: Set<string>): string {
