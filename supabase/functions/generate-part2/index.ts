@@ -503,7 +503,7 @@ Return ONLY valid JSON:
   "type": "${isLastTwo ? "talk_to_companion" : "say_and_expand"}",
   "inputType": "recording",
   "question": "<personal, open-ended prompt about ${topic} — NEVER mention companion>",
-  "sentenceStarter": "<starter like: I like ${topic} because…>",
+  "sentenceStarter": "<starter that is the first few words of a direct answer to your question>",
   ${!isLastTwo ? '"baseSentence": "<simple 4-6 word sentence to repeat/expand>",' : ""}
   "modelAnswer": "<example 1 sentence response>",
   "acceptableKeywords": ["<3-5 simple words>"],
