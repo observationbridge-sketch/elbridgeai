@@ -3510,9 +3510,18 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2, nudgeMessa
               </div>
             )}
             {answer && !speech.isListening && !nudgeMessage && (
-              <div className="w-full bg-muted/50 rounded-lg p-4 border border-border">
+              <div className="w-full bg-muted/50 rounded-lg p-4 border border-border space-y-2">
                 <p className="text-sm text-muted-foreground mb-1">What I heard:</p>
                 <p className="text-lg text-foreground font-medium">{answer}</p>
+                <button
+                  onClick={() => {
+                    speech.resetTranscript();
+                    setAnswer("");
+                  }}
+                  className="text-base text-muted-foreground hover:text-destructive underline transition-colors"
+                >
+                  🔄 Try again
+                </button>
               </div>
             )}
           </>
@@ -3568,12 +3577,21 @@ function MicrophoneInput({ speech, answer, setAnswer, disabled, isK2, nudgeMessa
               <p className="text-sm font-medium text-warning">{nudgeMessage}</p>
             </div>
           )}
-          {answer && !speech.isListening && !nudgeMessage && (
-            <div className="w-full bg-muted/50 rounded-lg p-3 border border-border">
-              <p className="text-xs text-muted-foreground mb-1">What I heard:</p>
-              <p className="text-foreground">{answer}</p>
-            </div>
-          )}
+            {answer && !speech.isListening && !nudgeMessage && (
+              <div className="w-full bg-muted/50 rounded-lg p-3 border border-border space-y-2">
+                <p className="text-xs text-muted-foreground mb-1">What I heard:</p>
+                <p className="text-foreground">{answer}</p>
+                <button
+                  onClick={() => {
+                    speech.resetTranscript();
+                    setAnswer("");
+                  }}
+                  className="text-xs text-muted-foreground hover:text-destructive underline transition-colors"
+                >
+                  🔄 Re-record
+                </button>
+              </div>
+            )}
         </div>
       ) : (
         <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-center">
