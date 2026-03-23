@@ -237,21 +237,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { grade, contentHistory, forcedTheme } = await req.json();
+    const { grade, contentHistory } = await req.json();
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const history = contentHistory as ContentHistory | null;
     const isK2 = grade === "K-2";
     
-    let theme: string;
-    if (forcedTheme) {
-      theme = forcedTheme;
-      console.log("[anchor] Using forcedTheme, skipping selectTheme:", theme);
-    } else {
-      theme = selectTheme(history, isK2);
-      console.log("[anchor] No forcedTheme, selected random theme:", theme);
-    }
+    const theme = selectTheme(history, isK2);
+    console.log("[anchor] Selected random theme:", theme);
     const historyContext = buildHistoryContext(history);
 
     const systemPrompt = isK2
