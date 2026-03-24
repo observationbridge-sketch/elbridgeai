@@ -2719,14 +2719,15 @@ function Part2StrategyView({
           </div>
         )}
 
-        {/* Base sentence for expansion — only show for non-recording activities */}
-        {activity.baseSentence && inputType !== "recording" && (
-          <div className="bg-success/5 rounded-lg p-4 border border-success/20 text-center space-y-2">
-            <Zap className="h-6 w-6 text-success mx-auto" />
-            <p className="text-sm text-muted-foreground">Build on this sentence:</p>
-            <p className="text-lg font-bold text-foreground">{activity.baseSentence}</p>
+        {/* Base sentence for Say & Expand */}
+        {activity.baseSentence && (
+          <div className={`bg-success/5 rounded-lg ${isK2 ? "p-6" : "p-4"} border border-success/20 space-y-3`}>
+            <p className={`${isK2 ? "text-lg" : "text-sm"} text-muted-foreground font-medium`}>✏️ Start with this:</p>
+            <p className={`${isK2 ? "text-2xl" : "text-lg"} font-bold text-foreground`}>{activity.baseSentence}</p>
             {activity.expansionHint && (
-              <p className="text-sm text-accent font-medium">➕ Add: {activity.expansionHint}</p>
+              <p className={`${isK2 ? "text-lg" : "text-sm"} text-accent font-medium`}>
+                💡 Now expand it! {activity.expansionHint}
+              </p>
             )}
           </div>
         )}
