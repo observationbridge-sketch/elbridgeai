@@ -25,6 +25,21 @@ const THEMES = [
   "Space & planets",
   "Rainforest adventures",
   "Volcanoes & earthquakes",
+  "Interesting facts about animals",
+  "Interesting facts about the human body",
+  "Interesting facts about space",
+  "Amazing inventions & technology",
+  "World records & extremes",
+  "Famous explorers & discoveries",
+  "How things are made",
+  "Ancient civilizations",
+  "Community helpers & jobs",
+  "Food & cooking from around the world",
+  "Celebrations & holidays around the world",
+  "Weather & seasons",
+  "Underwater world",
+  "Dinosaurs & prehistoric life",
+  "Maps & geography",
 ];
 
 const K2_SAFE_THEMES = [
@@ -34,6 +49,14 @@ const K2_SAFE_THEMES = [
   "Superheroes",
   "Fantasy & myths",
   "Character development",
+  "Interesting facts about animals",
+  "Interesting facts about the human body",
+  "Community helpers & jobs",
+  "Food & cooking from around the world",
+  "Celebrations & holidays around the world",
+  "Weather & seasons",
+  "Dinosaurs & prehistoric life",
+  "Underwater world",
 ];
 
 const K2_BANNED_WORDS = new Set([
