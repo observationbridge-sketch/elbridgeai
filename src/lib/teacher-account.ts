@@ -17,4 +17,16 @@ export async function ensureTeacherAccount(user: User) {
   if (error) {
     throw error;
   }
+
+  // Activate beta pass (creates subscription + increments beta slot counter).
+  // Safe to call multiple times — the edge function returns 409 if already activated.
+  try {
+    const { error: passError } = await supabase.functions.invoke("activate-pass");
+    if (passError) {
+      // Log but don't block the auth flow — 409 "already_activated" is expected on login
+      console.warn("activate-pass:", passError.message);
+    }
+  } catch (e) {
+    console.warn("activate-pass call failed:", e);
+  }
 }
