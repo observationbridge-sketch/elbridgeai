@@ -364,9 +364,12 @@ MULTIPLE CHOICE QUALITY RULES (MANDATORY):
 2. The question must ask about ONE specific fact that is explicitly stated in the passage — not an inference, not an opinion.
 3. The correct answer must be stated word-for-word or near-word-for-word in the passage.
 4. Distractors must be clearly and obviously wrong to anyone who read the passage — never use near-synonyms, plausible alternatives, or words that could also fit.
-5. Self-test before outputting: "Could a careful reader choose any option other than the correct one?" If yes, REWRITE the question.
-6. BAD example: "What is flying? A bird or a dragon?" — both could be right if the passage doesn't specify.
-7. GOOD example: passage says "The red dragon breathed blue fire" → question "What color was the dragon's fire?" → correct: "blue" → wrong: "red", "green", "orange".
+5. No distractor may match the correct answer (case-insensitive).
+6. No distractor may repeat another distractor — all 4 options must be unique.
+7. No distractor may be a substring of the question stem.
+8. Self-test before outputting: "Are all four options clearly distinct from each other AND from the question? Could a careful reader choose any option other than the correct one?" If any check fails, REWRITE.
+9. BAD example: "What is flying? A bird or a dragon?" — both could be right if the passage doesn't specify.
+10. GOOD example: passage says "The red dragon breathed blue fire" → question "What color was the dragon's fire?" → correct: "blue" → wrong: "red", "green", "orange".
 
 Return ONLY valid JSON:
 {

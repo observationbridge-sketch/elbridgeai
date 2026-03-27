@@ -246,6 +246,12 @@ WRITING DOMAIN RULES (CRITICAL):
 
 CRITICAL: The correct answer must NOT always be the first option. Randomly vary which position (A, B, C, or D) contains the correct answer across all ${questionCount} questions. Never put the correct answer in position A more than twice out of ${questionCount} questions.
 
+SELF-CHECK (mandatory before outputting):
+1. Are all ${optionCount} options unique (case-insensitive)? No two options may have the same text.
+2. Does any distractor match the correctAnswer? If yes, replace it.
+3. Is any distractor a substring of the question text? If yes, replace it.
+4. Are all options clearly distinct from each other? If not, regenerate.
+
 Return ONLY valid JSON (no markdown):
 {
   "challengeType": "speed_round",
