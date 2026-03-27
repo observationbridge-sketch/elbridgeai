@@ -360,8 +360,9 @@ function jumbleSentence(passage: string): { original: string; correctWords: stri
   const clean = firstSentence.replace(/[.!?]$/, "").trim();
   const words = clean.split(/\s+/);
 
-  // Cap at 8 words maximum so all chips are always visible
-  const capped = words.slice(0, 8);
+  // Hard cap at 10 words so the jumble is always completable
+  const MAX_JUMBLE_WORDS = 10;
+  const capped = words.slice(0, MAX_JUMBLE_WORDS);
 
   let shuffled = [...capped].sort(() => Math.random() - 0.5);
   let attempts = 0;
@@ -371,7 +372,8 @@ function jumbleSentence(passage: string): { original: string; correctWords: stri
   }
   const correctLower = capped.map(w => w.toLowerCase());
   const jumbledLower = shuffled.map(w => w.toLowerCase());
-  return { original: firstSentence.trim(), correctWords: correctLower, jumbled: jumbledLower };
+  // Use the capped words as the "original" so it matches what the student actually sees
+  return { original: capped.join(" "), correctWords: correctLower, jumbled: jumbledLower };
 }
 
 // ═══════════════════════════════════════════════
