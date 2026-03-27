@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      beta_slots: {
+        Row: {
+          id: number
+          slots_total: number
+          slots_used: number
+        }
+        Insert: {
+          id?: number
+          slots_total?: number
+          slots_used?: number
+        }
+        Update: {
+          id?: number
+          slots_total?: number
+          slots_used?: number
+        }
+        Relationships: []
+      }
       content_bank: {
         Row: {
           anchor: Json
@@ -440,6 +458,27 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string | null
         }
         Relationships: []
       }
