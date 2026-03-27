@@ -73,6 +73,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          check_in_sent: boolean
           created_at: string
           full_name: string | null
           grade_band: string | null
@@ -81,6 +82,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          check_in_sent?: boolean
           created_at?: string
           full_name?: string | null
           grade_band?: string | null
@@ -89,6 +91,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          check_in_sent?: boolean
           created_at?: string
           full_name?: string | null
           grade_band?: string | null

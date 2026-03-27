@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN check_in_sent boolean NOT NULL DEFAULT false;

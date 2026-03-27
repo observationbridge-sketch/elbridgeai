@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.activate-pass]
 verify_jwt = false
+
+[functions.send-beta-checkin]
+verify_jwt = false
