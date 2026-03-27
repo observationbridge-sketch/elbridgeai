@@ -158,6 +158,43 @@ function extractJsonFromAiResponse(rawContent: string): any {
   }
 }
 
+function sanitizeMultipleChoiceOptions(activity: any): void {
+  if (!activity || !Array.isArray(activity.options) || !activity.modelAnswer) return;
+  const correct = activity.modelAnswer.trim().toLowerCase();
+  const stem = (activity.question || "").trim().toLowerCase();
+  const seen = new Set<string>([correct]);
+  const sanitized: string[] = [];
+
+  for (const opt of activity.options) {
+    const norm = opt.trim().toLowerCase();
+    if (norm === correct) {
+      sanitized.push(activity.modelAnswer);
+      continue;
+    }
+    if (seen.has(norm) || norm === correct || (norm.length > 3 && stem.includes(norm))) {
+      continue;
+    }
+    seen.add(norm);
+    sanitized.push(opt);
+  }
+
+  const fillers = ["None of these", "Not enough information", "All of the above", "Something else"];
+  let fillerIdx = 0;
+  const targetCount = activity.options.length;
+  while (sanitized.length < targetCount && fillerIdx < fillers.length) {
+    const f = fillers[fillerIdx++];
+    if (!seen.has(f.toLowerCase())) {
+      seen.add(f.toLowerCase());
+      sanitized.push(f);
+    }
+  }
+
+  if (!sanitized.includes(activity.modelAnswer)) {
+    sanitized[0] = activity.modelAnswer;
+  }
+  activity.options = sanitized;
+}
+
 function isValidFillInBlankSchema(value: any): boolean {
   if (!value || typeof value !== "object") return false;
   if (typeof value.sentence !== "string" || !value.sentence.trim()) return false;
@@ -644,6 +681,11 @@ serve(async (req) => {
         console.error("Invalid fill-in schema", { questionIndex: qIdx, activity });
         throw new Error("Missing required fill-in fields");
       }
+    }
+
+    // Sanitize multiple choice options (position 3 for 3-5, any tap activity for K-2)
+    if (activity.options && Array.isArray(activity.options)) {
+      sanitizeMultipleChoiceOptions(activity);
     }
 
     // FORCE correct type and inputType for 3-5

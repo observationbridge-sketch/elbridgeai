@@ -51,6 +51,46 @@ function extractJsonFromAiResponse(rawContent: string): any {
   }
 }
 
+function sanitizeMultipleChoiceOptions(question: any): void {
+  if (!question || !Array.isArray(question.options) || !question.correctAnswer) return;
+  const correct = question.correctAnswer.trim().toLowerCase();
+  const stem = (question.question || "").trim().toLowerCase();
+  const seen = new Set<string>([correct]);
+  const sanitized: string[] = [];
+
+  for (const opt of question.options) {
+    const norm = opt.trim().toLowerCase();
+    if (norm === correct) {
+      sanitized.push(question.correctAnswer);
+      continue;
+    }
+    // Reject if: duplicate of another option, matches correct answer, or is substring of question stem
+    if (seen.has(norm) || norm === correct || (norm.length > 3 && stem.includes(norm))) {
+      continue; // skip bad distractor
+    }
+    seen.add(norm);
+    sanitized.push(opt);
+  }
+
+  // If we lost distractors, fill with generic wrong answers
+  const fillers = ["None of these", "Not enough information", "All of the above", "Something else"];
+  let fillerIdx = 0;
+  const targetCount = question.options.length;
+  while (sanitized.length < targetCount && fillerIdx < fillers.length) {
+    const f = fillers[fillerIdx++];
+    if (!seen.has(f.toLowerCase())) {
+      seen.add(f.toLowerCase());
+      sanitized.push(f);
+    }
+  }
+
+  // Ensure correct answer is present and randomize its position
+  if (!sanitized.includes(question.correctAnswer)) {
+    sanitized[0] = question.correctAnswer;
+  }
+  question.options = sanitized;
+}
+
 function validateChallenge(challenge: any, challengeType: string, isK2: boolean): void {
   if (challengeType === "speed_round") {
     const expectedCount = isK2 ? 3 : 5;
@@ -299,6 +339,12 @@ Return ONLY valid JSON (no markdown):
 
         challenge = extractJsonFromAiResponse(content);
         validateChallenge(challenge, challengeType, isK2);
+        // Sanitize all multiple choice options in speed_round
+        if (challengeType === "speed_round" && Array.isArray(challenge.questions)) {
+          for (const q of challenge.questions) {
+            sanitizeMultipleChoiceOptions(q);
+          }
+        }
         challenge.challengeType = challengeType;
         break; // Success
       } catch (err) {
