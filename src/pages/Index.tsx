@@ -169,7 +169,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h1 className="text-3xl sm:text-4xl md:text-[2.75rem] leading-snug md:leading-tight font-bold text-foreground">
-              Students complete a 5-minute language session
+              Students complete a 5–20 minute language session
               <br className="hidden sm:block" />
               <span className="text-muted-foreground">
                 {" "}— reading, writing, speaking, and listening —{" "}
@@ -279,7 +279,7 @@ const Index = () => {
                 icon: BookOpen,
                 step: "③",
                 title: "Students complete reading, writing, speaking & listening",
-                sub: "5 minutes",
+                sub: "5–20 minutes",
               },
               {
                 icon: BarChart3,
