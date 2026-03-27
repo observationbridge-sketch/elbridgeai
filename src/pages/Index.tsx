@@ -303,20 +303,17 @@ const Index = () => {
 
       {/* ── SECTION 5 — Video Embed ── */}
       <section className="container mx-auto px-4 py-16 md:py-20">
-        <div className="max-w-2xl mx-auto">
-          <div className="aspect-video rounded-2xl border border-border bg-muted/30 shadow-sm flex items-center justify-center">
-            <div className="text-center space-y-3 px-6">
-              <Play className="h-12 w-12 text-muted-foreground/40 mx-auto" />
-              <p className="text-sm text-muted-foreground">
-                Add your Loom embed URL here before publishing.
-              </p>
-              <p className="text-xs text-muted-foreground/60">
-                Suggested size: 16:9 · max-width 720px · centered
-              </p>
-            </div>
+        <div className="max-w-[720px] mx-auto">
+          <div className="relative w-full rounded-2xl border border-border shadow-sm overflow-hidden" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src="https://www.loom.com/embed/9b97a658242d44e5a77e39dd5aeb46c5"
+              frameBorder="0"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
           </div>
           <p className="text-center text-sm text-muted-foreground mt-4 italic">
-            A real session — from teacher setup to student completion. About 90 seconds.
+            A real session — from teacher setup to student completion.
           </p>
         </div>
       </section>
