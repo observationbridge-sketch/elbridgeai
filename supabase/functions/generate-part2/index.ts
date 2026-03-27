@@ -158,6 +158,43 @@ function extractJsonFromAiResponse(rawContent: string): any {
   }
 }
 
+function sanitizeMultipleChoiceOptions(activity: any): void {
+  if (!activity || !Array.isArray(activity.options) || !activity.modelAnswer) return;
+  const correct = activity.modelAnswer.trim().toLowerCase();
+  const stem = (activity.question || "").trim().toLowerCase();
+  const seen = new Set<string>([correct]);
+  const sanitized: string[] = [];
+
+  for (const opt of activity.options) {
+    const norm = opt.trim().toLowerCase();
+    if (norm === correct) {
+      sanitized.push(activity.modelAnswer);
+      continue;
+    }
+    if (seen.has(norm) || norm === correct || (norm.length > 3 && stem.includes(norm))) {
+      continue;
+    }
+    seen.add(norm);
+    sanitized.push(opt);
+  }
+
+  const fillers = ["None of these", "Not enough information", "All of the above", "Something else"];
+  let fillerIdx = 0;
+  const targetCount = activity.options.length;
+  while (sanitized.length < targetCount && fillerIdx < fillers.length) {
+    const f = fillers[fillerIdx++];
+    if (!seen.has(f.toLowerCase())) {
+      seen.add(f.toLowerCase());
+      sanitized.push(f);
+    }
+  }
+
+  if (!sanitized.includes(activity.modelAnswer)) {
+    sanitized[0] = activity.modelAnswer;
+  }
+  activity.options = sanitized;
+}
+
 function isValidFillInBlankSchema(value: any): boolean {
   if (!value || typeof value !== "object") return false;
   if (typeof value.sentence !== "string" || !value.sentence.trim()) return false;
@@ -327,9 +364,12 @@ MULTIPLE CHOICE QUALITY RULES (MANDATORY):
 2. The question must ask about ONE specific fact that is explicitly stated in the passage — not an inference, not an opinion.
 3. The correct answer must be stated word-for-word or near-word-for-word in the passage.
 4. Distractors must be clearly and obviously wrong to anyone who read the passage — never use near-synonyms, plausible alternatives, or words that could also fit.
-5. Self-test before outputting: "Could a careful reader choose any option other than the correct one?" If yes, REWRITE the question.
-6. BAD example: "What is flying? A bird or a dragon?" — both could be right if the passage doesn't specify.
-7. GOOD example: passage says "The red dragon breathed blue fire" → question "What color was the dragon's fire?" → correct: "blue" → wrong: "red", "green", "orange".
+5. No distractor may match the correct answer (case-insensitive).
+6. No distractor may repeat another distractor — all 4 options must be unique.
+7. No distractor may be a substring of the question stem.
+8. Self-test before outputting: "Are all four options clearly distinct from each other AND from the question? Could a careful reader choose any option other than the correct one?" If any check fails, REWRITE.
+9. BAD example: "What is flying? A bird or a dragon?" — both could be right if the passage doesn't specify.
+10. GOOD example: passage says "The red dragon breathed blue fire" → question "What color was the dragon's fire?" → correct: "blue" → wrong: "red", "green", "orange".
 
 Return ONLY valid JSON:
 {
@@ -644,6 +684,11 @@ serve(async (req) => {
         console.error("Invalid fill-in schema", { questionIndex: qIdx, activity });
         throw new Error("Missing required fill-in fields");
       }
+    }
+
+    // Sanitize multiple choice options (position 3 for 3-5, any tap activity for K-2)
+    if (activity.options && Array.isArray(activity.options)) {
+      sanitizeMultipleChoiceOptions(activity);
     }
 
     // FORCE correct type and inputType for 3-5
