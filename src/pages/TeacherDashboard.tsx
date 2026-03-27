@@ -380,8 +380,13 @@ const TeacherDashboard = () => {
                       </div>
 
                       {/* Code display */}
-                      <div className="bg-muted rounded-lg p-6 text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Share this code with students</p>
+                      <div className="bg-muted rounded-lg p-6 text-center space-y-2">
+                        <p className="text-2xl md:text-3xl font-bold text-foreground">
+                          Go to <span className="text-primary">elbridgeai.com/join</span>
+                        </p>
+                        <p className="text-base md:text-lg font-medium text-muted-foreground">
+                          Then enter your code:
+                        </p>
                         <div className="flex items-center justify-center gap-3">
                           <span className="text-5xl font-mono font-bold tracking-[0.2em] text-primary">{sessionCode}</span>
                           <Button variant="ghost" size="icon" onClick={copyCode}><Copy className="h-5 w-5" /></Button>
