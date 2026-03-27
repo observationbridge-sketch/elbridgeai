@@ -433,15 +433,21 @@ This is the wind-down — medium-easy. The student writes only 1-2 sentences MAX
 Give a fun, low-pressure prompt. No multi-paragraph writing. Keep it light.
 
 HARD RULE: Maximum 1-2 sentences expected. Do NOT ask for 3+ sentences.
-IMPORTANT: This must be a PERSONAL OPINION or PREFERENCE question — ask the student what they would choose, prefer, or like about ${topic}. Example: "If you could have one power from ${topic}, what would it be?"
+
+QUICK WRITE PROMPT RULES FOR ELL STUDENTS (MANDATORY):
+1. Questions MUST be answerable with concrete personal experience or simple observation — NOT abstract hypotheticals.
+2. NEVER use "if you could have a superpower", "imagine you were", "if you could be", or any fantasy/hypothetical framing. These require too much abstract thinking in a second language.
+3. GOOD prompts: "What do you know about ${topic}?", "What would happen if there was no ${topic}?", "Describe what ${topic} feels/looks/sounds like.", "What is your favorite thing about ${topic}?"
+4. BAD prompts: "If you could choose one superpower from ${topic}...", "Imagine you were a ${topic}...", "If you could be any part of ${topic}..."
+5. The sentence starter MUST directly match the question so the student can begin writing immediately without re-reading the question. Example: Question "What do you know about the Sun?" → Starter "I know that the Sun..."
 Do NOT ask about real life connections — that comes next.
 
 Return ONLY valid JSON:
 {
   "type": "quick_write",
   "inputType": "typing",
-  "question": "<fun writing prompt about ${topic}, 1-2 sentences only>",
-  "sentenceStarter": "<optional sentence starter or null>",
+  "question": "<concrete, observable writing prompt about ${topic}, 1-2 sentences only>",
+  "sentenceStarter": "<sentence starter that directly continues from the question>",
   "wordBank": null,
   "modelAnswer": "<1-2 sentence sample response>",
   "acceptableKeywords": ["<5-8 words>"],
