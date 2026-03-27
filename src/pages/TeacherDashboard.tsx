@@ -272,8 +272,20 @@ const TeacherDashboard = () => {
     ? "Waiting for students…"
     : "Session Live 🟢";
 
+  const [betaSlots, setBetaSlots] = useState<{ used: number; total: number } | null>(null);
+  useEffect(() => {
+    supabase.functions.invoke("check-beta-slots").then(({ data }) => {
+      if (data) setBetaSlots({ used: data.slots_used, total: data.slots_total });
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
+      {betaSlots && (
+        <div className="bg-muted/60 text-muted-foreground text-xs text-center py-1">
+          Beta: {betaSlots.used} of {betaSlots.total} spots taken
+        </div>
+      )}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
