@@ -362,7 +362,17 @@ function jumbleSentence(passage: string): { original: string; correctWords: stri
 
   // Hard cap at 10 words so the jumble is always completable
   const MAX_JUMBLE_WORDS = 10;
-  const capped = words.slice(0, MAX_JUMBLE_WORDS);
+  // Words that cannot end a sentence — trim back if the cap lands on one
+  const BAD_ENDING_WORDS = new Set([
+    "gives", "takes", "makes", "has", "does", "goes", "is", "are", "was", "were",
+    "that", "the", "a", "an", "to", "of", "and", "or", "with", "in", "on", "at",
+    "for", "by", "from", "but", "so", "if", "not", "can", "will", "do", "this",
+  ]);
+  let capped = words.slice(0, MAX_JUMBLE_WORDS);
+  // Trim back until the last word is a noun/adjective (min 3 words)
+  while (capped.length > 3 && BAD_ENDING_WORDS.has(capped[capped.length - 1].toLowerCase())) {
+    capped = capped.slice(0, -1);
+  }
 
   let shuffled = [...capped].sort(() => Math.random() - 0.5);
   let attempts = 0;
