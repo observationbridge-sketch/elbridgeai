@@ -329,10 +329,18 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── SECTION 5 — Video Embed ── */}
+      {/* ── SECTION 5 — 3–5 Student Session Video ── */}
       <section className="container mx-auto px-4 py-16 md:py-20">
-        <div className="max-w-[720px] mx-auto">
-          <div className="relative w-full rounded-2xl border border-border shadow-sm overflow-hidden" style={{ paddingBottom: "56.25%" }}>
+        <div className="max-w-3xl mx-auto text-center space-y-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground leading-tight">
+            Grades 3–5 Student Session
+          </h2>
+          <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            Watch a 3rd–5th grader work through a full session independently.
+          </p>
+        </div>
+        <div className="max-w-[720px] mx-auto mt-8">
+          <div className="relative w-full rounded-2xl border border-border shadow-sm overflow-hidden" style={{ paddingBottom: "62.5%" }}>
             <iframe
               src="https://www.loom.com/embed/9b97a658242d44e5a77e39dd5aeb46c5"
               frameBorder="0"
@@ -340,9 +348,6 @@ const Index = () => {
               className="absolute inset-0 w-full h-full"
             />
           </div>
-          <p className="text-center text-sm text-muted-foreground mt-4 italic">
-            A real session — from teacher setup to student completion.
-          </p>
         </div>
       </section>
 
