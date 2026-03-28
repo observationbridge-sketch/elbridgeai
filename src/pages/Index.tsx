@@ -255,6 +255,34 @@ const Index = () => {
         </section>
       )}
 
+      {/* ── SECTION 3.5 — Student Example Video (Focal) ── */}
+      <section className="relative bg-gradient-to-b from-accent/5 via-accent/10 to-accent/5 border-y border-accent/20">
+        <div className="container mx-auto px-4 py-16 md:py-24">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <span className="inline-block text-xs font-bold tracking-[0.2em] uppercase text-accent bg-accent/10 px-4 py-1.5 rounded-full">
+              🎬 See It In Action
+            </span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground leading-tight">
+              Watch a Real Student Complete a Session
+            </h2>
+            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              A 1st–2nd grader works through reading, writing, speaking, and listening — all on their own.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto mt-10">
+            <div className="relative rounded-2xl border-2 border-accent/30 shadow-2xl overflow-hidden ring-1 ring-accent/10 ring-offset-4 ring-offset-background" style={{ paddingBottom: "62.5%" }}>
+              <iframe
+                src="https://www.loom.com/embed/68fb8aceaf81437fac1037627460dc38"
+                frameBorder="0"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── SECTION 4 — How a Session Works ── */}
       <section id="how-it-works" className="bg-muted/40 border-y border-border">
         <div className="container mx-auto px-4 py-16 md:py-20">
