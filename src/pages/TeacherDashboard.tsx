@@ -570,6 +570,9 @@ const TeacherDashboard = () => {
             {user && <ContentHistoryPanel teacherId={user.id} />}
             {user && <EmailSettings userId={user.id} />}
 
+            {/* Lesson Plan Snippet */}
+            <LessonPlanSnippet />
+
             {/* Session History */}
             <Card className="card-shadow border-border">
               <CardHeader>
