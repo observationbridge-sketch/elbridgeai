@@ -101,6 +101,11 @@ function validateChallenge(challenge: any, challengeType: string, isK2: boolean)
       if (!Array.isArray(q.options) || !q.correctAnswer || !q.question) {
         throw new Error("Each speed_round question must have options, question, and correctAnswer");
       }
+      // Strip "Listen:" or "Listen to this:" prefix from questions and audioDescriptions
+      q.question = q.question.replace(/^Listen(?:\s+to\s+this)?:\s*/i, "");
+      if (q.audioDescription) {
+        q.audioDescription = q.audioDescription.replace(/^Listen(?:\s+to\s+this)?:\s*/i, "");
+      }
     }
   } else if (challengeType === "story_builder") {
     if (!Array.isArray(challenge.scenes) || challenge.scenes.length < 3 || challenge.scenes.length > 4) {
