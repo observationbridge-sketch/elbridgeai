@@ -87,10 +87,10 @@ export function getSemanticDistractors(correctWord: string, usedWords: Set<strin
 export const SAFE_FALLBACK_WORDS = ["cat", "sun", "hat"];
 export const FALLBACK_DISTRACTORS = SAFE_FALLBACK_WORDS;
 
-/** Required tile count per sentence frame tier */
+/** Required tile count per sentence frame tier — ALWAYS 3 visible word options */
 export const TIER_TILE_COUNTS: Record<number, number> = {
-  1: 2, // 1 blank → 1 correct + 1 distractor
-  2: 4, // 2 blanks → 2 correct + 2 distractors
+  1: 3, // 1 blank → 1 correct + 2 distractors (always 3 options shown)
+  2: 5, // 2 blanks → 2 correct + 3 distractors
   3: 6, // 3 blanks → 3 correct + 3 distractors
 };
 
@@ -393,26 +393,27 @@ export function generateK2SentenceFrame(
   }
   blankSentence += ".";
 
-  // Build tiles — correct words + distractors from CURRENT anchor sentence only
+  // Build tiles — correct words + ALWAYS 2 distractors from CURRENT anchor sentence
   const correctWords = toBlank.map((w) => normalizeWord(w)).filter(Boolean);
   const usedWords = new Set(correctWords);
+  const DISTRACTOR_COUNT = 2; // Always show exactly 3 options: 1 correct + 2 distractors
   const sentenceDistractorPool = uniqueSentenceWords.filter((w) => !usedWords.has(w) && !BANNED_DISTRACTOR_WORDS.has(w) && w.length > 2);
 
   const distractors: string[] = [];
   for (const sentenceWord of sentenceDistractorPool) {
-    if (distractors.length >= blankCount) break;
+    if (distractors.length >= DISTRACTOR_COUNT) break;
     distractors.push(sentenceWord);
     usedWords.add(sentenceWord);
   }
 
   // If the sentence is too short, use semantically related distractors
-  if (distractors.length < blankCount) {
-    const needed = blankCount - distractors.length;
+  if (distractors.length < DISTRACTOR_COUNT) {
+    const needed = DISTRACTOR_COUNT - distractors.length;
     const semanticFills = getSemanticDistractors(correctWords[0] || "", usedWords, needed);
     distractors.push(...semanticFills);
   }
 
-  // Shuffle tiles
+  // Shuffle tiles — always exactly 3 options (1 correct + 2 distractors)
   const tiles = [...correctWords, ...distractors].sort(() => Math.random() - 0.5);
 
   return { blankSentence, correctWords, tiles };
