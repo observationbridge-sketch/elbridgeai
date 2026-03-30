@@ -523,6 +523,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_beta_subscription: {
+        Args: { p_expires_at: string; p_user_id: string }
+        Returns: Json
+      }
       ensure_teacher_account: {
         Args: { p_full_name?: string; p_user_id: string }
         Returns: undefined
