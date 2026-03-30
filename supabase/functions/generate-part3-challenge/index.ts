@@ -121,12 +121,12 @@ function generateFallbackChallenge(topic: string, theme: string, isK2: boolean):
     ? [
         { domain: "reading", question: `What is ${topic} about?`, options: ["Something fun", "Something scary"], correctAnswer: "Something fun" },
         { domain: "reading", question: `Where can you find ${topic}?`, options: ["Outside", "In a box"], correctAnswer: "Outside" },
-        { domain: "listening", audioDescription: `Listen: ${topic} is very interesting. Many people like to learn about ${topic}.`, question: `Do people like ${topic}?`, options: ["Yes", "No"], correctAnswer: "Yes" },
+        { domain: "listening", audioDescription: `${topic} is very interesting. Many people like to learn about ${topic}.`, question: `Do people like ${topic}?`, options: ["Yes", "No"], correctAnswer: "Yes" },
       ]
     : [
         { domain: "reading", passage: `${topic} is a fascinating subject. Many students enjoy learning about it because it connects to the world around us.`, question: `Why do students enjoy learning about ${topic}?`, options: ["It connects to the world", "It is boring", "It is too hard", "It is only for adults"], correctAnswer: "It connects to the world" },
         { domain: "reading", passage: `Learning about ${topic} helps us understand ${theme} better. There are many interesting facts to discover.`, question: `What does learning about ${topic} help us understand?`, options: [`${theme}`, "Nothing", "Only math", "Only science"], correctAnswer: `${theme}` },
-        { domain: "listening", audioDescription: `Listen to this: ${topic} is something you can explore every day. The more you learn, the more interesting it gets!`, question: "What happens the more you learn?", options: ["It gets more interesting", "It gets boring", "It disappears", "It stops"], correctAnswer: "It gets more interesting" },
+        { domain: "listening", audioDescription: `${topic} is something you can explore every day. The more you learn, the more interesting it gets!`, question: "What happens the more you learn?", options: ["It gets more interesting", "It gets boring", "It disappears", "It stops"], correctAnswer: "It gets more interesting" },
         { domain: "speaking", question: `What is one thing you learned about ${topic} today?`, options: ["I learned something new", "I learned nothing", "I forgot everything", "I didn't listen"], correctAnswer: "I learned something new" },
         { domain: "writing", question: `Complete this sentence: The best thing about ${topic} is _____.`, options: ["how interesting it is", "nothing at all", "that it is boring", "that it ended"], correctAnswer: "how interesting it is" },
       ];
@@ -233,6 +233,7 @@ ${domainMixInstruction}
 
 Each question must have exactly ${optionCount} options with one clearly correct answer.
 Do NOT reference any images, pictures, or visuals.
+Do NOT prefix questions or audioDescriptions with "Listen:", "Listen to this:", or any similar label — start directly with the content.
 Each question MUST include a "domain" field with one of: "reading", "listening", "speaking", "writing".
 
 WRITING DOMAIN RULES (CRITICAL):
