@@ -286,13 +286,15 @@ This is the warm-up — easy, with heavy scaffolding.
 STRUCTURE:
 1. Include a short 3-5 sentence passage (field: "passage") about "${topic}" — MAXIMUM 60 WORDS
 2. Present a sentence frame with 1 blank marked as ___
-3. Include a "wordBank" array with 4-6 key vocabulary words from the passage
+3. Include a "wordBank" array with exactly 3 words: the 1 correct answer + 2 plausible distractors from the passage
 4. Include a fillInBlank object: { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 
 FILL-IN-THE-BLANK RULES:
 - The sentence MUST make grammatical sense when correct words are inserted
 - Clear context clues so the student can guess the answer
 - Maximum 1 blank for this warm-up position
+- Each question MUST use a DIFFERENT sentence — NEVER repeat the same sentence across questions in the same session
+- Distractors MUST be drawn from words in the same passage/sentence
 
 Return ONLY valid JSON:
 {
@@ -301,8 +303,8 @@ Return ONLY valid JSON:
   "passage": "<3-5 sentence passage about ${topic}, MAX 60 words>",
   "question": "<instruction + sentence frame with ___ blank>",
   "sentenceFrame": "<just the frame with ___ blank>",
-  "wordBank": ["<4-6 vocabulary words>"],
-  "fillInBlank": { "sentence": "<sentence with ___>", "blanks": ["<blank info>"], "answers": ["<correct word>"], "wordBank": ["<word choices>"] },
+  "wordBank": ["<exactly 3 words: correct + 2 distractors>"],
+  "fillInBlank": { "sentence": "<sentence with ___>", "blanks": ["<blank info>"], "answers": ["<correct word>"], "wordBank": ["<exactly 3 words>"] },
   "modelAnswer": "<completed sentence>",
   "acceptableKeywords": ["<6-8 words>"],
   "difficulty": 1,
@@ -526,7 +528,10 @@ K-2 CONTENT RULES (MANDATORY):
 - For speaking activities: maximum 1 sentence, must involve the student's animal companion (Baby Chick)
 
 ADAPTIVE DIFFICULTY TIER (current: Tier ${tier}):
-${tier === 1 ? "- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly 2 word choices" : ""}${tier === 2 ? "- Tier 2: Maximum 6 words per sentence, exactly 2 blanks, exactly 3 word choices" : ""}${tier === 3 ? "- Tier 3: Maximum 8 words per sentence, exactly 3 blanks, exactly 4 word choices" : ""}`;
+- ALWAYS show exactly 3 word choices (1 correct answer + 2 plausible distractors from the same sentence)
+- Distractors MUST come from words in the SAME sentence — never introduce outside words
+${tier === 1 ? "- Tier 1: Maximum 4 words per sentence, exactly 1 blank" : ""}${tier === 2 ? "- Tier 2: Maximum 6 words per sentence, exactly 2 blanks" : ""}${tier === 3 ? "- Tier 3: Maximum 8 words per sentence, exactly 3 blanks" : ""}
+- Each question in the set MUST use a DIFFERENT sentence — NEVER repeat the same sentence across questions`;
 
   // For K-2, use sentence_frames for typing positions, speaking for recording positions
   if (inputType === "recording") {
@@ -594,7 +599,8 @@ Generate a SENTENCE FRAME activity about "${topic}" for K-2 students.
 Do NOT include a reading passage — omit the "passage" field entirely or set it to null.
 Show ONLY the fill-in-the-blank sentence directly.
 ALL words must be max 2 syllables.
-Include a "wordBank" array with correct answer word(s) PLUS 1-2 distractor single words (tappable tiles).
+Include a "wordBank" array with exactly 3 words: the correct answer word PLUS 2 distractor words drawn from the SAME sentence (tappable tiles).
+Each question MUST use a DIFFERENT sentence — NEVER repeat the same anchor sentence across questions in the same session.
 
 Include a fillInBlank object: { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 

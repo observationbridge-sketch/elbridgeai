@@ -22,7 +22,7 @@ import {
   normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
   isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
   MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS, shouldForceRevealAfterAttempts,
-  generateK2SentenceFrame,
+  generateK2SentenceFrame, getSemanticDistractors,
 } from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
@@ -268,6 +268,32 @@ function validateFillInBlankPayload(payload: any): payload is FillInBlankPayload
   return true;
 }
 
+function enforceWordBankSize(missingWords: string[], wordBank: string[]): string[] {
+  // Always exactly 3 word options: correct answers + distractors to fill to 3
+  const TARGET = 3;
+  const uniqueBank = [...new Set(wordBank.map(w => w.toLowerCase()))];
+  const correctSet = new Set(missingWords.map(w => w.toLowerCase()));
+
+  // Ensure correct answers are included
+  const result = [...missingWords.map(w => w.toLowerCase())];
+  const used = new Set(result);
+
+  // Add distractors from word bank
+  for (const w of uniqueBank) {
+    if (result.length >= TARGET) break;
+    if (!used.has(w)) { result.push(w); used.add(w); }
+  }
+
+  // If still short, use semantic distractors
+  if (result.length < TARGET) {
+    const fills = getSemanticDistractors(missingWords[0] || "", used, TARGET - result.length);
+    result.push(...fills);
+  }
+
+  // Trim to exactly 3
+  return result.slice(0, TARGET).sort(() => Math.random() - 0.5);
+}
+
 function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWords: string[]; wordBank: string[] } | null {
   // Legacy shape already used by WordBankFillBlanks
   if (
@@ -280,7 +306,7 @@ function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWo
     return {
       blanked: payload.blankedSentence,
       missingWords: payload.missingWords,
-      wordBank: payload.wordBank,
+      wordBank: enforceWordBankSize(payload.missingWords, payload.wordBank),
     };
   }
 
@@ -291,7 +317,7 @@ function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWo
   return {
     blanked: payload.sentence,
     missingWords: payload.answers,
-    wordBank: payload.wordBank,
+    wordBank: enforceWordBankSize(payload.answers, payload.wordBank),
   };
 }
 
@@ -338,17 +364,26 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
   const blanked = words.map((w, i) => (finalPicked.includes(i) ? "___" : w)).join(" ");
 
   // Build distractor pool from words that actually appear in the sentence
-  // This ensures students only see words they've read on screen — no phantom words like "jump"
+  // This ensures students only see words they've read on screen — no phantom words
   const sentenceWordPool = words
     .map((w) => w.replace(/[^a-zA-Z']/g, ""))
     .filter((w) => w.length > 2 && !missingWords.map((m) => m.toLowerCase()).includes(w.toLowerCase()));
 
-  const distractorCount = isK2 ? 2 : 3;
+  // Always exactly 2 distractors → total 3 word options (1 correct + 2 distractors)
+  const DISTRACTOR_COUNT = 2;
   const distractors = sentenceWordPool
     .sort(() => Math.random() - 0.5)
-    .slice(0, distractorCount);
+    .slice(0, DISTRACTOR_COUNT);
 
-  // No fallback to keyWords — only use words the student has actually seen on screen
+  // If sentence too short for 2 distractors, import semantic fallbacks
+  if (distractors.length < DISTRACTOR_COUNT) {
+    const usedWords = new Set([...missingWords.map(w => w.toLowerCase()), ...distractors.map(w => w.toLowerCase())]);
+    const needed = DISTRACTOR_COUNT - distractors.length;
+    const fills = getSemanticDistractors(missingWords[0] || "", usedWords, needed);
+    distractors.push(...fills);
+  }
+
+  // Always exactly 3 options shown
   const wordBank = [...missingWords, ...distractors];
   const shuffledBank = [...new Set(wordBank)].sort(() => Math.random() - 0.5);
   return { blanked, missingWords, wordBank: shuffledBank };
