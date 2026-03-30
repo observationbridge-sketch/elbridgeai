@@ -293,6 +293,8 @@ FILL-IN-THE-BLANK RULES:
 - The sentence MUST make grammatical sense when correct words are inserted
 - Clear context clues so the student can guess the answer
 - Maximum 1 blank for this warm-up position
+- Each question MUST use a DIFFERENT sentence — NEVER repeat the same sentence across questions in the same session
+- Distractors MUST be drawn from words in the same passage/sentence
 
 Return ONLY valid JSON:
 {
