@@ -526,7 +526,10 @@ K-2 CONTENT RULES (MANDATORY):
 - For speaking activities: maximum 1 sentence, must involve the student's animal companion (Baby Chick)
 
 ADAPTIVE DIFFICULTY TIER (current: Tier ${tier}):
-${tier === 1 ? "- Tier 1: Maximum 4 words per sentence, exactly 1 blank, exactly 2 word choices" : ""}${tier === 2 ? "- Tier 2: Maximum 6 words per sentence, exactly 2 blanks, exactly 3 word choices" : ""}${tier === 3 ? "- Tier 3: Maximum 8 words per sentence, exactly 3 blanks, exactly 4 word choices" : ""}`;
+- ALWAYS show exactly 3 word choices (1 correct answer + 2 plausible distractors from the same sentence)
+- Distractors MUST come from words in the SAME sentence — never introduce outside words
+${tier === 1 ? "- Tier 1: Maximum 4 words per sentence, exactly 1 blank" : ""}${tier === 2 ? "- Tier 2: Maximum 6 words per sentence, exactly 2 blanks" : ""}${tier === 3 ? "- Tier 3: Maximum 8 words per sentence, exactly 3 blanks" : ""}
+- Each question in the set MUST use a DIFFERENT sentence — NEVER repeat the same sentence across questions`;
 
   // For K-2, use sentence_frames for typing positions, speaking for recording positions
   if (inputType === "recording") {
@@ -594,7 +597,8 @@ Generate a SENTENCE FRAME activity about "${topic}" for K-2 students.
 Do NOT include a reading passage — omit the "passage" field entirely or set it to null.
 Show ONLY the fill-in-the-blank sentence directly.
 ALL words must be max 2 syllables.
-Include a "wordBank" array with correct answer word(s) PLUS 1-2 distractor single words (tappable tiles).
+Include a "wordBank" array with exactly 3 words: the correct answer word PLUS 2 distractor words drawn from the SAME sentence (tappable tiles).
+Each question MUST use a DIFFERENT sentence — NEVER repeat the same anchor sentence across questions in the same session.
 
 Include a fillInBlank object: { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 
