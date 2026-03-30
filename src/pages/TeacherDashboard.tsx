@@ -44,6 +44,32 @@ interface ConnectedStudent {
   theme?: string | null;
 }
 
+const LESSON_PLAN_TEXT = "Students will complete a structured ELD practice session using ElbridgeAI, engaging in listening, speaking, reading, and writing activities built around today's session theme. The session takes approximately 4–6 minutes and is self-paced. This activity supports oral language development and academic vocabulary in alignment with ELD standards.";
+
+const LessonPlanSnippet = () => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(LESSON_PLAN_TEXT);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <Card className="card-shadow border-border">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <GraduationCap className="h-5 w-5 text-muted-foreground" /> Lesson Plan Snippet
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Textarea readOnly value={LESSON_PLAN_TEXT} className="resize-none text-sm bg-muted/50 border-border" rows={4} />
+        <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+          {copied ? <><Check className="h-4 w-4" /> Copied!</> : <><Copy className="h-4 w-4" /> Copy to clipboard</>}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
