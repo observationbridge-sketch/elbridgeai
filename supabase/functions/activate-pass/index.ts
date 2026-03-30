@@ -80,21 +80,24 @@ Deno.serve(async (req) => {
     }
 
     // 2. Create the free_trial subscription (90 days — through June 2026)
+    // Uses ON CONFLICT to prevent race-condition duplicates
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 90);
 
-    const { data: subscription, error: subError } = await supabase
-      .from("subscriptions")
-      .insert({
-        user_id: userId,
-        plan: "free_trial",
-        status: "active",
-        expires_at: expiresAt.toISOString(),
-      })
-      .select()
-      .single();
+    const { data: subscription, error: subError } = await supabase.rpc(
+      'activate_beta_subscription',
+      { p_user_id: userId, p_expires_at: expiresAt.toISOString() }
+    );
 
-    if (subError) throw subError;
+    if (subError) {
+      if (subError.message?.includes('already_activated')) {
+        return new Response(
+          JSON.stringify({ error: "already_activated", message: "You already have an active subscription" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw subError;
+    }
 
     // 3. Increment slots_used
     const { error: updateError } = await supabase
