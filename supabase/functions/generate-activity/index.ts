@@ -79,11 +79,11 @@ ${isK2 ? `- Include a short 1-2 sentence passage in the "passage" field (max 8 w
 
 LISTENING (type: multiple_choice):
 ${isK2 ? `- The "audioDescription" field must contain 1-2 simple sentences (max 8 words each) that will be read aloud
-- Start audioDescription with "Listen:" followed by the short story
+- Do NOT prefix audioDescription with "Listen:" — start directly with the sentence content
 - Ask ONE simple question about what was heard
 - Provide 2-3 answer options using emojis or very short text (1-2 words)
 - Include an "emojiHint" field with 1-2 large emojis representing the story content` : `- The "audioDescription" field must contain a complete 3-5 sentence mini-story or description that will be read aloud via TTS
-- Start audioDescription with "Listen to this story:" followed by the full story
+- Do NOT prefix audioDescription with "Listen:" or "Listen to this story:" — start directly with the story content
 - Then ask a comprehension question about what was just heard
 - Provide 4 answer options`}
 
