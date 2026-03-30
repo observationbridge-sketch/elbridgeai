@@ -268,6 +268,32 @@ function validateFillInBlankPayload(payload: any): payload is FillInBlankPayload
   return true;
 }
 
+function enforceWordBankSize(missingWords: string[], wordBank: string[]): string[] {
+  // Always exactly 3 word options: correct answers + distractors to fill to 3
+  const TARGET = 3;
+  const uniqueBank = [...new Set(wordBank.map(w => w.toLowerCase()))];
+  const correctSet = new Set(missingWords.map(w => w.toLowerCase()));
+
+  // Ensure correct answers are included
+  const result = [...missingWords.map(w => w.toLowerCase())];
+  const used = new Set(result);
+
+  // Add distractors from word bank
+  for (const w of uniqueBank) {
+    if (result.length >= TARGET) break;
+    if (!used.has(w)) { result.push(w); used.add(w); }
+  }
+
+  // If still short, use semantic distractors
+  if (result.length < TARGET) {
+    const fills = getSemanticDistractors(missingWords[0] || "", used, TARGET - result.length);
+    result.push(...fills);
+  }
+
+  // Trim to exactly 3
+  return result.slice(0, TARGET).sort(() => Math.random() - 0.5);
+}
+
 function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWords: string[]; wordBank: string[] } | null {
   // Legacy shape already used by WordBankFillBlanks
   if (
@@ -280,7 +306,7 @@ function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWo
     return {
       blanked: payload.blankedSentence,
       missingWords: payload.missingWords,
-      wordBank: payload.wordBank,
+      wordBank: enforceWordBankSize(payload.missingWords, payload.wordBank),
     };
   }
 
@@ -291,7 +317,7 @@ function normalizeFillInBlankPayload(payload: any): { blanked: string; missingWo
   return {
     blanked: payload.sentence,
     missingWords: payload.answers,
-    wordBank: payload.wordBank,
+    wordBank: enforceWordBankSize(payload.answers, payload.wordBank),
   };
 }
 
