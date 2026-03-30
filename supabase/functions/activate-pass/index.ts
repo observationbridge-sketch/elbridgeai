@@ -64,51 +64,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1. Check if beta is full
-    const { data: slots, error: slotsError } = await supabase
+    // Atomic activation via database function (prevents race conditions)
+    const { data: subscription, error: subError } = await supabase.rpc(
+      'activate_beta_subscription',
+      { p_user_id: userId, p_expires_at: new Date(Date.now() + 90 * 86400000).toISOString() }
+    );
+
+    if (subError) {
+      if (subError.message?.includes('already_activated')) {
+        return new Response(
+          JSON.stringify({ error: "already_activated", message: "You already have an active subscription" }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (subError.message?.includes('beta_full')) {
+        return new Response(
+          JSON.stringify({ error: "beta_full", message: "Beta is full" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw subError;
+    }
+
+    const { data: slots } = await supabase
       .from("beta_slots")
       .select("slots_total, slots_used")
       .single();
-
-    if (slotsError) throw slotsError;
-
-    if (slots.slots_used >= slots.slots_total) {
-      return new Response(
-        JSON.stringify({ error: "beta_full", message: "Beta is full" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 2. Create the free_trial subscription (90 days — through June 2026)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 90);
-
-    const { data: subscription, error: subError } = await supabase
-      .from("subscriptions")
-      .insert({
-        user_id: userId,
-        plan: "free_trial",
-        status: "active",
-        expires_at: expiresAt.toISOString(),
-      })
-      .select()
-      .single();
-
-    if (subError) throw subError;
-
-    // 3. Increment slots_used
-    const { error: updateError } = await supabase
-      .from("beta_slots")
-      .update({ slots_used: slots.slots_used + 1 })
-      .eq("id", 1);
-
-    if (updateError) throw updateError;
 
     return new Response(
       JSON.stringify({
         status: "activated",
         subscription,
-        slots_remaining: slots.slots_total - slots.slots_used - 1,
+        slots_remaining: slots ? slots.slots_total - slots.slots_used : 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
