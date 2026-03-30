@@ -286,7 +286,7 @@ This is the warm-up — easy, with heavy scaffolding.
 STRUCTURE:
 1. Include a short 3-5 sentence passage (field: "passage") about "${topic}" — MAXIMUM 60 WORDS
 2. Present a sentence frame with 1 blank marked as ___
-3. Include a "wordBank" array with 4-6 key vocabulary words from the passage
+3. Include a "wordBank" array with exactly 3 words: the 1 correct answer + 2 plausible distractors from the passage
 4. Include a fillInBlank object: { "sentence": string, "blanks": array, "answers": string[], "wordBank": string[] }
 
 FILL-IN-THE-BLANK RULES:
@@ -301,8 +301,8 @@ Return ONLY valid JSON:
   "passage": "<3-5 sentence passage about ${topic}, MAX 60 words>",
   "question": "<instruction + sentence frame with ___ blank>",
   "sentenceFrame": "<just the frame with ___ blank>",
-  "wordBank": ["<4-6 vocabulary words>"],
-  "fillInBlank": { "sentence": "<sentence with ___>", "blanks": ["<blank info>"], "answers": ["<correct word>"], "wordBank": ["<word choices>"] },
+  "wordBank": ["<exactly 3 words: correct + 2 distractors>"],
+  "fillInBlank": { "sentence": "<sentence with ___>", "blanks": ["<blank info>"], "answers": ["<correct word>"], "wordBank": ["<exactly 3 words>"] },
   "modelAnswer": "<completed sentence>",
   "acceptableKeywords": ["<6-8 words>"],
   "difficulty": 1,
