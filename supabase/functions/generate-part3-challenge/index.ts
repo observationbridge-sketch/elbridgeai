@@ -233,7 +233,8 @@ ${STRICT_RULES}
 Generate a SPEED ROUND challenge with exactly ${questionCount} multiple-choice questions about "${topic}".
 ${isK2 ? `K-2 RULES: 
 - Each question must have exactly ${optionCount} options only (NOT 4).
-- Use simple Tier 1 vocabulary. Short sentences under 10 words.` : ""}
+- Use simple Tier 1 vocabulary. Short sentences under 10 words.
+- GRAMMAR QUESTIONS: Do NOT test subject-verb agreement (e.g. "pump" vs "pumps") — these differences are too subtle for emerging ELL readers. Instead test clearly visible differences such as wrong word order (e.g. "The dog big runs" vs "The big dog runs") or missing vs present key content words.` : ""}
 ${domainMixInstruction}
 
 Each question must have exactly ${optionCount} options with one clearly correct answer.
