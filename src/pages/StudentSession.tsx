@@ -22,7 +22,7 @@ import {
   normalizeWord, sentenceToWords, isExactWordOrderMatch, deduplicateChips,
   isSentenceFrameCorrect, buildSentenceFrameTiles, deterministicShuffle,
   MAX_WRONG_ATTEMPTS, CORRECT_AUTO_ADVANCE_MS, shouldForceRevealAfterAttempts,
-  generateK2SentenceFrame,
+  generateK2SentenceFrame, getSemanticDistractors,
 } from "@/lib/k2-rules";
 
 type Domain = "reading" | "writing" | "speaking" | "listening";
@@ -351,7 +351,6 @@ function generateBlanks(sentence: string, keyWords: string[], isK2?: boolean): {
 
   // If sentence too short for 2 distractors, import semantic fallbacks
   if (distractors.length < DISTRACTOR_COUNT) {
-    const { getSemanticDistractors } = await import("@/lib/k2-rules");
     const usedWords = new Set([...missingWords.map(w => w.toLowerCase()), ...distractors.map(w => w.toLowerCase())]);
     const needed = DISTRACTOR_COUNT - distractors.length;
     const fills = getSemanticDistractors(missingWords[0] || "", usedWords, needed);
