@@ -272,9 +272,9 @@ export function buildSentenceFrameTiles(
     finalTiles.push(...semanticFills);
   }
 
-  // 5. Ensure minimum 2 tiles (at least 1 distractor)
-  if (finalTiles.length < 2) {
-    const semanticFills = getSemanticDistractors(correctNorm, usedWords, 2 - finalTiles.length);
+  // 5. Ensure minimum 3 tiles (1 correct + 2 distractors) — always 3 options
+  if (finalTiles.length < 3) {
+    const semanticFills = getSemanticDistractors(correctNorm, usedWords, 3 - finalTiles.length);
     finalTiles.push(...semanticFills);
   }
 
