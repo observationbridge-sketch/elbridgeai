@@ -14,7 +14,7 @@ interface NavItem {
 }
 
 const links: NavItem[] = [
-  { label: "ElBridgeAI", href: "https://elbridgeai.com", active: true },
+  { label: "ElBridgeAI", href: null, active: true },
   { label: "ParentsBridgeAI", href: "https://parentsbridgeai.com", active: false },
   { label: "SpellingBridgeAI", href: "https://spellingbridgeai.com", active: false },
 ];
