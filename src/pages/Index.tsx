@@ -16,6 +16,7 @@ import {
   X,
   Check,
 } from "lucide-react";
+import BridgeAISuiteStrip from "@/components/BridgeAISuiteStrip";
 
 /* ------------------------------------------------------------------ */
 /*  Slot counter bar color                                             */
