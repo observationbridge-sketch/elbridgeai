@@ -51,6 +51,14 @@ const StudentJoin = () => {
     try {
       const upperCode = code.toUpperCase().trim();
 
+      // Title-case the student name so the completion screen and dashboards
+      // always show e.g. "Maria" instead of "maria" or "MARIA".
+      const cleanName = name
+        .trim()
+        .split(/\s+/)
+        .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w))
+        .join(" ");
+
       const { data: session, error } = await supabase
         .from("sessions")
         .select("id")
@@ -66,7 +74,7 @@ const StudentJoin = () => {
 
       const { data: student, error: joinError } = await supabase
         .from("session_students")
-        .insert({ session_id: session.id, student_name: name.trim() })
+        .insert({ session_id: session.id, student_name: cleanName })
         .select()
         .single();
 
@@ -76,7 +84,7 @@ const StudentJoin = () => {
         return;
       }
 
-      toast.success(`Welcome, ${name}! 🎉`);
+      toast.success(`Welcome, ${cleanName}! 🎉`);
       navigate(`/student/session/${session.id}/${student.id}`);
     } catch {
       toast.error("Something went wrong.");
