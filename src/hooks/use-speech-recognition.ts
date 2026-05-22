@@ -51,10 +51,12 @@ export function useSpeechRecognition() {
       recognition.onend = () => {
         if (shouldListenRef.current) {
           try {
+            recognitionRef.current = null;
             const newRec = createRecognition();
             recognitionRef.current = newRec;
             newRec.start();
           } catch {
+            recognitionRef.current = null;
             shouldListenRef.current = false;
             setIsListening(false);
           }
@@ -103,6 +105,13 @@ export function useSpeechRecognition() {
 
   const startListening = useCallback(() => {
     if (!isSupported) return;
+
+    // Kill any orphaned recognition instance before creating a new one so rapid
+    // mic taps don't leave dangling listeners.
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+      recognitionRef.current = null;
+    }
 
     // Safety: clear any pending stop-timeout and prior transcript so a new
     // recording never bleeds in finals from the previous attempt.
