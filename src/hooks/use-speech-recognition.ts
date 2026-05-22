@@ -104,7 +104,16 @@ export function useSpeechRecognition() {
   const startListening = useCallback(() => {
     if (!isSupported) return;
 
+    // Safety: clear any pending stop-timeout and prior transcript so a new
+    // recording never bleeds in finals from the previous attempt.
+    if (stopTimeoutRef.current) {
+      clearTimeout(stopTimeoutRef.current);
+      stopTimeoutRef.current = null;
+    }
+    accumulatedRef.current = "";
     sessionFinalsRef.current = "";
+    setTranscript("");
+
     shouldListenRef.current = true;
     recordingStartRef.current = Date.now();
 

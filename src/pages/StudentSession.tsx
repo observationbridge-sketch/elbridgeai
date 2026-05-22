@@ -395,8 +395,8 @@ function jumbleSentence(passage: string): { original: string; correctWords: stri
   const clean = firstSentence.replace(/[.!?]$/, "").trim();
   const words = clean.split(/\s+/);
 
-  // Hard cap at 10 words so the jumble is always completable
-  const MAX_JUMBLE_WORDS = 10;
+  // Hard cap at 8 words so the jumble is always completable for K-2/3-5 ELLs
+  const MAX_JUMBLE_WORDS = 8;
   // Words that cannot end a sentence — trim back if the cap lands on one
   const BAD_ENDING_WORDS = new Set([
     "gives", "takes", "makes", "has", "does", "goes", "is", "are", "was", "were",
